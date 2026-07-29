@@ -1,34 +1,35 @@
-import sequelize from '../config/database.js';
-import { initAsignatura } from './asignatura.model.js';
-import { initCarrera } from './carrera.model.js';
-import { initCarreraAsignatura } from './carreraAsignatura.model.js';
-import { initCurso } from './curso.model.js';
-import { initDocente } from './docente.model.js';
-import { initEstudiante } from './estudiante.model.js';
-import { initFacultad } from './facultad.model.js';
-import { initMatricula } from './matricula.model.js';
-import { initPeriodoAcademico } from './periodoAcademico.model.js';
+import { sequelize } from '../config/database.js';
+import Asignatura from './Asignatura.js';
+import Carrera from './Carrera.js';
+import CarreraAsignatura from './CarreraAsignatura.js';
+import Curso from './Curso.js';
+import Docente from './Docente.js';
+import Estudiante from './Estudiante.js';
+import Facultad from './Facultad.js';
+import Matricula from './Matricula.js';
+import PeriodoAcademico from './PeriodoAcademico.js';
+import Rol from './Rol.js';
+import Sesion from './Sesion.js';
+import Usuario from './Usuario.js';
+import configureAssociations from './associations.js';
+
+Rol.initModel(sequelize);
+Usuario.initModel(sequelize);
+Sesion.initModel(sequelize);
+Facultad.initModel(sequelize);
+Carrera.initModel(sequelize);
+Estudiante.initModel(sequelize);
+Asignatura.initModel(sequelize);
+CarreraAsignatura.initModel(sequelize);
+Docente.initModel(sequelize);
+PeriodoAcademico.initModel(sequelize);
+Curso.initModel(sequelize);
+Matricula.initModel(sequelize);
 
 const models = {
-  Facultad: initFacultad(sequelize),
-  Carrera: initCarrera(sequelize),
-  Estudiante: initEstudiante(sequelize),
-  Asignatura: initAsignatura(sequelize),
-  CarreraAsignatura: initCarreraAsignatura(sequelize),
-  Docente: initDocente(sequelize),
-  PeriodoAcademico: initPeriodoAcademico(sequelize),
-  Curso: initCurso(sequelize),
-  Matricula: initMatricula(sequelize)
-};
-
-Object.values(models).forEach((model) => {
-  if (typeof model.associate === 'function') {
-    model.associate(models);
-  }
-});
-
-export { sequelize };
-export const {
+  Rol,
+  Usuario,
+  Sesion,
   Facultad,
   Carrera,
   Estudiante,
@@ -38,6 +39,24 @@ export const {
   PeriodoAcademico,
   Curso,
   Matricula
-} = models;
+};
+
+configureAssociations(models);
+
+export {
+  sequelize,
+  Rol,
+  Usuario,
+  Sesion,
+  Facultad,
+  Carrera,
+  Estudiante,
+  Asignatura,
+  CarreraAsignatura,
+  Docente,
+  PeriodoAcademico,
+  Curso,
+  Matricula
+};
 
 export default models;
