@@ -2,19 +2,27 @@ import { DataTypes, Model } from 'sequelize';
 
 class Estudiante extends Model {
   static associate(models) {
-    this.belongsTo(models.Carrera, {
-      foreignKey: 'carrera_id',
-      as: 'carrera',
-      onDelete: 'RESTRICT',
-      onUpdate: 'CASCADE'
-    });
+ 
+    /*
+    if (models.Carrera) {
+      this.belongsTo(models.Carrera, {
+        foreignKey: 'carrera_id',
+        as: 'carrera',
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE'
+      });
+    }
+    */
 
-    this.belongsToMany(models.Curso, {
-      through: models.Matricula,
-      foreignKey: 'estudiante_id',
-      otherKey: 'curso_id',
-      as: 'cursos'
-    });
+   
+    if (models.Curso) {
+      this.belongsToMany(models.Curso, {
+        through: 'matriculas',
+        foreignKey: 'estudiante_id',
+        otherKey: 'curso_id',
+        as: 'cursos'
+      });
+    }
   }
 }
 
