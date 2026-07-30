@@ -2,33 +2,49 @@ import { DataTypes, Model } from 'sequelize';
 
 class Curso extends Model {
   static associate(models) {
-    this.belongsTo(models.Asignatura, {
-      foreignKey: 'asignatura_id',
-      as: 'asignatura',
-      onDelete: 'RESTRICT',
-      onUpdate: 'CASCADE'
-    });
+    // ⚠️ COMENTADO: Asignatura aún no está cargada en index.js
+    /*
+    if (models.Asignatura) {
+      this.belongsTo(models.Asignatura, {
+        foreignKey: 'asignatura_id',
+        as: 'asignatura',
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE'
+      });
+    }
+    */
 
-    this.belongsTo(models.Docente, {
-      foreignKey: 'docente_id',
-      as: 'docente',
-      onDelete: 'RESTRICT',
-      onUpdate: 'CASCADE'
-    });
+    // ✅ ACTIVO: Docente ya está cargado e inicializado
+    if (models.Docente) {
+      this.belongsTo(models.Docente, {
+        foreignKey: 'docente_id',
+        as: 'docente',
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE'
+      });
+    }
 
-    this.belongsTo(models.PeriodoAcademico, {
-      foreignKey: 'periodo_id',
-      as: 'periodo',
-      onDelete: 'RESTRICT',
-      onUpdate: 'CASCADE'
-    });
+    // ⚠️ COMENTADO: PeriodoAcademico aún no está cargado en index.js
+    /*
+    if (models.PeriodoAcademico) {
+      this.belongsTo(models.PeriodoAcademico, {
+        foreignKey: 'periodo_id',
+        as: 'periodo',
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE'
+      });
+    }
+    */
 
-    this.belongsToMany(models.Estudiante, {
-      through: models.Matricula,
-      foreignKey: 'curso_id',
-      otherKey: 'estudiante_id',
-      as: 'estudiantes'
-    });
+    // ✅ AJUSTADO: Si quieres relacionar con Estudiante sin usar el modelo Matricula
+    if (models.Estudiante) {
+      this.belongsToMany(models.Estudiante, {
+        through: 'matriculas', // Se usa el nombre de la tabla directamente como string
+        foreignKey: 'curso_id',
+        otherKey: 'estudiante_id',
+        as: 'estudiantes'
+      });
+    }
   }
 }
 
