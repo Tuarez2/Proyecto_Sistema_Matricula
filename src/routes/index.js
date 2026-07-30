@@ -4,7 +4,7 @@ import docenteRoutes from './docentes.routes.js';
 import cursoRoutes from './curso.routes.js';
 import estudianteRoutes from './estudiante.routes.js';
 import asignaturaRoutes from './asignatura.routes.js';
-
+import carreraRoutes from './carrera.routes.js';
 const router = Router();
 
 
