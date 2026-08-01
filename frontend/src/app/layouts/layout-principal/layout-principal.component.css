@@ -1,0 +1,38 @@
+:host {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.encabezado-principal,
+.pie-principal {
+  background: #ffffff;
+  border-color: #d1d5db;
+}
+
+.encabezado-principal {
+  border-bottom: 1px solid #d1d5db;
+}
+
+.pie-principal {
+  border-top: 1px solid #d1d5db;
+}
+
+.contenedor {
+  width: min(100% - 2rem, 1200px);
+  margin: 0 auto;
+}
+
+.encabezado-principal p,
+.pie-principal p {
+  margin: 0;
+  padding: 1rem 0;
+}
+
+.encabezado-principal p {
+  font-weight: 700;
+}
+
+.contenido-principal {
+  flex: 1;
+}

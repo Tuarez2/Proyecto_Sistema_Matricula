@@ -1,0 +1,18 @@
+.pagina-no-encontrada {
+  padding: 3rem 0;
+}
+
+.pagina-no-encontrada h1 {
+  margin: 0 0 1rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.pagina-no-encontrada a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.pagina-no-encontrada a:hover {
+  text-decoration: underline;
+}
