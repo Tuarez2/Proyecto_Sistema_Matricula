@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 import {
   ACADEMIC_PERIOD_STATUS,
   COURSE_STATUS,
-  ENROLLMENT_STATUS
+  ESTADOS_MATRICULA_OCUPAN_CUPO
 } from '../constants/domain.constants.js';
 import { Asignatura, Curso, Docente, Matricula, PeriodoAcademico, sequelize } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
@@ -24,12 +24,6 @@ const estadosPeriodoGestionCursos = [
   ACADEMIC_PERIOD_STATUS.PLANNED,
   ACADEMIC_PERIOD_STATUS.ENROLLMENT_OPEN,
   ACADEMIC_PERIOD_STATUS.IN_PROGRESS
-];
-
-const estadosMatriculaOcupanCupo = [
-  ENROLLMENT_STATUS.ENROLLED,
-  ENROLLMENT_STATUS.PASSED,
-  ENROLLMENT_STATUS.FAILED
 ];
 
 const atributosPeriodo = [
@@ -152,7 +146,7 @@ const contarMatriculasQueOcupanCupo = (cursoId, opciones = {}) =>
   Matricula.count({
     where: {
       curso_id: cursoId,
-      estado: { [Op.in]: estadosMatriculaOcupanCupo }
+      estado: { [Op.in]: ESTADOS_MATRICULA_OCUPAN_CUPO }
     },
     transaction: opciones.transaction
   });

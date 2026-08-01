@@ -32,6 +32,12 @@ export const ENROLLMENT_STATUS = Object.freeze({
   CANCELLED: 'anulada'
 });
 
+export const ESTADOS_MATRICULA_OCUPAN_CUPO = Object.freeze([
+  ENROLLMENT_STATUS.ENROLLED,
+  ENROLLMENT_STATUS.PASSED,
+  ENROLLMENT_STATUS.FAILED
+]);
+
 export const ROLE_CODES = Object.freeze({
   ADMIN: 'ADMIN',
   ENROLLMENT_MANAGER: 'GESTOR_MATRICULA',
