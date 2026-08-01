@@ -2,11 +2,15 @@ import * as cursoService from '../services/curso.service.js';
 import manejadorAsync from '../utils/asyncHandler.js';
 
 export const obtenerCursos = manejadorAsync(async (req, res) => {
-  const cursos = await cursoService.listarCursos();
+  const resultado = await cursoService.listarCursos(req.query);
 
   res.status(200).json({
     success: true,
-    data: cursos
+    data: resultado.data,
+    page: resultado.page,
+    limit: resultado.limit,
+    total: resultado.total,
+    totalPages: resultado.totalPages
   });
 });
 
