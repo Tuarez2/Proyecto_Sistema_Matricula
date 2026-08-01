@@ -1,24 +1,26 @@
 import app from './app.js';
-import config from './config/env.js';
-import { sequelize } from './models/index.js';
+import environment from './config/environment.js';
+import { checkDatabaseConnection, sequelize } from './config/database.js';
+import logger from './config/logger.js';
+import './models/index.js';
 
 let server;
 
-const bootstrap = async () => {
+const startServer = async () => {
   try {
-    await sequelize.authenticate();
+    await checkDatabaseConnection();
 
-    server = app.listen(config.port, () => {
-      console.log(`Servidor escuchando en http://localhost:${config.port}`);
+    server = app.listen(environment.port, () => {
+      logger.info(`Server listening on http://localhost:${environment.port}`);
     });
   } catch (error) {
-    console.error('No fue posible iniciar el servidor:', error);
+    logger.error('Unable to start server.', error);
     process.exit(1);
   }
 };
 
 const shutdown = async (signal) => {
-  console.log(`${signal} recibido. Cerrando servidor...`);
+  logger.info(`${signal} received. Closing server...`);
 
   if (server) {
     server.close(async () => {
@@ -35,4 +37,4 @@ const shutdown = async (signal) => {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-bootstrap();
+startServer();

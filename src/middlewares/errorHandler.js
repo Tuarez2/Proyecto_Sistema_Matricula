@@ -1,42 +1,61 @@
-import { BaseError, UniqueConstraintError, ValidationError } from 'sequelize';
-import { errorResponse } from '../utils/apiResponse.js';
+import { ForeignKeyConstraintError, UniqueConstraintError, ValidationError } from 'sequelize';
 
-export const errorHandler = (err, _req, res, _next) => {
-  const statusCode = err.statusCode || err.status || 500;
-  const isOperational = statusCode < 500;
+import ApiError from '../utils/ApiError.js';
 
-  if (err instanceof UniqueConstraintError) {
-    return errorResponse(res, {
-      statusCode: 409,
-      message: 'Ya existe un registro con los datos únicos enviados',
-      errors: err.errors.map((error) => ({
-        field: error.path,
-        message: error.message
+const errorHandler = (error, req, res, next) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (error instanceof ApiError) {
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+      code: error.code,
+      details: error.details
+    });
+  }
+
+  if (error instanceof UniqueConstraintError) {
+    return res.status(409).json({
+      success: false,
+      message: 'El registro ya existe.',
+      code: 'UNIQUE_CONSTRAINT_ERROR',
+      details: error.errors.map((item) => ({
+        field: item.path,
+        message: item.message
       }))
     });
   }
 
-  if (err instanceof ValidationError) {
-    return errorResponse(res, {
-      statusCode: 422,
-      message: 'Error de validación',
-      errors: err.errors.map((error) => ({
-        field: error.path,
-        message: error.message
+  if (error instanceof ForeignKeyConstraintError) {
+    return res.status(400).json({
+      success: false,
+      message: 'La relacion especificada no existe o impide completar la operacion.',
+      code: 'FOREIGN_KEY_CONSTRAINT_ERROR',
+      details: {
+        table: error.table,
+        fields: error.fields
+      }
+    });
+  }
+
+  if (error instanceof ValidationError) {
+    return res.status(400).json({
+      success: false,
+      message: 'Error de validacion.',
+      code: 'VALIDATION_ERROR',
+      details: error.errors.map((item) => ({
+        field: item.path,
+        message: item.message
       }))
     });
   }
 
-  if (err instanceof BaseError) {
-    return errorResponse(res, {
-      statusCode: 500,
-      message: 'Error de base de datos'
-    });
-  }
-
-  return errorResponse(res, {
-    statusCode,
-    message: isOperational ? err.message : 'Error interno del servidor',
-    errors: err.errors
+  return res.status(500).json({
+    success: false,
+    message: 'Error interno del servidor.',
+    code: 'INTERNAL_SERVER_ERROR',
+    stack: isProduction ? undefined : error.stack
   });
 };
+
+export default errorHandler;

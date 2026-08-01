@@ -1,29 +1,62 @@
+import { sequelize } from '../config/database.js';
+import Asignatura from './Asignatura.js';
+import Carrera from './Carrera.js';
+import CarreraAsignatura from './CarreraAsignatura.js';
+import Curso from './Curso.js';
+import Docente from './Docente.js';
+import Estudiante from './Estudiante.js';
+import Facultad from './Facultad.js';
+import Matricula from './Matricula.js';
+import PeriodoAcademico from './PeriodoAcademico.js';
+import Rol from './Rol.js';
+import Sesion from './Sesion.js';
+import Usuario from './Usuario.js';
+import configureAssociations from './associations.js';
 
-import sequelize from '../config/database.js';
+Rol.initModel(sequelize);
+Usuario.initModel(sequelize);
+Sesion.initModel(sequelize);
+Facultad.initModel(sequelize);
+Carrera.initModel(sequelize);
+Estudiante.initModel(sequelize);
+Asignatura.initModel(sequelize);
+CarreraAsignatura.initModel(sequelize);
+Docente.initModel(sequelize);
+PeriodoAcademico.initModel(sequelize);
+Curso.initModel(sequelize);
+Matricula.initModel(sequelize);
 
-import { initDocente } from './docente.model.js';
-import { initCurso } from './curso.model.js';
-import { initEstudiante } from './estudiante.model.js';
-import { initAsignatura } from './asignatura.model.js';
-import { initCarrera } from './carrera.model.js';
-export const Docente = initDocente(sequelize);
-export const Curso = initCurso(sequelize);
-export const Estudiante = initEstudiante(sequelize);
-export const Asignatura = initAsignatura(sequelize);
-export const Carrera = initCarrera(sequelize);
 const models = {
-  Docente,
-  Curso,
+  Rol,
+  Usuario,
+  Sesion,
+  Facultad,
+  Carrera,
   Estudiante,
   Asignatura,
-  Carrera,
+  CarreraAsignatura,
+  Docente,
+  PeriodoAcademico,
+  Curso,
+  Matricula
 };
 
-Object.values(models).forEach((model) => {
-  if (model.associate) {
-    model.associate(models);
-  }
-});
+configureAssociations(models);
 
-export { sequelize };
+export {
+  sequelize,
+  Rol,
+  Usuario,
+  Sesion,
+  Facultad,
+  Carrera,
+  Estudiante,
+  Asignatura,
+  CarreraAsignatura,
+  Docente,
+  PeriodoAcademico,
+  Curso,
+  Matricula
+};
+
 export default models;

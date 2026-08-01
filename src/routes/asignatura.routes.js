@@ -1,18 +1,25 @@
 import { Router } from 'express';
+
 import {
-  crearAsignatura,
-  obtenerAsignaturas,
-  obtenerAsignaturaPorId,
   actualizarAsignatura,
-  eliminarAsignatura
-} from '../controllers/asignaturaController.js';
+  crearAsignatura,
+  eliminarAsignatura,
+  obtenerAsignaturaPorId,
+  obtenerAsignaturas
+} from '../controllers/asignatura.controller.js';
+import validateRequest from '../middlewares/validateRequest.js';
+import {
+  validateCreateAsignatura,
+  validateIdParam,
+  validateUpdateAsignatura
+} from '../validators/asignatura.validator.js';
 
 const router = Router();
 
-router.post('/', crearAsignatura);
 router.get('/', obtenerAsignaturas);
-router.get('/:id', obtenerAsignaturaPorId);
-router.put('/:id', actualizarAsignatura);
-router.delete('/:id', eliminarAsignatura);
+router.get('/:id', validateIdParam, validateRequest, obtenerAsignaturaPorId);
+router.post('/', validateCreateAsignatura, validateRequest, crearAsignatura);
+router.put('/:id', validateIdParam, validateUpdateAsignatura, validateRequest, actualizarAsignatura);
+router.delete('/:id', validateIdParam, validateRequest, eliminarAsignatura);
 
 export default router;

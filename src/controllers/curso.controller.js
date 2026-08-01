@@ -1,175 +1,58 @@
-import Curso from '../models/curso.model.js';
+import * as cursoService from '../services/curso.service.js';
+import asyncHandler from '../utils/asyncHandler.js';
 
+export const obtenerCursos = asyncHandler(async (req, res) => {
+  const cursos = await cursoService.listarCursos();
 
-export const crearCurso = async (req, res) => {
-  try {
-    const {
-      periodo_id,
-      asignatura_id,
-      docente_id,
-      paralelo,
-      cupo_maximo,
-      horario,
-      aula,
-      estado
-    } = req.body;
+  res.status(200).json({
+    success: true,
+    data: cursos
+  });
+});
 
-   
-    if (!periodo_id || !asignatura_id || !docente_id || !paralelo || !cupo_maximo) {
-      return res.status(400).json({
-        message: 'Los campos periodo_id, asignatura_id, docente_id, paralelo y cupo_maximo son obligatorios.'
-      });
-    }
+export const obtenerCursoPorId = asyncHandler(async (req, res) => {
+  const curso = await cursoService.obtenerCursoPorId(req.params.id);
 
-    const nuevoCurso = await Curso.create({
-      periodo_id,
-      asignatura_id,
-      docente_id,
-      paralelo,
-      cupo_maximo,
-      horario,
-      aula,
-      estado: estado !== undefined ? estado : true
-    });
+  res.status(200).json({
+    success: true,
+    data: curso
+  });
+});
 
-    return res.status(201).json(nuevoCurso);
-  } catch (error) {
-   
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({
-        message: 'Ya existe un curso registrado para la misma asignatura, periodo académico y paralelo.'
-      });
-    }
+export const crearCurso = asyncHandler(async (req, res) => {
+  const curso = await cursoService.crearCurso(req.body);
 
-  
-    if (error.name === 'SequelizeForeignKeyConstraintError') {
-      return res.status(400).json({
-        message: 'El periodo académico, la asignatura o el docente ingresado no existe.'
-      });
-    }
+  res.status(201).json({
+    success: true,
+    message: 'Curso creado correctamente.',
+    data: curso
+  });
+});
 
-    return res.status(500).json({
-      message: 'Error interno al intentar crear el curso.',
-      error: error.message
-    });
-  }
-};
+export const actualizarCurso = asyncHandler(async (req, res) => {
+  const curso = await cursoService.actualizarCurso(req.params.id, req.body);
 
+  res.status(200).json({
+    success: true,
+    message: 'Curso actualizado correctamente.',
+    data: curso
+  });
+});
 
-export const obtenerCursos = async (req, res) => {
-  try {
-    const cursos = await Curso.findAll({
-      include: [
-        { association: 'asignatura' },
-        { association: 'docente' },
-        { association: 'periodo' }
-      ]
-    });
-    return res.status(200).json(cursos);
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Error al obtener la lista de cursos.',
-      error: error.message
-    });
-  }
-};
+export const eliminarCurso = asyncHandler(async (req, res) => {
+  const curso = await cursoService.eliminarCurso(req.params.id);
 
+  res.status(200).json({
+    success: true,
+    message: 'Curso cancelado correctamente.',
+    data: curso
+  });
+});
 
-export const obtenerCursoPorId = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const curso = await Curso.findByPk(id, {
-      include: [
-        { association: 'asignatura' },
-        { association: 'docente' },
-        { association: 'periodo' },
-        { association: 'estudiantes' } 
-      ]
-    });
-
-    if (!curso) {
-      return res.status(404).json({ message: 'Curso no encontrado.' });
-    }
-
-    return res.status(200).json(curso);
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Error al obtener el curso.',
-      error: error.message
-    });
-  }
-};
-
-
-export const actualizarCurso = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      periodo_id,
-      asignatura_id,
-      docente_id,
-      paralelo,
-      cupo_maximo,
-      horario,
-      aula,
-      estado
-    } = req.body;
-
-    const curso = await Curso.findByPk(id);
-    if (!curso) {
-      return res.status(404).json({ message: 'Curso no encontrado.' });
-    }
-
-    await curso.update({
-      periodo_id,
-      asignatura_id,
-      docente_id,
-      paralelo,
-      cupo_maximo,
-      horario,
-      aula,
-      estado
-    });
-
-    return res.status(200).json({
-      message: 'Curso actualizado exitosamente.',
-      curso
-    });
-  } catch (error) {
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({
-        message: 'Ya existe un curso registrado para esa asignatura, periodo y paralelo.'
-      });
-    }
-    return res.status(500).json({
-      message: 'Error al actualizar el curso.',
-      error: error.message
-    });
-  }
-};
-
-
-export const eliminarCurso = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const curso = await Curso.findByPk(id);
-
-    if (!curso) {
-      return res.status(404).json({ message: 'Curso no encontrado.' });
-    }
-
-    await curso.destroy();
-    return res.status(200).json({ message: 'Curso eliminado correctamente.' });
-  } catch (error) {
-    if (error.name === 'SequelizeForeignKeyConstraintError') {
-      return res.status(400).json({
-        message: 'No se puede eliminar el curso porque ya posee estudiantes o matrículas asociadas.'
-      });
-    }
-
-    return res.status(500).json({
-      message: 'Error al eliminar el curso.',
-      error: error.message
-    });
-  }
+export default {
+  obtenerCursos,
+  obtenerCursoPorId,
+  crearCurso,
+  actualizarCurso,
+  eliminarCurso
 };

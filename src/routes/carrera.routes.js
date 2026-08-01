@@ -1,18 +1,21 @@
 import { Router } from 'express';
+
 import {
-  crearCarrera,
-  obtenerCarreras,
-  obtenerCarreraPorId,
   actualizarCarrera,
-  eliminarCarrera
-} from '../controllers/carreraController.js';
+  crearCarrera,
+  eliminarCarrera,
+  obtenerCarreraPorId,
+  obtenerCarreras
+} from '../controllers/carrera.controller.js';
+import validateRequest from '../middlewares/validateRequest.js';
+import { validateCreateCarrera, validateIdParam, validateUpdateCarrera } from '../validators/carrera.validator.js';
 
 const router = Router();
 
-router.post('/', crearCarrera);
 router.get('/', obtenerCarreras);
-router.get('/:id', obtenerCarreraPorId);
-router.put('/:id', actualizarCarrera);
-router.delete('/:id', eliminarCarrera);
+router.get('/:id', validateIdParam, validateRequest, obtenerCarreraPorId);
+router.post('/', validateCreateCarrera, validateRequest, crearCarrera);
+router.put('/:id', validateIdParam, validateUpdateCarrera, validateRequest, actualizarCarrera);
+router.delete('/:id', validateIdParam, validateRequest, eliminarCarrera);
 
 export default router;
