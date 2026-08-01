@@ -1,9 +1,9 @@
 import { body } from 'express-validator';
 
 import { ACADEMIC_STATUS } from '../constants/domain.constants.js';
-import { validateAllowedFields, validateIdParam } from './common.validator.js';
+import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
 
-const allowedFields = [
+const camposPermitidos = [
   'carrera_id',
   'numero_matricula',
   'identificacion',
@@ -16,7 +16,7 @@ const allowedFields = [
   'nivel_academico_actual'
 ];
 
-const rules = [
+const reglas = [
   body('carrera_id').optional().isInt({ min: 1 }).withMessage('La carrera debe ser valida.').toInt(),
   body('numero_matricula').optional().isLength({ min: 1, max: 30 }).withMessage('El numero de matricula es invalido.'),
   body('identificacion').optional().isLength({ min: 1, max: 20 }).withMessage('La identificacion es invalida.'),
@@ -36,8 +36,8 @@ const rules = [
     .toInt()
 ];
 
-export const validateCreateEstudiante = [
-  validateAllowedFields(allowedFields),
+export const validarCreacionEstudiante = [
+  validarCamposPermitidos(camposPermitidos),
   body('carrera_id').exists().withMessage('La carrera es obligatoria.'),
   body('numero_matricula').exists().withMessage('El numero de matricula es obligatorio.'),
   body('identificacion').exists().withMessage('La identificacion es obligatoria.'),
@@ -46,15 +46,15 @@ export const validateCreateEstudiante = [
   body('correo').exists().withMessage('El correo es obligatorio.'),
   body('fecha_nacimiento').exists().withMessage('La fecha de nacimiento es obligatoria.'),
   body('nivel_academico_actual').exists().withMessage('El nivel academico actual es obligatorio.'),
-  ...rules
+  ...reglas
 ];
 
-export const validateUpdateEstudiante = [validateAllowedFields(allowedFields, { requireAtLeastOne: true }), ...rules];
+export const validarActualizacionEstudiante = [validarCamposPermitidos(camposPermitidos, { requireAtLeastOne: true }), ...reglas];
 
-export { validateIdParam };
+export { validarIdParam };
 
 export default {
-  validateCreateEstudiante,
-  validateUpdateEstudiante,
-  validateIdParam
+  validarCreacionEstudiante,
+  validarActualizacionEstudiante,
+  validarIdParam
 };

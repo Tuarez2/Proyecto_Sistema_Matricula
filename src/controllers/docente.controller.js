@@ -1,7 +1,7 @@
 import * as docenteService from '../services/docente.service.js';
-import asyncHandler from '../utils/asyncHandler.js';
+import manejadorAsync from '../utils/asyncHandler.js';
 
-export const obtenerDocentes = asyncHandler(async (req, res) => {
+export const obtenerDocentes = manejadorAsync(async (req, res) => {
   const docentes = await docenteService.listarDocentes();
 
   res.status(200).json({
@@ -10,7 +10,7 @@ export const obtenerDocentes = asyncHandler(async (req, res) => {
   });
 });
 
-export const obtenerDocentePorId = asyncHandler(async (req, res) => {
+export const obtenerDocentePorId = manejadorAsync(async (req, res) => {
   const docente = await docenteService.obtenerDocentePorId(req.params.id);
 
   res.status(200).json({
@@ -19,7 +19,7 @@ export const obtenerDocentePorId = asyncHandler(async (req, res) => {
   });
 });
 
-export const crearDocente = asyncHandler(async (req, res) => {
+export const crearDocente = manejadorAsync(async (req, res) => {
   const docente = await docenteService.crearDocente(req.body);
 
   res.status(201).json({
@@ -29,7 +29,7 @@ export const crearDocente = asyncHandler(async (req, res) => {
   });
 });
 
-export const actualizarDocente = asyncHandler(async (req, res) => {
+export const actualizarDocente = manejadorAsync(async (req, res) => {
   const docente = await docenteService.actualizarDocente(req.params.id, req.body);
 
   res.status(200).json({
@@ -39,7 +39,7 @@ export const actualizarDocente = asyncHandler(async (req, res) => {
   });
 });
 
-export const eliminarDocente = asyncHandler(async (req, res) => {
+export const eliminarDocente = manejadorAsync(async (req, res) => {
   const docente = await docenteService.eliminarDocente(req.params.id);
 
   res.status(200).json({

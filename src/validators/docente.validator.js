@@ -1,10 +1,10 @@
 import { body } from 'express-validator';
 
-import { validateAllowedFields, validateIdParam } from './common.validator.js';
+import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
 
-const allowedFields = ['identificacion', 'nombres', 'apellidos', 'correo', 'telefono', 'especialidad', 'activo'];
+const camposPermitidos = ['identificacion', 'nombres', 'apellidos', 'correo', 'telefono', 'especialidad', 'activo'];
 
-const rules = [
+const reglas = [
   body('identificacion').optional().isLength({ min: 1, max: 20 }).withMessage('La identificacion es invalida.'),
   body('nombres').optional().isLength({ min: 1, max: 100 }).withMessage('Los nombres son invalidos.'),
   body('apellidos').optional().isLength({ min: 1, max: 100 }).withMessage('Los apellidos son invalidos.'),
@@ -14,22 +14,22 @@ const rules = [
   body('activo').optional().isBoolean().withMessage('El campo activo debe ser booleano.').toBoolean()
 ];
 
-export const validateCreateDocente = [
-  validateAllowedFields(allowedFields),
+export const validarCreacionDocente = [
+  validarCamposPermitidos(camposPermitidos),
   body('identificacion').exists().withMessage('La identificacion es obligatoria.'),
   body('nombres').exists().withMessage('Los nombres son obligatorios.'),
   body('apellidos').exists().withMessage('Los apellidos son obligatorios.'),
   body('correo').exists().withMessage('El correo es obligatorio.'),
   body('especialidad').exists().withMessage('La especialidad es obligatoria.'),
-  ...rules
+  ...reglas
 ];
 
-export const validateUpdateDocente = [validateAllowedFields(allowedFields, { requireAtLeastOne: true }), ...rules];
+export const validarActualizacionDocente = [validarCamposPermitidos(camposPermitidos, { requireAtLeastOne: true }), ...reglas];
 
-export { validateIdParam };
+export { validarIdParam };
 
 export default {
-  validateCreateDocente,
-  validateUpdateDocente,
-  validateIdParam
+  validarCreacionDocente,
+  validarActualizacionDocente,
+  validarIdParam
 };

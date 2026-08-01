@@ -5,9 +5,9 @@ const authorizeRoles = (...roles) => (req, res, next) => {
     return next(new ApiError(401, 'Autenticacion requerida.', 'AUTHENTICATION_REQUIRED'));
   }
 
-  const userRoleCode = req.user.rol?.codigo;
+  const codigoRolUsuario = req.user.rol?.codigo;
 
-  if (!roles.includes(userRoleCode)) {
+  if (!roles.includes(codigoRolUsuario)) {
     return next(new ApiError(403, 'No tiene permisos para realizar esta accion.', 'FORBIDDEN'));
   }
 

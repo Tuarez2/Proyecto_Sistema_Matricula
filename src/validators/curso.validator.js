@@ -1,9 +1,9 @@
 import { body } from 'express-validator';
 
 import { COURSE_STATUS } from '../constants/domain.constants.js';
-import { validateAllowedFields, validateIdParam } from './common.validator.js';
+import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
 
-const allowedFields = [
+const camposPermitidos = [
   'periodo_id',
   'asignatura_id',
   'docente_id',
@@ -14,7 +14,7 @@ const allowedFields = [
   'estado'
 ];
 
-const rules = [
+const reglas = [
   body('periodo_id').optional().isInt({ min: 1 }).withMessage('El periodo academico debe ser valido.').toInt(),
   body('asignatura_id').optional().isInt({ min: 1 }).withMessage('La asignatura debe ser valida.').toInt(),
   body('docente_id').optional().isInt({ min: 1 }).withMessage('El docente debe ser valido.').toInt(),
@@ -25,8 +25,8 @@ const rules = [
   body('estado').optional().isIn(Object.values(COURSE_STATUS)).withMessage('El estado del curso no es valido.')
 ];
 
-export const validateCreateCurso = [
-  validateAllowedFields(allowedFields),
+export const validarCreacionCurso = [
+  validarCamposPermitidos(camposPermitidos),
   body('periodo_id').exists().withMessage('El periodo academico es obligatorio.'),
   body('asignatura_id').exists().withMessage('La asignatura es obligatoria.'),
   body('docente_id').exists().withMessage('El docente es obligatorio.'),
@@ -34,15 +34,15 @@ export const validateCreateCurso = [
   body('aula').exists().withMessage('El aula es obligatoria.'),
   body('horario').exists().withMessage('El horario es obligatorio.'),
   body('cupo_maximo').exists().withMessage('El cupo maximo es obligatorio.'),
-  ...rules
+  ...reglas
 ];
 
-export const validateUpdateCurso = [validateAllowedFields(allowedFields, { requireAtLeastOne: true }), ...rules];
+export const validarActualizacionCurso = [validarCamposPermitidos(camposPermitidos, { requireAtLeastOne: true }), ...reglas];
 
-export { validateIdParam };
+export { validarIdParam };
 
 export default {
-  validateCreateCurso,
-  validateUpdateCurso,
-  validateIdParam
+  validarCreacionCurso,
+  validarActualizacionCurso,
+  validarIdParam
 };

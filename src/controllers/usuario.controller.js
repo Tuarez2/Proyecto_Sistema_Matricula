@@ -1,20 +1,20 @@
 import * as usuarioService from '../services/usuario.service.js';
-import asyncHandler from '../utils/asyncHandler.js';
+import manejadorAsync from '../utils/asyncHandler.js';
 
-export const obtenerUsuarios = asyncHandler(async (req, res) => {
-  const result = await usuarioService.listarUsuarios(req.query);
+export const obtenerUsuarios = manejadorAsync(async (req, res) => {
+  const resultado = await usuarioService.listarUsuarios(req.query);
 
   res.status(200).json({
     success: true,
-    data: result.data,
-    page: result.page,
-    limit: result.limit,
-    total: result.total,
-    totalPages: result.totalPages
+    data: resultado.data,
+    page: resultado.page,
+    limit: resultado.limit,
+    total: resultado.total,
+    totalPages: resultado.totalPages
   });
 });
 
-export const obtenerUsuarioPorId = asyncHandler(async (req, res) => {
+export const obtenerUsuarioPorId = manejadorAsync(async (req, res) => {
   const usuario = await usuarioService.obtenerUsuarioPorId(req.params.id);
 
   res.status(200).json({
@@ -23,7 +23,7 @@ export const obtenerUsuarioPorId = asyncHandler(async (req, res) => {
   });
 });
 
-export const crearUsuario = asyncHandler(async (req, res) => {
+export const crearUsuario = manejadorAsync(async (req, res) => {
   const usuario = await usuarioService.crearUsuario(req.body);
 
   res.status(201).json({
@@ -33,7 +33,7 @@ export const crearUsuario = asyncHandler(async (req, res) => {
   });
 });
 
-export const actualizarUsuario = asyncHandler(async (req, res) => {
+export const actualizarUsuario = manejadorAsync(async (req, res) => {
   const usuario = await usuarioService.actualizarUsuario(req.params.id, req.body, req.user.id);
 
   res.status(200).json({
@@ -43,7 +43,7 @@ export const actualizarUsuario = asyncHandler(async (req, res) => {
   });
 });
 
-export const cambiarEstadoUsuario = asyncHandler(async (req, res) => {
+export const cambiarEstadoUsuario = manejadorAsync(async (req, res) => {
   const usuario = await usuarioService.cambiarEstadoUsuario(req.params.id, req.body.estado, req.user.id);
 
   res.status(200).json({
@@ -53,7 +53,7 @@ export const cambiarEstadoUsuario = asyncHandler(async (req, res) => {
   });
 });
 
-export const cambiarPasswordUsuario = asyncHandler(async (req, res) => {
+export const cambiarPasswordUsuario = manejadorAsync(async (req, res) => {
   const usuario = await usuarioService.cambiarPasswordUsuario(req.params.id, req.body.password);
 
   res.status(200).json({

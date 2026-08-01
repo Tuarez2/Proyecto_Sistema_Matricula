@@ -3,13 +3,13 @@ import { Op } from 'sequelize';
 import { ROLE_CODES, USER_STATUS } from '../constants/domain.constants.js';
 import { Docente, Estudiante, Rol, Sesion, Usuario, sequelize } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
-import { normalizePagination } from '../utils/pagination.js';
-import { hashPassword } from '../utils/password.js';
+import { normalizarPaginacion } from '../utils/pagination.js';
+import { generarHashPassword } from '../utils/password.js';
 
-const USER_NOT_FOUND = 'Usuario no encontrado.';
-const ACTIVE_ADMIN_STATUS = USER_STATUS.ACTIVE;
+const MENSAJE_USUARIO_NO_ENCONTRADO = 'Usuario no encontrado.';
+const ESTADO_ADMIN_ACTIVO = USER_STATUS.ACTIVE;
 
-const allowedCreateFields = [
+const camposPermitidosCreacion = [
   'nombres',
   'apellidos',
   'correo',
@@ -21,7 +21,7 @@ const allowedCreateFields = [
   'debe_cambiar_password'
 ];
 
-const allowedUpdateFields = [
+const camposPermitidosActualizacion = [
   'nombres',
   'apellidos',
   'correo',
@@ -32,121 +32,121 @@ const allowedUpdateFields = [
   'debe_cambiar_password'
 ];
 
-const userAttributes = {
+const atributosUsuario = {
   exclude: ['password_hash']
 };
 
-const roleInclude = {
+const inclusionRol = {
   model: Rol,
   as: 'rol',
   attributes: ['id', 'codigo', 'nombre', 'activo']
 };
 
-const estudianteInclude = {
+const inclusionEstudiante = {
   model: Estudiante,
   as: 'estudiante',
   attributes: ['id', 'numero_matricula', 'nombres', 'apellidos', 'correo', 'estado_academico']
 };
 
-const docenteInclude = {
+const inclusionDocente = {
   model: Docente,
   as: 'docente',
   attributes: ['id', 'identificacion', 'nombres', 'apellidos', 'correo', 'activo']
 };
 
-const userInclude = [roleInclude, estudianteInclude, docenteInclude];
+const inclusionesUsuario = [inclusionRol, inclusionEstudiante, inclusionDocente];
 
-const pickPayload = (data, allowedFields) =>
-  allowedFields.reduce((payload, field) => {
-    if (Object.prototype.hasOwnProperty.call(data, field) && data[field] !== undefined) {
-      payload[field] = data[field];
+const seleccionarDatosPermitidos = (datos, camposPermitidos) =>
+  camposPermitidos.reduce((datosPermitidos, campo) => {
+    if (Object.prototype.hasOwnProperty.call(datos, campo) && datos[campo] !== undefined) {
+      datosPermitidos[campo] = datos[campo];
     }
-    return payload;
+    return datosPermitidos;
   }, {});
 
-const normalizeNullableId = (value) => (value === null || value === undefined ? null : Number(value));
+const normalizarIdNullable = (valor) => (valor === null || valor === undefined ? null : Number(valor));
 
-export const sanitizeUser = (user) => {
-  if (!user) return null;
+export const sanitizarUsuario = (usuario) => {
+  if (!usuario) return null;
 
-  const plainUser = typeof user.get === 'function' ? user.get({ plain: true }) : user;
+  const usuarioPlano = typeof usuario.get === 'function' ? usuario.get({ plain: true }) : usuario;
 
   return {
-    id: plainUser.id,
-    nombres: plainUser.nombres,
-    apellidos: plainUser.apellidos,
-    correo: plainUser.correo,
-    estado: plainUser.estado,
-    rol_id: plainUser.rol_id,
-    estudiante_id: plainUser.estudiante_id,
-    docente_id: plainUser.docente_id,
-    debe_cambiar_password: plainUser.debe_cambiar_password,
-    ultimo_acceso: plainUser.ultimo_acceso,
-    created_at: plainUser.created_at,
-    updated_at: plainUser.updated_at,
-    rol: plainUser.rol
+    id: usuarioPlano.id,
+    nombres: usuarioPlano.nombres,
+    apellidos: usuarioPlano.apellidos,
+    correo: usuarioPlano.correo,
+    estado: usuarioPlano.estado,
+    rol_id: usuarioPlano.rol_id,
+    estudiante_id: usuarioPlano.estudiante_id,
+    docente_id: usuarioPlano.docente_id,
+    debe_cambiar_password: usuarioPlano.debe_cambiar_password,
+    ultimo_acceso: usuarioPlano.ultimo_acceso,
+    created_at: usuarioPlano.created_at,
+    updated_at: usuarioPlano.updated_at,
+    rol: usuarioPlano.rol
       ? {
-          id: plainUser.rol.id,
-          codigo: plainUser.rol.codigo,
-          nombre: plainUser.rol.nombre,
-          activo: plainUser.rol.activo
+          id: usuarioPlano.rol.id,
+          codigo: usuarioPlano.rol.codigo,
+          nombre: usuarioPlano.rol.nombre,
+          activo: usuarioPlano.rol.activo
         }
       : null,
-    estudiante: plainUser.estudiante
+    estudiante: usuarioPlano.estudiante
       ? {
-          id: plainUser.estudiante.id,
-          numero_matricula: plainUser.estudiante.numero_matricula,
-          nombres: plainUser.estudiante.nombres,
-          apellidos: plainUser.estudiante.apellidos,
-          correo: plainUser.estudiante.correo,
-          estado_academico: plainUser.estudiante.estado_academico
+          id: usuarioPlano.estudiante.id,
+          numero_matricula: usuarioPlano.estudiante.numero_matricula,
+          nombres: usuarioPlano.estudiante.nombres,
+          apellidos: usuarioPlano.estudiante.apellidos,
+          correo: usuarioPlano.estudiante.correo,
+          estado_academico: usuarioPlano.estudiante.estado_academico
         }
       : null,
-    docente: plainUser.docente
+    docente: usuarioPlano.docente
       ? {
-          id: plainUser.docente.id,
-          identificacion: plainUser.docente.identificacion,
-          nombres: plainUser.docente.nombres,
-          apellidos: plainUser.docente.apellidos,
-          correo: plainUser.docente.correo,
-          activo: plainUser.docente.activo
+          id: usuarioPlano.docente.id,
+          identificacion: usuarioPlano.docente.identificacion,
+          nombres: usuarioPlano.docente.nombres,
+          apellidos: usuarioPlano.docente.apellidos,
+          correo: usuarioPlano.docente.correo,
+          activo: usuarioPlano.docente.activo
         }
       : null
   };
 };
 
-const findUserOrFail = async (id, options = {}) => {
-  const user = await Usuario.findByPk(id, {
-    attributes: userAttributes,
-    include: userInclude,
-    ...options
+const buscarUsuarioOError = async (id, opciones = {}) => {
+  const usuario = await Usuario.findByPk(id, {
+    attributes: atributosUsuario,
+    include: inclusionesUsuario,
+    ...opciones
   });
 
-  if (!user) {
-    throw new ApiError(404, USER_NOT_FOUND, 'USUARIO_NOT_FOUND');
+  if (!usuario) {
+    throw new ApiError(404, MENSAJE_USUARIO_NO_ENCONTRADO, 'USUARIO_NOT_FOUND');
   }
 
-  return user;
+  return usuario;
 };
 
-const ensureRoleExists = async (rolId, options = {}) => {
-  const role = await Rol.findByPk(rolId, options);
+const asegurarRolExistente = async (rolId, opciones = {}) => {
+  const rol = await Rol.findByPk(rolId, opciones);
 
-  if (!role) {
+  if (!rol) {
     throw new ApiError(404, 'Rol no encontrado.', 'ROL_NOT_FOUND');
   }
 
-  if (!role.activo) {
+  if (!rol.activo) {
     throw new ApiError(400, 'El rol seleccionado no esta activo.', 'ROL_INACTIVE');
   }
 
-  return role;
+  return rol;
 };
 
-const ensureEstudianteExists = async (estudianteId, options = {}) => {
+const asegurarEstudianteExistente = async (estudianteId, opciones = {}) => {
   if (estudianteId === null || estudianteId === undefined) return null;
 
-  const estudiante = await Estudiante.findByPk(estudianteId, options);
+  const estudiante = await Estudiante.findByPk(estudianteId, opciones);
 
   if (!estudiante) {
     throw new ApiError(404, 'Estudiante no encontrado.', 'ESTUDIANTE_NOT_FOUND');
@@ -155,10 +155,10 @@ const ensureEstudianteExists = async (estudianteId, options = {}) => {
   return estudiante;
 };
 
-const ensureDocenteExists = async (docenteId, options = {}) => {
+const asegurarDocenteExistente = async (docenteId, opciones = {}) => {
   if (docenteId === null || docenteId === undefined) return null;
 
-  const docente = await Docente.findByPk(docenteId, options);
+  const docente = await Docente.findByPk(docenteId, opciones);
 
   if (!docente) {
     throw new ApiError(404, 'Docente no encontrado.', 'DOCENTE_NOT_FOUND');
@@ -167,43 +167,43 @@ const ensureDocenteExists = async (docenteId, options = {}) => {
   return docente;
 };
 
-const ensureUniqueCorreo = async (correo, excludeUserId = null, options = {}) => {
+const asegurarCorreoUnico = async (correo, usuarioIdExcluido = null, opciones = {}) => {
   if (!correo) return;
 
-  const where = { correo };
+  const condiciones = { correo };
 
-  if (excludeUserId) {
-    where.id = { [Op.ne]: excludeUserId };
+  if (usuarioIdExcluido) {
+    condiciones.id = { [Op.ne]: usuarioIdExcluido };
   }
 
-  const existingUser = await Usuario.findOne({ where, ...options });
+  const usuarioExistente = await Usuario.findOne({ where: condiciones, ...opciones });
 
-  if (existingUser) {
+  if (usuarioExistente) {
     throw new ApiError(409, 'El correo ya esta registrado.', 'USUARIO_CORREO_DUPLICATED');
   }
 };
 
-const ensureUniqueRelation = async (field, value, excludeUserId = null, options = {}) => {
-  if (value === null || value === undefined) return;
+const asegurarRelacionUnica = async (campo, valor, usuarioIdExcluido = null, opciones = {}) => {
+  if (valor === null || valor === undefined) return;
 
-  const where = { [field]: value };
+  const condiciones = { [campo]: valor };
 
-  if (excludeUserId) {
-    where.id = { [Op.ne]: excludeUserId };
+  if (usuarioIdExcluido) {
+    condiciones.id = { [Op.ne]: usuarioIdExcluido };
   }
 
-  const existingUser = await Usuario.findOne({ where, ...options });
+  const usuarioExistente = await Usuario.findOne({ where: condiciones, ...opciones });
 
-  if (existingUser) {
+  if (usuarioExistente) {
     throw new ApiError(409, 'La relacion ya esta asociada a otro usuario.', 'USUARIO_RELACION_DUPLICATED', {
-      field
+      field: campo
     });
   }
 };
 
-const countActiveAdmins = (options = {}) =>
+const contarAdministradoresActivos = (opciones = {}) =>
   Usuario.count({
-    where: { estado: ACTIVE_ADMIN_STATUS },
+    where: { estado: ESTADO_ADMIN_ACTIVO },
     include: [
       {
         model: Rol,
@@ -212,99 +212,99 @@ const countActiveAdmins = (options = {}) =>
         attributes: []
       }
     ],
-    ...options
+    ...opciones
   });
 
-const ensureSystemKeepsActiveAdmin = async (user, payload, options = {}) => {
-  const currentRole = user.rol;
+const asegurarAdministradorActivoSistema = async (usuario, datosPermitidos, opciones = {}) => {
+  const rolActual = usuario.rol;
 
-  if (currentRole?.codigo !== ROLE_CODES.ADMIN || user.estado !== ACTIVE_ADMIN_STATUS) {
+  if (rolActual?.codigo !== ROLE_CODES.ADMIN || usuario.estado !== ESTADO_ADMIN_ACTIVO) {
     return;
   }
 
-  let nextRole = currentRole;
+  let rolSiguiente = rolActual;
 
-  if (Object.prototype.hasOwnProperty.call(payload, 'rol_id') && payload.rol_id !== user.rol_id) {
-    nextRole = await ensureRoleExists(payload.rol_id, options);
+  if (Object.prototype.hasOwnProperty.call(datosPermitidos, 'rol_id') && datosPermitidos.rol_id !== usuario.rol_id) {
+    rolSiguiente = await asegurarRolExistente(datosPermitidos.rol_id, opciones);
   }
 
-  const nextEstado = Object.prototype.hasOwnProperty.call(payload, 'estado') ? payload.estado : user.estado;
-  const remainsActiveAdmin = nextEstado === ACTIVE_ADMIN_STATUS && nextRole.codigo === ROLE_CODES.ADMIN;
+  const estadoSiguiente = Object.prototype.hasOwnProperty.call(datosPermitidos, 'estado') ? datosPermitidos.estado : usuario.estado;
+  const mantieneAdminActivo = estadoSiguiente === ESTADO_ADMIN_ACTIVO && rolSiguiente.codigo === ROLE_CODES.ADMIN;
 
-  if (remainsActiveAdmin) {
+  if (mantieneAdminActivo) {
     return;
   }
 
-  const activeAdmins = await countActiveAdmins(options);
+  const administradoresActivos = await contarAdministradoresActivos(opciones);
 
-  if (activeAdmins <= 1) {
+  if (administradoresActivos <= 1) {
     throw new ApiError(409, 'No se puede dejar el sistema sin administradores activos.', 'LAST_ACTIVE_ADMIN');
   }
 };
 
-const validatePayloadRelations = async (payload, excludeUserId = null, options = {}) => {
-  if (Object.prototype.hasOwnProperty.call(payload, 'rol_id')) {
-    await ensureRoleExists(payload.rol_id, options);
+const validarRelacionesDatos = async (datosPermitidos, usuarioIdExcluido = null, opciones = {}) => {
+  if (Object.prototype.hasOwnProperty.call(datosPermitidos, 'rol_id')) {
+    await asegurarRolExistente(datosPermitidos.rol_id, opciones);
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload, 'estudiante_id')) {
-    const estudianteId = normalizeNullableId(payload.estudiante_id);
-    payload.estudiante_id = estudianteId;
-    await ensureEstudianteExists(estudianteId, options);
-    await ensureUniqueRelation('estudiante_id', estudianteId, excludeUserId, options);
+  if (Object.prototype.hasOwnProperty.call(datosPermitidos, 'estudiante_id')) {
+    const estudianteId = normalizarIdNullable(datosPermitidos.estudiante_id);
+    datosPermitidos.estudiante_id = estudianteId;
+    await asegurarEstudianteExistente(estudianteId, opciones);
+    await asegurarRelacionUnica('estudiante_id', estudianteId, usuarioIdExcluido, opciones);
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload, 'docente_id')) {
-    const docenteId = normalizeNullableId(payload.docente_id);
-    payload.docente_id = docenteId;
-    await ensureDocenteExists(docenteId, options);
-    await ensureUniqueRelation('docente_id', docenteId, excludeUserId, options);
+  if (Object.prototype.hasOwnProperty.call(datosPermitidos, 'docente_id')) {
+    const docenteId = normalizarIdNullable(datosPermitidos.docente_id);
+    datosPermitidos.docente_id = docenteId;
+    await asegurarDocenteExistente(docenteId, opciones);
+    await asegurarRelacionUnica('docente_id', docenteId, usuarioIdExcluido, opciones);
   }
 };
 
-const revokeUserSessions = async (userId, options = {}) =>
+const revocarSesionesUsuario = async (usuarioId, opciones = {}) =>
   Sesion.update(
     { revocada_en: new Date() },
     {
       where: {
-        usuario_id: userId,
+        usuario_id: usuarioId,
         revocada_en: { [Op.is]: null }
       },
-      ...options
+      ...opciones
     }
   );
 
-export const listarUsuarios = async (filters = {}) => {
-  const { page, limit, offset } = normalizePagination(filters.page, filters.limit);
-  const where = {};
-  const include = [...userInclude];
+export const listarUsuarios = async (filtros = {}) => {
+  const { page: pagina, limit: limite, offset: desplazamiento } = normalizarPaginacion(filtros.page, filtros.limit);
+  const condiciones = {};
+  const inclusiones = [...inclusionesUsuario];
 
-  if (filters.correo) {
-    where.correo = { [Op.like]: `%${filters.correo}%` };
+  if (filtros.correo) {
+    condiciones.correo = { [Op.like]: `%${filtros.correo}%` };
   }
 
-  if (filters.estado) {
-    where.estado = filters.estado;
+  if (filtros.estado) {
+    condiciones.estado = filtros.estado;
   }
 
-  if (filters.rol) {
-    const roleFilter = Number.isInteger(Number(filters.rol))
-      ? { id: Number(filters.rol) }
-      : { codigo: filters.rol };
+  if (filtros.rol) {
+    const filtroRol = Number.isInteger(Number(filtros.rol))
+      ? { id: Number(filtros.rol) }
+      : { codigo: filtros.rol };
 
-    include[0] = {
-      ...roleInclude,
-      where: roleFilter
+    inclusiones[0] = {
+      ...inclusionRol,
+      where: filtroRol
     };
   }
 
-  const { rows, count } = await Usuario.findAndCountAll({
-    where,
-    attributes: userAttributes,
-    include,
+  const { rows: registros, count: totalRegistros } = await Usuario.findAndCountAll({
+    where: condiciones,
+    attributes: atributosUsuario,
+    include: inclusiones,
     distinct: true,
-    limit,
-    offset,
+    limit: limite,
+    offset: desplazamiento,
     order: [
       ['apellidos', 'ASC'],
       ['nombres', 'ASC'],
@@ -313,107 +313,107 @@ export const listarUsuarios = async (filters = {}) => {
   });
 
   return {
-    data: rows.map(sanitizeUser),
-    page,
-    limit,
-    total: count,
-    totalPages: Math.ceil(count / limit)
+    data: registros.map(sanitizarUsuario),
+    page: pagina,
+    limit: limite,
+    total: totalRegistros,
+    totalPages: Math.ceil(totalRegistros / limite)
   };
 };
 
-export const obtenerUsuarioPorId = async (id) => sanitizeUser(await findUserOrFail(id));
+export const obtenerUsuarioPorId = async (id) => sanitizarUsuario(await buscarUsuarioOError(id));
 
-export const crearUsuario = async (data) =>
+export const crearUsuario = async (datos) =>
   sequelize.transaction(async (transaction) => {
-    const payload = pickPayload(data, allowedCreateFields);
+    const datosPermitidos = seleccionarDatosPermitidos(datos, camposPermitidosCreacion);
 
-    await ensureUniqueCorreo(payload.correo, null, { transaction });
-    await validatePayloadRelations(payload, null, { transaction });
+    await asegurarCorreoUnico(datosPermitidos.correo, null, { transaction });
+    await validarRelacionesDatos(datosPermitidos, null, { transaction });
 
-    const password_hash = await hashPassword(payload.password);
-    delete payload.password;
+    const password_hash = await generarHashPassword(datosPermitidos.password);
+    delete datosPermitidos.password;
 
-    const user = await Usuario.create(
+    const usuario = await Usuario.create(
       {
-        ...payload,
+        ...datosPermitidos,
         password_hash
       },
       { transaction }
     );
 
-    return sanitizeUser(
-      await Usuario.findByPk(user.id, {
-        attributes: userAttributes,
-        include: userInclude,
+    return sanitizarUsuario(
+      await Usuario.findByPk(usuario.id, {
+        attributes: atributosUsuario,
+        include: inclusionesUsuario,
         transaction
       })
     );
   });
 
-export const actualizarUsuario = async (id, data, authenticatedUserId) =>
+export const actualizarUsuario = async (id, datos, usuarioAutenticadoId) =>
   sequelize.transaction(async (transaction) => {
-    const user = await findUserOrFail(id, { transaction });
-    const payload = pickPayload(data, allowedUpdateFields);
+    const usuario = await buscarUsuarioOError(id, { transaction });
+    const datosPermitidos = seleccionarDatosPermitidos(datos, camposPermitidosActualizacion);
 
-    if (Object.keys(payload).length === 0) {
+    if (Object.keys(datosPermitidos).length === 0) {
       throw new ApiError(400, 'Debe enviar al menos un campo valido.', 'EMPTY_UPDATE_PAYLOAD');
     }
 
     if (
-      user.id === authenticatedUserId &&
-      Object.prototype.hasOwnProperty.call(payload, 'estado') &&
-      payload.estado !== ACTIVE_ADMIN_STATUS
+      usuario.id === usuarioAutenticadoId &&
+      Object.prototype.hasOwnProperty.call(datosPermitidos, 'estado') &&
+      datosPermitidos.estado !== ESTADO_ADMIN_ACTIVO
     ) {
       throw new ApiError(409, 'No puede desactivar su propio usuario administrativo.', 'SELF_DEACTIVATION_NOT_ALLOWED');
     }
 
-    await ensureSystemKeepsActiveAdmin(user, payload, { transaction });
-    await ensureUniqueCorreo(payload.correo, user.id, { transaction });
-    await validatePayloadRelations(payload, user.id, { transaction });
+    await asegurarAdministradorActivoSistema(usuario, datosPermitidos, { transaction });
+    await asegurarCorreoUnico(datosPermitidos.correo, usuario.id, { transaction });
+    await validarRelacionesDatos(datosPermitidos, usuario.id, { transaction });
 
-    await user.update(payload, { transaction });
+    await usuario.update(datosPermitidos, { transaction });
 
     if (
-      Object.prototype.hasOwnProperty.call(payload, 'estado') &&
-      user.estado !== ACTIVE_ADMIN_STATUS
+      Object.prototype.hasOwnProperty.call(datosPermitidos, 'estado') &&
+      usuario.estado !== ESTADO_ADMIN_ACTIVO
     ) {
-      await revokeUserSessions(user.id, { transaction });
+      await revocarSesionesUsuario(usuario.id, { transaction });
     }
 
-    return sanitizeUser(
-      await Usuario.findByPk(user.id, {
-        attributes: userAttributes,
-        include: userInclude,
+    return sanitizarUsuario(
+      await Usuario.findByPk(usuario.id, {
+        attributes: atributosUsuario,
+        include: inclusionesUsuario,
         transaction
       })
     );
   });
 
-export const cambiarEstadoUsuario = async (id, estado, authenticatedUserId) =>
+export const cambiarEstadoUsuario = async (id, estado, usuarioAutenticadoId) =>
   sequelize.transaction(async (transaction) => {
-    const user = await findUserOrFail(id, { transaction });
-    const payload = { estado };
+    const usuario = await buscarUsuarioOError(id, { transaction });
+    const datosPermitidos = { estado };
 
-    if (user.id === authenticatedUserId && estado !== ACTIVE_ADMIN_STATUS) {
+    if (usuario.id === usuarioAutenticadoId && estado !== ESTADO_ADMIN_ACTIVO) {
       throw new ApiError(409, 'No puede desactivar su propio usuario administrativo.', 'SELF_DEACTIVATION_NOT_ALLOWED');
     }
 
-    await ensureSystemKeepsActiveAdmin(user, payload, { transaction });
+    await asegurarAdministradorActivoSistema(usuario, datosPermitidos, { transaction });
 
-    if (user.estado === estado) {
-      return sanitizeUser(user);
+    if (usuario.estado === estado) {
+      return sanitizarUsuario(usuario);
     }
 
-    await user.update(payload, { transaction });
+    await usuario.update(datosPermitidos, { transaction });
 
-    if (estado !== ACTIVE_ADMIN_STATUS) {
-      await revokeUserSessions(user.id, { transaction });
+    if (estado !== ESTADO_ADMIN_ACTIVO) {
+      await revocarSesionesUsuario(usuario.id, { transaction });
     }
 
-    return sanitizeUser(
-      await Usuario.findByPk(user.id, {
-        attributes: userAttributes,
-        include: userInclude,
+    return sanitizarUsuario(
+      await Usuario.findByPk(usuario.id, {
+        attributes: atributosUsuario,
+        include: inclusionesUsuario,
         transaction
       })
     );
@@ -421,22 +421,22 @@ export const cambiarEstadoUsuario = async (id, estado, authenticatedUserId) =>
 
 export const cambiarPasswordUsuario = async (id, password) =>
   sequelize.transaction(async (transaction) => {
-    const user = await findUserOrFail(id, { transaction });
-    const password_hash = await hashPassword(password);
+    const usuario = await buscarUsuarioOError(id, { transaction });
+    const password_hash = await generarHashPassword(password);
 
-    await user.update(
+    await usuario.update(
       {
         password_hash,
         debe_cambiar_password: false
       },
       { transaction }
     );
-    await revokeUserSessions(user.id, { transaction });
+    await revocarSesionesUsuario(usuario.id, { transaction });
 
-    return sanitizeUser(
-      await Usuario.findByPk(user.id, {
-        attributes: userAttributes,
-        include: userInclude,
+    return sanitizarUsuario(
+      await Usuario.findByPk(usuario.id, {
+        attributes: atributosUsuario,
+        include: inclusionesUsuario,
         transaction
       })
     );
@@ -449,5 +449,5 @@ export default {
   actualizarUsuario,
   cambiarEstadoUsuario,
   cambiarPasswordUsuario,
-  sanitizeUser
+  sanitizarUsuario
 };

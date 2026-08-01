@@ -11,14 +11,14 @@ import {
 import { ROLE_CODES } from '../constants/domain.constants.js';
 import authenticate from '../middlewares/authenticate.js';
 import authorizeRoles from '../middlewares/authorizeRoles.js';
-import validateRequest from '../middlewares/validateRequest.js';
+import validarSolicitud from '../middlewares/validateRequest.js';
 import {
-  validateChangeEstadoUsuario,
-  validateChangePasswordUsuario,
-  validateCreateUsuario,
-  validateIdParam,
-  validateListUsuarios,
-  validateUpdateUsuario
+  validarCambioEstadoUsuario,
+  validarCambioPasswordUsuario,
+  validarCreacionUsuario,
+  validarIdParam,
+  validarListadoUsuarios,
+  validarActualizacionUsuario
 } from '../validators/usuario.validator.js';
 
 const router = Router();
@@ -27,11 +27,11 @@ const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 router.use(authenticate);
 router.use(adminOnly);
 
-router.get('/', validateListUsuarios, validateRequest, obtenerUsuarios);
-router.get('/:id', validateIdParam, validateRequest, obtenerUsuarioPorId);
-router.post('/', validateCreateUsuario, validateRequest, crearUsuario);
-router.put('/:id', validateIdParam, validateUpdateUsuario, validateRequest, actualizarUsuario);
-router.patch('/:id/estado', validateIdParam, validateChangeEstadoUsuario, validateRequest, cambiarEstadoUsuario);
-router.patch('/:id/password', validateIdParam, validateChangePasswordUsuario, validateRequest, cambiarPasswordUsuario);
+router.get('/', validarListadoUsuarios, validarSolicitud, obtenerUsuarios);
+router.get('/:id', validarIdParam, validarSolicitud, obtenerUsuarioPorId);
+router.post('/', validarCreacionUsuario, validarSolicitud, crearUsuario);
+router.put('/:id', validarIdParam, validarActualizacionUsuario, validarSolicitud, actualizarUsuario);
+router.patch('/:id/estado', validarIdParam, validarCambioEstadoUsuario, validarSolicitud, cambiarEstadoUsuario);
+router.patch('/:id/password', validarIdParam, validarCambioPasswordUsuario, validarSolicitud, cambiarPasswordUsuario);
 
 export default router;

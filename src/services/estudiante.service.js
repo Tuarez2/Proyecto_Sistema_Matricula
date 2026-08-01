@@ -2,7 +2,7 @@ import { ACADEMIC_STATUS } from '../constants/domain.constants.js';
 import { Carrera, Estudiante } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
 
-const allowedFields = [
+const camposPermitidos = [
   'carrera_id',
   'numero_matricula',
   'identificacion',
@@ -15,18 +15,18 @@ const allowedFields = [
   'nivel_academico_actual'
 ];
 
-const listInclude = [{ association: 'carrera' }];
-const detailInclude = [{ association: 'carrera' }, { association: 'cursosMatriculados' }];
+const inclusionesListado = [{ association: 'carrera' }];
+const inclusionesDetalle = [{ association: 'carrera' }, { association: 'cursosMatriculados' }];
 
-const pickPayload = (body) =>
-  allowedFields.reduce((payload, field) => {
-    if (Object.prototype.hasOwnProperty.call(body, field) && body[field] !== undefined) {
-      payload[field] = body[field];
+const seleccionarDatosPermitidos = (cuerpoSolicitud) =>
+  camposPermitidos.reduce((datosPermitidos, campo) => {
+    if (Object.prototype.hasOwnProperty.call(cuerpoSolicitud, campo) && cuerpoSolicitud[campo] !== undefined) {
+      datosPermitidos[campo] = cuerpoSolicitud[campo];
     }
-    return payload;
+    return datosPermitidos;
   }, {});
 
-const ensureCarreraExists = async (carreraId) => {
+const asegurarCarreraExistente = async (carreraId) => {
   const carrera = await Carrera.findByPk(carreraId);
 
   if (!carrera) {
@@ -34,10 +34,10 @@ const ensureCarreraExists = async (carreraId) => {
   }
 };
 
-export const listarEstudiantes = async () => Estudiante.findAll({ include: listInclude });
+export const listarEstudiantes = async () => Estudiante.findAll({ include: inclusionesListado });
 
 export const obtenerEstudiantePorId = async (id) => {
-  const estudiante = await Estudiante.findByPk(id, { include: detailInclude });
+  const estudiante = await Estudiante.findByPk(id, { include: inclusionesDetalle });
 
   if (!estudiante) {
     throw new ApiError(404, 'Estudiante no encontrado.', 'ESTUDIANTE_NOT_FOUND');
@@ -46,29 +46,29 @@ export const obtenerEstudiantePorId = async (id) => {
   return estudiante;
 };
 
-export const crearEstudiante = async (data) => {
-  await ensureCarreraExists(data.carrera_id);
-  return Estudiante.create(pickPayload(data));
+export const crearEstudiante = async (datos) => {
+  await asegurarCarreraExistente(datos.carrera_id);
+  return Estudiante.create(seleccionarDatosPermitidos(datos));
 };
 
-export const actualizarEstudiante = async (id, data) => {
+export const actualizarEstudiante = async (id, datos) => {
   const estudiante = await Estudiante.findByPk(id);
 
   if (!estudiante) {
     throw new ApiError(404, 'Estudiante no encontrado.', 'ESTUDIANTE_NOT_FOUND');
   }
 
-  const payload = pickPayload(data);
+  const datosPermitidos = seleccionarDatosPermitidos(datos);
 
-  if (Object.keys(payload).length === 0) {
+  if (Object.keys(datosPermitidos).length === 0) {
     throw new ApiError(400, 'Debe enviar al menos un campo valido.', 'EMPTY_UPDATE_PAYLOAD');
   }
 
-  if (payload.carrera_id !== undefined) {
-    await ensureCarreraExists(payload.carrera_id);
+  if (datosPermitidos.carrera_id !== undefined) {
+    await asegurarCarreraExistente(datosPermitidos.carrera_id);
   }
 
-  await estudiante.update(payload);
+  await estudiante.update(datosPermitidos);
   return obtenerEstudiantePorId(id);
 };
 

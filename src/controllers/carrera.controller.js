@@ -1,7 +1,7 @@
 import * as carreraService from '../services/carrera.service.js';
-import asyncHandler from '../utils/asyncHandler.js';
+import manejadorAsync from '../utils/asyncHandler.js';
 
-export const obtenerCarreras = asyncHandler(async (req, res) => {
+export const obtenerCarreras = manejadorAsync(async (req, res) => {
   const carreras = await carreraService.listarCarreras();
 
   res.status(200).json({
@@ -10,7 +10,7 @@ export const obtenerCarreras = asyncHandler(async (req, res) => {
   });
 });
 
-export const obtenerCarreraPorId = asyncHandler(async (req, res) => {
+export const obtenerCarreraPorId = manejadorAsync(async (req, res) => {
   const carrera = await carreraService.obtenerCarreraPorId(req.params.id);
 
   res.status(200).json({
@@ -19,7 +19,7 @@ export const obtenerCarreraPorId = asyncHandler(async (req, res) => {
   });
 });
 
-export const crearCarrera = asyncHandler(async (req, res) => {
+export const crearCarrera = manejadorAsync(async (req, res) => {
   const carrera = await carreraService.crearCarrera(req.body);
 
   res.status(201).json({
@@ -29,7 +29,7 @@ export const crearCarrera = asyncHandler(async (req, res) => {
   });
 });
 
-export const actualizarCarrera = asyncHandler(async (req, res) => {
+export const actualizarCarrera = manejadorAsync(async (req, res) => {
   const carrera = await carreraService.actualizarCarrera(req.params.id, req.body);
 
   res.status(200).json({
@@ -39,7 +39,7 @@ export const actualizarCarrera = asyncHandler(async (req, res) => {
   });
 });
 
-export const eliminarCarrera = asyncHandler(async (req, res) => {
+export const eliminarCarrera = manejadorAsync(async (req, res) => {
   const carrera = await carreraService.eliminarCarrera(req.params.id);
 
   res.status(200).json({

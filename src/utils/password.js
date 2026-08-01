@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 
-const SALT_ROUNDS = 12;
+const RONDAS_SALT = 12;
 
-export const hashPassword = (password) => bcrypt.hash(password, SALT_ROUNDS);
+export const generarHashPassword = (password) => bcrypt.hash(password, RONDAS_SALT);
 
-export const comparePassword = (password, passwordHash) => bcrypt.compare(password, passwordHash);
+export const compararPassword = (password, hashAlmacenado) => bcrypt.compare(password, hashAlmacenado);

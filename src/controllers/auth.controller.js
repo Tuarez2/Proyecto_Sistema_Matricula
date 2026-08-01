@@ -1,27 +1,27 @@
 import * as authService from '../services/auth.service.js';
-import asyncHandler from '../utils/asyncHandler.js';
+import manejadorAsync from '../utils/asyncHandler.js';
 
-export const login = asyncHandler(async (req, res) => {
-  const data = await authService.login(req.body, req);
+export const login = manejadorAsync(async (req, res) => {
+  const datos = await authService.login(req.body, req);
 
   res.status(200).json({
     success: true,
     message: 'Inicio de sesion correcto.',
-    data
+    data: datos
   });
 });
 
-export const refresh = asyncHandler(async (req, res) => {
-  const data = await authService.refresh(req.body.refreshToken);
+export const refresh = manejadorAsync(async (req, res) => {
+  const datos = await authService.refresh(req.body.refreshToken);
 
   res.status(200).json({
     success: true,
     message: 'Tokens renovados correctamente.',
-    data
+    data: datos
   });
 });
 
-export const logout = asyncHandler(async (req, res) => {
+export const logout = manejadorAsync(async (req, res) => {
   await authService.logout(req.user.sessionId);
 
   res.status(200).json({
@@ -30,13 +30,13 @@ export const logout = asyncHandler(async (req, res) => {
   });
 });
 
-export const me = asyncHandler(async (req, res) => {
-  const user = await authService.getAuthenticatedUser(req.user.id);
+export const me = manejadorAsync(async (req, res) => {
+  const usuario = await authService.obtenerUsuarioAutenticado(req.user.id);
 
   res.status(200).json({
     success: true,
     data: {
-      user
+      user: usuario
     }
   });
 });

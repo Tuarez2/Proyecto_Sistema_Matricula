@@ -1,9 +1,9 @@
 import { body } from 'express-validator';
 
-import { validateAllowedFields } from './common.validator.js';
+import { validarCamposPermitidos } from './common.validator.js';
 
-export const validateLogin = [
-  validateAllowedFields(['correo', 'password']),
+export const validarLogin = [
+  validarCamposPermitidos(['correo', 'password']),
   body('correo')
     .exists()
     .withMessage('El correo es obligatorio.')
@@ -25,8 +25,8 @@ export const validateLogin = [
     .withMessage('La contrasena tiene una longitud invalida.')
 ];
 
-export const validateRefresh = [
-  validateAllowedFields(['refreshToken']),
+export const validarRefresh = [
+  validarCamposPermitidos(['refreshToken']),
   body('refreshToken')
     .exists()
     .withMessage('El refresh token es obligatorio.')
@@ -39,6 +39,6 @@ export const validateRefresh = [
 ];
 
 export default {
-  validateLogin,
-  validateRefresh
+  validarLogin,
+  validarRefresh
 };

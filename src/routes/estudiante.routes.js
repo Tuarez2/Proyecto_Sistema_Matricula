@@ -10,11 +10,11 @@ import {
 import { ROLE_CODES } from '../constants/domain.constants.js';
 import authenticate from '../middlewares/authenticate.js';
 import authorizeRoles from '../middlewares/authorizeRoles.js';
-import validateRequest from '../middlewares/validateRequest.js';
+import validarSolicitud from '../middlewares/validateRequest.js';
 import {
-  validateCreateEstudiante,
-  validateIdParam,
-  validateUpdateEstudiante
+  validarCreacionEstudiante,
+  validarIdParam,
+  validarActualizacionEstudiante
 } from '../validators/estudiante.validator.js';
 
 const router = Router();
@@ -22,9 +22,9 @@ const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 
 router.use(authenticate);
 router.get('/', obtenerEstudiantes);
-router.get('/:id', validateIdParam, validateRequest, obtenerEstudiantePorId);
-router.post('/', adminOnly, validateCreateEstudiante, validateRequest, crearEstudiante);
-router.put('/:id', adminOnly, validateIdParam, validateUpdateEstudiante, validateRequest, actualizarEstudiante);
-router.delete('/:id', adminOnly, validateIdParam, validateRequest, eliminarEstudiante);
+router.get('/:id', validarIdParam, validarSolicitud, obtenerEstudiantePorId);
+router.post('/', adminOnly, validarCreacionEstudiante, validarSolicitud, crearEstudiante);
+router.put('/:id', adminOnly, validarIdParam, validarActualizacionEstudiante, validarSolicitud, actualizarEstudiante);
+router.delete('/:id', adminOnly, validarIdParam, validarSolicitud, eliminarEstudiante);
 
 export default router;

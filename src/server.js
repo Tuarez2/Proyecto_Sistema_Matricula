@@ -1,14 +1,14 @@
 import app from './app.js';
 import environment from './config/environment.js';
-import { checkDatabaseConnection, sequelize } from './config/database.js';
+import { verificarConexionBaseDatos, sequelize } from './config/database.js';
 import logger from './config/logger.js';
 import './models/index.js';
 
 let server;
 
-const startServer = async () => {
+const iniciarServidor = async () => {
   try {
-    await checkDatabaseConnection();
+    await verificarConexionBaseDatos();
 
     server = app.listen(environment.port, () => {
       logger.info(`Server listening on http://localhost:${environment.port}`);
@@ -19,7 +19,7 @@ const startServer = async () => {
   }
 };
 
-const shutdown = async (signal) => {
+const cerrarServidor = async (signal) => {
   logger.info(`${signal} received. Closing server...`);
 
   if (server) {
@@ -34,7 +34,7 @@ const shutdown = async (signal) => {
   process.exit(0);
 };
 
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => cerrarServidor('SIGINT'));
+process.on('SIGTERM', () => cerrarServidor('SIGTERM'));
 
-startServer();
+iniciarServidor();

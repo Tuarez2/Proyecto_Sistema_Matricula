@@ -1,21 +1,21 @@
 import { Asignatura } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
 
-const allowedFields = ['codigo', 'nombre', 'creditos', 'nivel_academico', 'activo'];
-const include = [{ association: 'carreras' }, { association: 'cursos' }];
+const camposPermitidos = ['codigo', 'nombre', 'creditos', 'nivel_academico', 'activo'];
+const inclusiones = [{ association: 'carreras' }, { association: 'cursos' }];
 
-const pickPayload = (body) =>
-  allowedFields.reduce((payload, field) => {
-    if (Object.prototype.hasOwnProperty.call(body, field) && body[field] !== undefined) {
-      payload[field] = body[field];
+const seleccionarDatosPermitidos = (cuerpoSolicitud) =>
+  camposPermitidos.reduce((datosPermitidos, campo) => {
+    if (Object.prototype.hasOwnProperty.call(cuerpoSolicitud, campo) && cuerpoSolicitud[campo] !== undefined) {
+      datosPermitidos[campo] = cuerpoSolicitud[campo];
     }
-    return payload;
+    return datosPermitidos;
   }, {});
 
-export const listarAsignaturas = async () => Asignatura.findAll({ include });
+export const listarAsignaturas = async () => Asignatura.findAll({ include: inclusiones });
 
 export const obtenerAsignaturaPorId = async (id) => {
-  const asignatura = await Asignatura.findByPk(id, { include });
+  const asignatura = await Asignatura.findByPk(id, { include: inclusiones });
 
   if (!asignatura) {
     throw new ApiError(404, 'Asignatura no encontrada.', 'ASIGNATURA_NOT_FOUND');
@@ -24,22 +24,22 @@ export const obtenerAsignaturaPorId = async (id) => {
   return asignatura;
 };
 
-export const crearAsignatura = async (data) => Asignatura.create(pickPayload(data));
+export const crearAsignatura = async (datos) => Asignatura.create(seleccionarDatosPermitidos(datos));
 
-export const actualizarAsignatura = async (id, data) => {
+export const actualizarAsignatura = async (id, datos) => {
   const asignatura = await Asignatura.findByPk(id);
 
   if (!asignatura) {
     throw new ApiError(404, 'Asignatura no encontrada.', 'ASIGNATURA_NOT_FOUND');
   }
 
-  const payload = pickPayload(data);
+  const datosPermitidos = seleccionarDatosPermitidos(datos);
 
-  if (Object.keys(payload).length === 0) {
+  if (Object.keys(datosPermitidos).length === 0) {
     throw new ApiError(400, 'Debe enviar al menos un campo valido.', 'EMPTY_UPDATE_PAYLOAD');
   }
 
-  await asignatura.update(payload);
+  await asignatura.update(datosPermitidos);
   return obtenerAsignaturaPorId(id);
 };
 

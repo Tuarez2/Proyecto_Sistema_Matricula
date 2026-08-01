@@ -1,7 +1,7 @@
 import * as asignaturaService from '../services/asignatura.service.js';
-import asyncHandler from '../utils/asyncHandler.js';
+import manejadorAsync from '../utils/asyncHandler.js';
 
-export const obtenerAsignaturas = asyncHandler(async (req, res) => {
+export const obtenerAsignaturas = manejadorAsync(async (req, res) => {
   const asignaturas = await asignaturaService.listarAsignaturas();
 
   res.status(200).json({
@@ -10,7 +10,7 @@ export const obtenerAsignaturas = asyncHandler(async (req, res) => {
   });
 });
 
-export const obtenerAsignaturaPorId = asyncHandler(async (req, res) => {
+export const obtenerAsignaturaPorId = manejadorAsync(async (req, res) => {
   const asignatura = await asignaturaService.obtenerAsignaturaPorId(req.params.id);
 
   res.status(200).json({
@@ -19,7 +19,7 @@ export const obtenerAsignaturaPorId = asyncHandler(async (req, res) => {
   });
 });
 
-export const crearAsignatura = asyncHandler(async (req, res) => {
+export const crearAsignatura = manejadorAsync(async (req, res) => {
   const asignatura = await asignaturaService.crearAsignatura(req.body);
 
   res.status(201).json({
@@ -29,7 +29,7 @@ export const crearAsignatura = asyncHandler(async (req, res) => {
   });
 });
 
-export const actualizarAsignatura = asyncHandler(async (req, res) => {
+export const actualizarAsignatura = manejadorAsync(async (req, res) => {
   const asignatura = await asignaturaService.actualizarAsignatura(req.params.id, req.body);
 
   res.status(200).json({
@@ -39,7 +39,7 @@ export const actualizarAsignatura = asyncHandler(async (req, res) => {
   });
 });
 
-export const eliminarAsignatura = asyncHandler(async (req, res) => {
+export const eliminarAsignatura = manejadorAsync(async (req, res) => {
   const asignatura = await asignaturaService.eliminarAsignatura(req.params.id);
 
   res.status(200).json({

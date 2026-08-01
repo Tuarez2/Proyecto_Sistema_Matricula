@@ -21,7 +21,7 @@ export const sequelize = new Sequelize(
   }
 );
 
-export const checkDatabaseConnection = async () => {
+export const verificarConexionBaseDatos = async () => {
   await sequelize.authenticate();
   logger.info('Database connection established.');
 };

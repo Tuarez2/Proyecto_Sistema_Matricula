@@ -10,17 +10,17 @@ import {
 import { ROLE_CODES } from '../constants/domain.constants.js';
 import authenticate from '../middlewares/authenticate.js';
 import authorizeRoles from '../middlewares/authorizeRoles.js';
-import validateRequest from '../middlewares/validateRequest.js';
-import { validateCreateCarrera, validateIdParam, validateUpdateCarrera } from '../validators/carrera.validator.js';
+import validarSolicitud from '../middlewares/validateRequest.js';
+import { validarCreacionCarrera, validarIdParam, validarActualizacionCarrera } from '../validators/carrera.validator.js';
 
 const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 
 router.use(authenticate);
 router.get('/', obtenerCarreras);
-router.get('/:id', validateIdParam, validateRequest, obtenerCarreraPorId);
-router.post('/', adminOnly, validateCreateCarrera, validateRequest, crearCarrera);
-router.put('/:id', adminOnly, validateIdParam, validateUpdateCarrera, validateRequest, actualizarCarrera);
-router.delete('/:id', adminOnly, validateIdParam, validateRequest, eliminarCarrera);
+router.get('/:id', validarIdParam, validarSolicitud, obtenerCarreraPorId);
+router.post('/', adminOnly, validarCreacionCarrera, validarSolicitud, crearCarrera);
+router.put('/:id', adminOnly, validarIdParam, validarActualizacionCarrera, validarSolicitud, actualizarCarrera);
+router.delete('/:id', adminOnly, validarIdParam, validarSolicitud, eliminarCarrera);
 
 export default router;

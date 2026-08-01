@@ -2,7 +2,7 @@ import { COURSE_STATUS } from '../constants/domain.constants.js';
 import { Asignatura, Curso, Docente, PeriodoAcademico } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
 
-const allowedFields = [
+const camposPermitidos = [
   'periodo_id',
   'asignatura_id',
   'docente_id',
@@ -13,18 +13,18 @@ const allowedFields = [
   'estado'
 ];
 
-const listInclude = [{ association: 'asignatura' }, { association: 'docente' }, { association: 'periodoAcademico' }];
-const detailInclude = [...listInclude, { association: 'estudiantesMatriculados' }];
+const inclusionesListado = [{ association: 'asignatura' }, { association: 'docente' }, { association: 'periodoAcademico' }];
+const inclusionesDetalle = [...inclusionesListado, { association: 'estudiantesMatriculados' }];
 
-const pickPayload = (body) =>
-  allowedFields.reduce((payload, field) => {
-    if (Object.prototype.hasOwnProperty.call(body, field) && body[field] !== undefined) {
-      payload[field] = body[field];
+const seleccionarDatosPermitidos = (cuerpoSolicitud) =>
+  camposPermitidos.reduce((datosPermitidos, campo) => {
+    if (Object.prototype.hasOwnProperty.call(cuerpoSolicitud, campo) && cuerpoSolicitud[campo] !== undefined) {
+      datosPermitidos[campo] = cuerpoSolicitud[campo];
     }
-    return payload;
+    return datosPermitidos;
   }, {});
 
-const ensureReferencesExist = async ({ periodo_id, asignatura_id, docente_id }) => {
+const asegurarReferenciasExistentes = async ({ periodo_id, asignatura_id, docente_id }) => {
   if (periodo_id !== undefined && !(await PeriodoAcademico.findByPk(periodo_id))) {
     throw new ApiError(400, 'El periodo academico especificado no existe.', 'PERIODO_ACADEMICO_NOT_FOUND');
   }
@@ -38,10 +38,10 @@ const ensureReferencesExist = async ({ periodo_id, asignatura_id, docente_id }) 
   }
 };
 
-export const listarCursos = async () => Curso.findAll({ include: listInclude });
+export const listarCursos = async () => Curso.findAll({ include: inclusionesListado });
 
 export const obtenerCursoPorId = async (id) => {
-  const curso = await Curso.findByPk(id, { include: detailInclude });
+  const curso = await Curso.findByPk(id, { include: inclusionesDetalle });
 
   if (!curso) {
     throw new ApiError(404, 'Curso no encontrado.', 'CURSO_NOT_FOUND');
@@ -50,26 +50,26 @@ export const obtenerCursoPorId = async (id) => {
   return curso;
 };
 
-export const crearCurso = async (data) => {
-  await ensureReferencesExist(data);
-  return Curso.create(pickPayload(data));
+export const crearCurso = async (datos) => {
+  await asegurarReferenciasExistentes(datos);
+  return Curso.create(seleccionarDatosPermitidos(datos));
 };
 
-export const actualizarCurso = async (id, data) => {
+export const actualizarCurso = async (id, datos) => {
   const curso = await Curso.findByPk(id);
 
   if (!curso) {
     throw new ApiError(404, 'Curso no encontrado.', 'CURSO_NOT_FOUND');
   }
 
-  const payload = pickPayload(data);
+  const datosPermitidos = seleccionarDatosPermitidos(datos);
 
-  if (Object.keys(payload).length === 0) {
+  if (Object.keys(datosPermitidos).length === 0) {
     throw new ApiError(400, 'Debe enviar al menos un campo valido.', 'EMPTY_UPDATE_PAYLOAD');
   }
 
-  await ensureReferencesExist(payload);
-  await curso.update(payload);
+  await asegurarReferenciasExistentes(datosPermitidos);
+  await curso.update(datosPermitidos);
   return obtenerCursoPorId(id);
 };
 

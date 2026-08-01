@@ -1,7 +1,7 @@
 import * as cursoService from '../services/curso.service.js';
-import asyncHandler from '../utils/asyncHandler.js';
+import manejadorAsync from '../utils/asyncHandler.js';
 
-export const obtenerCursos = asyncHandler(async (req, res) => {
+export const obtenerCursos = manejadorAsync(async (req, res) => {
   const cursos = await cursoService.listarCursos();
 
   res.status(200).json({
@@ -10,7 +10,7 @@ export const obtenerCursos = asyncHandler(async (req, res) => {
   });
 });
 
-export const obtenerCursoPorId = asyncHandler(async (req, res) => {
+export const obtenerCursoPorId = manejadorAsync(async (req, res) => {
   const curso = await cursoService.obtenerCursoPorId(req.params.id);
 
   res.status(200).json({
@@ -19,7 +19,7 @@ export const obtenerCursoPorId = asyncHandler(async (req, res) => {
   });
 });
 
-export const crearCurso = asyncHandler(async (req, res) => {
+export const crearCurso = manejadorAsync(async (req, res) => {
   const curso = await cursoService.crearCurso(req.body);
 
   res.status(201).json({
@@ -29,7 +29,7 @@ export const crearCurso = asyncHandler(async (req, res) => {
   });
 });
 
-export const actualizarCurso = asyncHandler(async (req, res) => {
+export const actualizarCurso = manejadorAsync(async (req, res) => {
   const curso = await cursoService.actualizarCurso(req.params.id, req.body);
 
   res.status(200).json({
@@ -39,7 +39,7 @@ export const actualizarCurso = asyncHandler(async (req, res) => {
   });
 });
 
-export const eliminarCurso = asyncHandler(async (req, res) => {
+export const eliminarCurso = manejadorAsync(async (req, res) => {
   const curso = await cursoService.eliminarCurso(req.params.id);
 
   res.status(200).json({

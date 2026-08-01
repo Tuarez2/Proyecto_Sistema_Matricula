@@ -1,14 +1,14 @@
 import { Docente } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
 
-const allowedFields = ['identificacion', 'nombres', 'apellidos', 'correo', 'telefono', 'especialidad', 'activo'];
+const camposPermitidos = ['identificacion', 'nombres', 'apellidos', 'correo', 'telefono', 'especialidad', 'activo'];
 
-const pickPayload = (body) =>
-  allowedFields.reduce((payload, field) => {
-    if (Object.prototype.hasOwnProperty.call(body, field) && body[field] !== undefined) {
-      payload[field] = body[field];
+const seleccionarDatosPermitidos = (cuerpoSolicitud) =>
+  camposPermitidos.reduce((datosPermitidos, campo) => {
+    if (Object.prototype.hasOwnProperty.call(cuerpoSolicitud, campo) && cuerpoSolicitud[campo] !== undefined) {
+      datosPermitidos[campo] = cuerpoSolicitud[campo];
     }
-    return payload;
+    return datosPermitidos;
   }, {});
 
 export const listarDocentes = async () => Docente.findAll();
@@ -23,22 +23,22 @@ export const obtenerDocentePorId = async (id) => {
   return docente;
 };
 
-export const crearDocente = async (data) => Docente.create(pickPayload(data));
+export const crearDocente = async (datos) => Docente.create(seleccionarDatosPermitidos(datos));
 
-export const actualizarDocente = async (id, data) => {
+export const actualizarDocente = async (id, datos) => {
   const docente = await Docente.findByPk(id);
 
   if (!docente) {
     throw new ApiError(404, 'Docente no encontrado.', 'DOCENTE_NOT_FOUND');
   }
 
-  const payload = pickPayload(data);
+  const datosPermitidos = seleccionarDatosPermitidos(datos);
 
-  if (Object.keys(payload).length === 0) {
+  if (Object.keys(datosPermitidos).length === 0) {
     throw new ApiError(400, 'Debe enviar al menos un campo valido.', 'EMPTY_UPDATE_PAYLOAD');
   }
 
-  await docente.update(payload);
+  await docente.update(datosPermitidos);
   return obtenerDocentePorId(id);
 };
 

@@ -2,46 +2,46 @@ import jwt from 'jsonwebtoken';
 
 import environment from '../config/environment.js';
 
-const JWT_ALGORITHM = 'HS256';
+const ALGORITMO_JWT = 'HS256';
 
-const signToken = (payload, secret, expiresIn) => {
-  const token = jwt.sign(payload, secret, {
-    algorithm: JWT_ALGORITHM,
-    expiresIn
+const firmarToken = (datosToken, secreto, expiracion) => {
+  const token = jwt.sign(datosToken, secreto, {
+    algorithm: ALGORITMO_JWT,
+    expiresIn: expiracion
   });
 
   return {
     token,
-    expiresAt: getTokenExpirationDate(token)
+    expiresAt: obtenerFechaExpiracionToken(token)
   };
 };
 
-const verifyToken = (token, secret) =>
-  jwt.verify(token, secret, {
-    algorithms: [JWT_ALGORITHM]
+const verificarToken = (token, secreto) =>
+  jwt.verify(token, secreto, {
+    algorithms: [ALGORITMO_JWT]
   });
 
-export const getTokenExpirationDate = (token) => {
-  const decoded = jwt.decode(token);
+export const obtenerFechaExpiracionToken = (token) => {
+  const tokenDecodificado = jwt.decode(token);
 
-  if (!decoded?.exp) {
+  if (!tokenDecodificado?.exp) {
     return null;
   }
 
-  return new Date(decoded.exp * 1000);
+  return new Date(tokenDecodificado.exp * 1000);
 };
 
-export const signAccessToken = (payload) =>
-  signToken(payload, environment.jwt.accessSecret, environment.jwt.accessExpiresIn);
+export const firmarTokenAcceso = (datosToken) =>
+  firmarToken(datosToken, environment.jwt.accessSecret, environment.jwt.accessExpiresIn);
 
-export const verifyAccessToken = (token) => verifyToken(token, environment.jwt.accessSecret);
+export const verificarTokenAcceso = (token) => verificarToken(token, environment.jwt.accessSecret);
 
-export const signRefreshToken = (payload) =>
-  signToken(payload, environment.jwt.refreshSecret, environment.jwt.refreshExpiresIn);
+export const firmarTokenRenovacion = (datosToken) =>
+  firmarToken(datosToken, environment.jwt.refreshSecret, environment.jwt.refreshExpiresIn);
 
-export const verifyRefreshToken = (token) => verifyToken(token, environment.jwt.refreshSecret);
+export const verificarTokenRenovacion = (token) => verificarToken(token, environment.jwt.refreshSecret);
 
-export const jwtConfigAvailable = () =>
+export const configuracionJwtDisponible = () =>
   Boolean(
     environment.jwt.accessSecret &&
       environment.jwt.refreshSecret &&
@@ -49,10 +49,10 @@ export const jwtConfigAvailable = () =>
   );
 
 export default {
-  getTokenExpirationDate,
-  jwtConfigAvailable,
-  signAccessToken,
-  verifyAccessToken,
-  signRefreshToken,
-  verifyRefreshToken
+  obtenerFechaExpiracionToken,
+  configuracionJwtDisponible,
+  firmarTokenAcceso,
+  verificarTokenAcceso,
+  firmarTokenRenovacion,
+  verificarTokenRenovacion
 };

@@ -2,11 +2,11 @@ import { body, query } from 'express-validator';
 
 import { USER_STATUS } from '../constants/domain.constants.js';
 import ApiError from '../utils/ApiError.js';
-import { validateIdParam } from './common.validator.js';
+import { validarIdParam } from './common.validator.js';
 
-const userStatuses = Object.values(USER_STATUS);
+const estadosUsuario = Object.values(USER_STATUS);
 
-const createFields = [
+const camposCreacion = [
   'nombres',
   'apellidos',
   'correo',
@@ -18,7 +18,7 @@ const createFields = [
   'debe_cambiar_password'
 ];
 
-const updateFields = [
+const camposActualizacion = [
   'nombres',
   'apellidos',
   'correo',
@@ -29,8 +29,8 @@ const updateFields = [
   'debe_cambiar_password'
 ];
 
-const listFields = ['correo', 'estado', 'rol', 'page', 'limit'];
-const sensitiveRejectedFields = [
+const camposListado = ['correo', 'estado', 'rol', 'page', 'limit'];
+const camposSensiblesRechazados = [
   'password_hash',
   'refresh_token_hash',
   'refresh_token',
@@ -40,43 +40,43 @@ const sensitiveRejectedFields = [
   'sessionId'
 ];
 
-const redactRejectedField = (field) =>
-  sensitiveRejectedFields.includes(field) ? 'campo_sensible_no_permitido' : field;
+const redactarCampoRechazado = (campo) =>
+  camposSensiblesRechazados.includes(campo) ? 'campo_sensible_no_permitido' : campo;
 
-const validateAllowedUsuarioFields = (allowedFields, options = {}) => (req, res, next) => {
-  const body = req.body ?? {};
-  const fields = Object.keys(body);
-  const unknownFields = fields.filter((field) => !allowedFields.includes(field));
+const validarCamposPermitidosUsuario = (camposPermitidos, opciones = {}) => (req, res, next) => {
+  const cuerpoSolicitud = req.body ?? {};
+  const campos = Object.keys(cuerpoSolicitud);
+  const camposDesconocidos = campos.filter((campo) => !camposPermitidos.includes(campo));
 
-  if (unknownFields.length > 0) {
+  if (camposDesconocidos.length > 0) {
     return next(
       new ApiError(
         400,
         'Existen campos no permitidos en la solicitud.',
         'UNKNOWN_FIELDS',
-        unknownFields.map(redactRejectedField)
+        camposDesconocidos.map(redactarCampoRechazado)
       )
     );
   }
 
-  if (options.requireAtLeastOne && fields.length === 0) {
+  if (opciones.requireAtLeastOne && campos.length === 0) {
     return next(new ApiError(400, 'Debe enviar al menos un campo valido.', 'EMPTY_REQUEST_BODY'));
   }
 
   return next();
 };
 
-const validateAllowedQueryFields = (allowedFields) => (req, res, next) => {
-  const fields = Object.keys(req.query ?? {});
-  const unknownFields = fields.filter((field) => !allowedFields.includes(field));
+const validarFiltrosPermitidos = (camposPermitidos) => (req, res, next) => {
+  const campos = Object.keys(req.query ?? {});
+  const camposDesconocidos = campos.filter((campo) => !camposPermitidos.includes(campo));
 
-  if (unknownFields.length > 0) {
+  if (camposDesconocidos.length > 0) {
     return next(
       new ApiError(
         400,
         'Existen filtros no permitidos en la solicitud.',
         'UNKNOWN_QUERY_FIELDS',
-        unknownFields.map(redactRejectedField)
+        camposDesconocidos.map(redactarCampoRechazado)
       )
     );
   }
@@ -84,28 +84,28 @@ const validateAllowedQueryFields = (allowedFields) => (req, res, next) => {
   return next();
 };
 
-const stringRule = (field, label, max) =>
-  body(field)
+const reglaTexto = (campo, etiqueta, maximo) =>
+  body(campo)
     .optional()
     .isString()
-    .withMessage(`${label} debe ser texto.`)
+    .withMessage(`${etiqueta} debe ser texto.`)
     .bail()
     .trim()
-    .isLength({ min: 1, max })
-    .withMessage(`${label} tiene una longitud invalida.`);
+    .isLength({ min: 1, max: maximo })
+    .withMessage(`${etiqueta} tiene una longitud invalida.`);
 
-const nullableIdRule = (field, label) =>
-  body(field)
+const reglaIdNullable = (campo, etiqueta) =>
+  body(campo)
     .optional({ nullable: true })
     .customSanitizer((value) => (value === null || value === '' ? null : value))
     .if((value) => value !== null)
     .isInt({ min: 1 })
-    .withMessage(`${label} debe ser un entero positivo.`)
+    .withMessage(`${etiqueta} debe ser un entero positivo.`)
     .toInt();
 
-const commonRules = [
-  stringRule('nombres', 'Los nombres', 100),
-  stringRule('apellidos', 'Los apellidos', 100),
+const reglasComunes = [
+  reglaTexto('nombres', 'Los nombres', 100),
+  reglaTexto('apellidos', 'Los apellidos', 100),
   body('correo')
     .optional()
     .isEmail()
@@ -116,11 +116,11 @@ const commonRules = [
     .normalizeEmail(),
   body('estado')
     .optional()
-    .isIn(userStatuses)
-    .withMessage(`El estado debe ser uno de: ${userStatuses.join(', ')}.`),
+    .isIn(estadosUsuario)
+    .withMessage(`El estado debe ser uno de: ${estadosUsuario.join(', ')}.`),
   body('rol_id').optional().isInt({ min: 1 }).withMessage('El rol debe ser un entero positivo.').toInt(),
-  nullableIdRule('estudiante_id', 'El estudiante'),
-  nullableIdRule('docente_id', 'El docente'),
+  reglaIdNullable('estudiante_id', 'El estudiante'),
+  reglaIdNullable('docente_id', 'El docente'),
   body('debe_cambiar_password')
     .optional()
     .isBoolean()
@@ -128,7 +128,7 @@ const commonRules = [
     .toBoolean()
 ];
 
-const passwordRule = () =>
+const reglaPassword = () =>
   body('password')
     .exists()
     .withMessage('La contrasena es obligatoria.')
@@ -139,8 +139,8 @@ const passwordRule = () =>
     .isLength({ min: 10, max: 128 })
     .withMessage('La contrasena debe tener entre 10 y 128 caracteres.');
 
-export const validateListUsuarios = [
-  validateAllowedQueryFields(listFields),
+export const validarListadoUsuarios = [
+  validarFiltrosPermitidos(camposListado),
   query('correo')
     .optional()
     .isString()
@@ -151,8 +151,8 @@ export const validateListUsuarios = [
     .withMessage('El filtro correo tiene una longitud invalida.'),
   query('estado')
     .optional()
-    .isIn(userStatuses)
-    .withMessage(`El estado debe ser uno de: ${userStatuses.join(', ')}.`),
+    .isIn(estadosUsuario)
+    .withMessage(`El estado debe ser uno de: ${estadosUsuario.join(', ')}.`),
   query('rol')
     .optional()
     .isString()
@@ -165,37 +165,37 @@ export const validateListUsuarios = [
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('El limite debe estar entre 1 y 100.').toInt()
 ];
 
-export const validateCreateUsuario = [
-  validateAllowedUsuarioFields(createFields),
+export const validarCreacionUsuario = [
+  validarCamposPermitidosUsuario(camposCreacion),
   body('nombres').exists().withMessage('Los nombres son obligatorios.'),
   body('apellidos').exists().withMessage('Los apellidos son obligatorios.'),
   body('correo').exists().withMessage('El correo es obligatorio.'),
   body('rol_id').exists().withMessage('El rol es obligatorio.'),
-  passwordRule(),
-  ...commonRules
+  reglaPassword(),
+  ...reglasComunes
 ];
 
-export const validateUpdateUsuario = [validateAllowedUsuarioFields(updateFields, { requireAtLeastOne: true }), ...commonRules];
+export const validarActualizacionUsuario = [validarCamposPermitidosUsuario(camposActualizacion, { requireAtLeastOne: true }), ...reglasComunes];
 
-export const validateChangeEstadoUsuario = [
-  validateAllowedUsuarioFields(['estado']),
+export const validarCambioEstadoUsuario = [
+  validarCamposPermitidosUsuario(['estado']),
   body('estado')
     .exists()
     .withMessage('El estado es obligatorio.')
     .bail()
-    .isIn(userStatuses)
-    .withMessage(`El estado debe ser uno de: ${userStatuses.join(', ')}.`)
+    .isIn(estadosUsuario)
+    .withMessage(`El estado debe ser uno de: ${estadosUsuario.join(', ')}.`)
 ];
 
-export const validateChangePasswordUsuario = [validateAllowedUsuarioFields(['password']), passwordRule()];
+export const validarCambioPasswordUsuario = [validarCamposPermitidosUsuario(['password']), reglaPassword()];
 
-export { validateIdParam };
+export { validarIdParam };
 
 export default {
-  validateListUsuarios,
-  validateCreateUsuario,
-  validateUpdateUsuario,
-  validateChangeEstadoUsuario,
-  validateChangePasswordUsuario,
-  validateIdParam
+  validarListadoUsuarios,
+  validarCreacionUsuario,
+  validarActualizacionUsuario,
+  validarCambioEstadoUsuario,
+  validarCambioPasswordUsuario,
+  validarIdParam
 };
