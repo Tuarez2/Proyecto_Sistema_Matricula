@@ -11,7 +11,7 @@ export const sequelize = new Sequelize(
     host: environment.database.host,
     port: environment.database.port,
     dialect: 'mysql',
-    logging: environment.nodeEnv === 'production' ? false : (message) => logger.info(message),
+    logging: environment.nodeEnv === 'development' ? (message) => logger.info(message) : false,
     define: {
       underscored: true,
       timestamps: true,

@@ -12,7 +12,9 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: environment.cors.origin }));
-app.use(morgan(environment.nodeEnv === 'production' ? 'combined' : 'dev'));
+if (environment.nodeEnv !== 'test') {
+  app.use(morgan(environment.nodeEnv === 'production' ? 'combined' : 'dev'));
+}
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 

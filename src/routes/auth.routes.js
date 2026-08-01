@@ -11,6 +11,10 @@ const router = Router();
 const cubetas = new Map();
 
 const limitarTasa = ({ limite, ventanaMs }) => (req, res, next) => {
+  if (process.env.NODE_ENV === 'test') {
+    return next();
+  }
+
   const ahora = Date.now();
   const clave = `${req.ip}:${req.path}`;
   const cubeta = cubetas.get(clave);

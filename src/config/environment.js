@@ -30,6 +30,24 @@ if (process.env.JWT_ACCESS_SECRET === process.env.JWT_REFRESH_SECRET) {
   throw new Error('JWT access and refresh secrets must be different.');
 }
 
+const obtenerNombreBaseDatos = () => {
+  if (process.env.NODE_ENV !== 'test') {
+    return process.env.DB_NAME;
+  }
+
+  const nombreBaseDatosPruebas = process.env.DB_NAME_TEST || process.env.DB_TEST_NAME || `${process.env.DB_NAME}_test`;
+
+  if (nombreBaseDatosPruebas === process.env.DB_NAME) {
+    throw new Error('Test database must be different from development database.');
+  }
+
+  if (!/test/i.test(nombreBaseDatosPruebas)) {
+    throw new Error('Test database name must include "test".');
+  }
+
+  return nombreBaseDatosPruebas;
+};
+
 const toNumber = (name) => {
   const value = Number(process.env[name]);
 
@@ -49,7 +67,7 @@ const environment = Object.freeze({
   database: Object.freeze({
     host: process.env.DB_HOST,
     port: toNumber('DB_PORT'),
-    name: process.env.DB_NAME,
+    name: obtenerNombreBaseDatos(),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD
   }),

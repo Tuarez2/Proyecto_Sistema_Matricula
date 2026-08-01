@@ -21,11 +21,26 @@ const baseConfig = {
   }
 };
 
+const obtenerBaseDatosPruebas = () => {
+  const database = process.env.DB_NAME_TEST || process.env.DB_TEST_NAME || `${baseConfig.database}_test`;
+
+  if (database === baseConfig.database) {
+    throw new Error('Test database must be different from development database.');
+  }
+
+  if (!/test/i.test(database)) {
+    throw new Error('Test database name must include "test".');
+  }
+
+  return database;
+};
+
 module.exports = {
   development: baseConfig,
   test: {
     ...baseConfig,
-    database: process.env.DB_TEST_NAME || `${baseConfig.database}_test`
+    database: obtenerBaseDatosPruebas(),
+    logging: false
   },
   production: {
     ...baseConfig,
