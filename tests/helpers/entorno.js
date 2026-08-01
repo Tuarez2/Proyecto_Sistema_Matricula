@@ -21,6 +21,13 @@ export const configurarEntornoPruebas = () => {
   process.env.INITIAL_ADMIN_LAST_NAME = 'Pruebas';
   process.env.INITIAL_ADMIN_EMAIL = 'admin.codex.test@example.test';
   process.env.INITIAL_ADMIN_PASSWORD = 'AdminCodexTest123!';
+  process.env.CORS_ORIGINS = 'http://localhost:3000,http://localhost:5173';
+  process.env.CORS_CREDENTIALS = 'false';
+  process.env.TRUST_PROXY = 'false';
+  process.env.RATE_LIMIT_WINDOW_MS = '900000';
+  process.env.RATE_LIMIT_MAX = '10000';
+  process.env.AUTH_RATE_LIMIT_WINDOW_MS = '900000';
+  process.env.AUTH_RATE_LIMIT_MAX = '10000';
 
   if (!process.env.DB_NAME_TEST && !process.env.DB_TEST_NAME) {
     process.env.DB_NAME_TEST = `${process.env.DB_NAME}_test`;

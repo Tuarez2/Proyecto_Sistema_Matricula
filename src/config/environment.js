@@ -58,11 +58,71 @@ const toNumber = (name) => {
   return value;
 };
 
+const toOptionalNumber = (name, defaultValue) => {
+  const value = process.env[name];
+
+  if (value === undefined || value === '') {
+    return defaultValue;
+  }
+
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    throw new Error(`Environment variable ${name} must be a valid number.`);
+  }
+
+  return numberValue;
+};
+
+const toBoolean = (name, defaultValue = false) => {
+  const value = process.env[name];
+
+  if (value === undefined || value === '') {
+    return defaultValue;
+  }
+
+  if (['true', '1', 'yes', 'on'].includes(value.toLowerCase())) {
+    return true;
+  }
+
+  if (['false', '0', 'no', 'off'].includes(value.toLowerCase())) {
+    return false;
+  }
+
+  throw new Error(`Environment variable ${name} must be a boolean value.`);
+};
+
+const interpretarTrustProxy = () => {
+  const value = process.env.TRUST_PROXY;
+
+  if (value === undefined || value === '' || ['false', '0', 'no', 'off'].includes(value.toLowerCase())) {
+    return false;
+  }
+
+  if (value === '1') {
+    return 1;
+  }
+
+  if (value === 'loopback') {
+    return 'loopback';
+  }
+
+  throw new Error('TRUST_PROXY must be false, 1 or loopback.');
+};
+
 const environment = Object.freeze({
   nodeEnv: process.env.NODE_ENV,
   port: toNumber('PORT'),
   cors: Object.freeze({
-    origin: process.env.CORS_ORIGIN ?? '*'
+    origins: process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? '',
+    credentials: toBoolean('CORS_CREDENTIALS', false)
+  }),
+  trustProxy: interpretarTrustProxy(),
+  rateLimit: Object.freeze({
+    generalWindowMs: toOptionalNumber('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
+    generalMax: toOptionalNumber('RATE_LIMIT_MAX', 300),
+    authWindowMs: toOptionalNumber('AUTH_RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
+    authMax: toOptionalNumber('AUTH_RATE_LIMIT_MAX', 10)
   }),
   database: Object.freeze({
     host: process.env.DB_HOST,
