@@ -10,11 +10,13 @@ import estudianteRoutes from './estudiante.routes.js';
 import facultadRoutes from './facultad.routes.js';
 import matriculaRoutes from './matricula.routes.js';
 import periodoRoutes from './periodo.routes.js';
+import rolRoutes from './rol.routes.js';
 import usuarioRoutes from './usuario.routes.js';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/roles', rolRoutes);
 router.use('/usuarios', usuarioRoutes);
 router.use('/facultades', facultadRoutes);
 router.use('/carreras', carreraRoutes);
