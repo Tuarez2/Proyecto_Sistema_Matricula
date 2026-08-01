@@ -1,4 +1,4 @@
-import { UniqueConstraintError, ValidationError } from 'sequelize';
+import { ForeignKeyConstraintError, UniqueConstraintError, ValidationError } from 'sequelize';
 
 import ApiError from '../utils/ApiError.js';
 
@@ -23,6 +23,18 @@ const errorHandler = (error, req, res, next) => {
         field: item.path,
         message: item.message
       }))
+    });
+  }
+
+  if (error instanceof ForeignKeyConstraintError) {
+    return res.status(400).json({
+      success: false,
+      message: 'La relacion especificada no existe o impide completar la operacion.',
+      code: 'FOREIGN_KEY_CONSTRAINT_ERROR',
+      details: {
+        table: error.table,
+        fields: error.fields
+      }
     });
   }
 

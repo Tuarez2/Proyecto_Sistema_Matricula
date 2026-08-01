@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import environment from './config/environment.js';
 import errorHandler from './middlewares/errorHandler.js';
 import notFound from './middlewares/notFound.js';
+import routes from './routes/index.js';
 
 const app = express();
 
@@ -21,6 +22,8 @@ app.get('/health', (req, res) => {
     status: 'ok'
   });
 });
+
+app.use('/api/v1', routes);
 
 app.use(notFound);
 app.use(errorHandler);
