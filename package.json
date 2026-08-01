@@ -1,0 +1,21 @@
+{
+  "name": "proyecto-sistema-matricula",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepositorio del Sistema de Matricula Universitaria",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "scripts": {
+    "verificar:entorno": "node scripts/verificar-entorno.mjs",
+    "instalar": "npm run verificar:entorno && npm ci --prefix backend && npm ci --prefix frontend",
+    "dev:backend": "npm --prefix backend start",
+    "dev:frontend": "npm --prefix frontend start",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test -- --watch=false",
+    "build:frontend": "npm --prefix frontend run build",
+    "validar:backend": "npm run verificar:entorno && npm run test:backend",
+    "validar:frontend": "npm run verificar:entorno && npm run build:frontend && npm run test:frontend",
+    "validar": "npm run verificar:entorno && npm run test:backend && npm run build:frontend && npm run test:frontend"
+  }
+}
