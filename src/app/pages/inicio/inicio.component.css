@@ -1,0 +1,14 @@
+.pagina-inicio {
+  padding: 3rem 0;
+}
+
+.pagina-inicio h1 {
+  margin: 0 0 0.75rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.pagina-inicio p {
+  margin: 0;
+  color: #4b5563;
+}
