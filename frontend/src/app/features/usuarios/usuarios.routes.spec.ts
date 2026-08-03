@@ -6,6 +6,7 @@ import { CLAVE_ROLES_PERMITIDOS, CODIGOS_ROL } from '../../core/config/codigos-r
 import { guardRoles } from '../../core/guards/roles.guard';
 import type { UsuarioAutenticado } from '../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
+import { CambiarEstadoUsuarioComponent } from './cambiar-estado-usuario/cambiar-estado-usuario.component';
 import { CrearUsuarioComponent } from './crear-usuario/crear-usuario.component';
 import { EditarUsuarioComponent } from './editar-usuario/editar-usuario.component';
 import { ListadoUsuariosComponent } from './listado-usuarios/listado-usuarios.component';
@@ -136,12 +137,58 @@ describe('rutasUsuarios', () => {
     );
   });
 
+  it('existe una ruta estado', () => {
+    expect(obtenerRutaEstado().path).toBe(':id/estado');
+  });
+
+  it('la ruta estado esta despues de editar', () => {
+    expect(rutasUsuarios.indexOf(obtenerRutaEstado())).toBeGreaterThan(
+      rutasUsuarios.indexOf(obtenerRutaEditar()),
+    );
+  });
+
+  it('la ruta estado esta antes de la ruta vacia', () => {
+    expect(rutasUsuarios.indexOf(obtenerRutaEstado())).toBeLessThan(
+      rutasUsuarios.indexOf(obtenerRutaRaiz()),
+    );
+  });
+
+  it('la ruta estado usa loadComponent', () => {
+    expect(obtenerRutaEstado().loadComponent).toBeDefined();
+  });
+
+  it('la ruta estado carga CambiarEstadoUsuarioComponent', async () => {
+    const componente = await obtenerRutaEstado().loadComponent?.();
+
+    expect(componente).toBe(CambiarEstadoUsuarioComponent);
+  });
+
+  it('la ruta estado tiene titulo Cambiar estado de usuario', () => {
+    expect(obtenerRutaEstado().title).toBe('Cambiar estado de usuario');
+  });
+
+  it('la ruta estado usa guardRoles', () => {
+    expect(obtenerRutaEstado().canActivate).toEqual([guardRoles]);
+  });
+
+  it('la ruta estado permite exclusivamente ADMIN', () => {
+    expect(obtenerRutaEstado().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+    ]);
+  });
+
+  it('la ruta estado usa CLAVE_ROLES_PERMITIDOS', () => {
+    expect(Object.keys(obtenerRutaEstado().data ?? {})).toContain(
+      CLAVE_ROLES_PERMITIDOS,
+    );
+  });
+
   it('no contiene rutas de contrasena', () => {
     expect(rutasUsuarios.some((ruta) => ruta.path?.includes('password'))).toBe(false);
   });
 
-  it('no contiene rutas de estado', () => {
-    expect(rutasUsuarios.some((ruta) => ruta.path?.includes('estado'))).toBe(false);
+  it('no contiene rutas de estado distintas a cambio de estado', () => {
+    expect(rutasUsuarios.filter((ruta) => ruta.path?.includes('estado')).length).toBe(1);
   });
 
   it('no contiene rutas de cambio de contrasena', () => {
@@ -180,10 +227,32 @@ describe('rutasUsuarios', () => {
     expect(ejecutarGuardRutaEditar()).toBe(false);
   });
 
+  it('un administrador puede activar usuarios estado', () => {
+    configurarAutenticacion('ADMIN');
+
+    expect(ejecutarGuardRutaEstado()).toBe(true);
+  });
+
+  it('otro rol no puede activar usuarios estado', () => {
+    configurarAutenticacion('DOCENTE');
+
+    expect(ejecutarGuardRutaEstado()).toBe(false);
+  });
+
   it('la ruta nuevo no es interpretada como identificador', () => {
     expect(rutasUsuarios.indexOf(obtenerRutaNuevo())).toBeLessThan(
       rutasUsuarios.indexOf(obtenerRutaEditar()),
     );
+  });
+
+  it('un id invalido puede cargar la ruta estado', () => {
+    expect(obtenerRutaEstado().path).toBe(':id/estado');
+  });
+
+  it('nuevo editar y listado continuan funcionando', async () => {
+    expect(await obtenerRutaNuevo().loadComponent?.()).toBe(CrearUsuarioComponent);
+    expect(await obtenerRutaEditar().loadComponent?.()).toBe(EditarUsuarioComponent);
+    expect(await obtenerRutaRaiz().loadComponent?.()).toBe(ListadoUsuariosComponent);
   });
 
   it('no contiene redirects', () => {
@@ -216,6 +285,16 @@ function obtenerRutaEditar() {
 
   if (!ruta) {
     throw new Error('No existe la ruta editar de usuarios.');
+  }
+
+  return ruta;
+}
+
+function obtenerRutaEstado() {
+  const ruta = rutasUsuarios.find((rutaActual) => rutaActual.path === ':id/estado');
+
+  if (!ruta) {
+    throw new Error('No existe la ruta estado de usuarios.');
   }
 
   return ruta;
@@ -264,5 +343,15 @@ function ejecutarGuardRutaEditar(): boolean {
 
   return TestBed.runInInjectionContext(() =>
     guardRoles(ruta, { url: '/usuarios/15/editar' } as RouterStateSnapshot),
+  ) as boolean;
+}
+
+function ejecutarGuardRutaEstado(): boolean {
+  const ruta = new ActivatedRouteSnapshot();
+
+  ruta.data = obtenerRutaEstado().data ?? {};
+
+  return TestBed.runInInjectionContext(() =>
+    guardRoles(ruta, { url: '/usuarios/15/estado' } as RouterStateSnapshot),
   ) as boolean;
 }

@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
   ActualizarUsuarioSolicitud,
+  CambiarEstadoUsuarioSolicitud,
   CrearUsuarioSolicitud,
   FiltrosListadoUsuarios,
   RespuestaListadoUsuarios,
@@ -48,6 +49,18 @@ export class UsuariosService {
     return this.http.put<RespuestaUsuario>(
       obtenerUrlApi(`usuarios/${idUsuario}`),
       datosUsuario,
+    );
+  }
+
+  cambiarEstadoUsuario(
+    idUsuario: number,
+    solicitud: CambiarEstadoUsuarioSolicitud,
+  ): Observable<RespuestaUsuario> {
+    return this.http.patch<RespuestaUsuario>(
+      obtenerUrlApi(`usuarios/${idUsuario}/estado`),
+      {
+        estado: solicitud.estado,
+      },
     );
   }
 

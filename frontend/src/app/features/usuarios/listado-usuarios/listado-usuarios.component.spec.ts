@@ -580,6 +580,13 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerEnlaces('Editar').length).toBe(1);
   });
 
+  it('cada usuario tiene enlace Cambiar estado', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlaces('Cambiar estado').length).toBe(1);
+  });
+
   it('el enlace Editar incluye el identificador', () => {
     iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
     fixture.detectChanges();
@@ -593,6 +600,24 @@ describe('ListadoUsuariosComponent', () => {
 
     expect(obtenerEnlace('Editar')?.getAttribute('href')).toBe(
       '/usuarios/15/editar',
+    );
+  });
+
+  it('el enlace Cambiar estado incluye el identificador', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')?.getAttribute('href')).toContain(
+      '/usuarios/15',
+    );
+  });
+
+  it('el enlace Cambiar estado apunta a usuarios id estado', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')?.getAttribute('href')).toBe(
+      '/usuarios/15/estado',
     );
   });
 
@@ -639,6 +664,19 @@ describe('ListadoUsuariosComponent', () => {
       .toEqual(['/usuarios/15/editar', '/usuarios/22/editar']);
   });
 
+  it('los enlaces de estado usan identificadores correctos con varios usuarios', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearUsuario({ id: 15 }),
+        crearUsuario({ id: 22, correo: 'otro@universidad.edu' }),
+      ],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlaces('Cambiar estado').map((enlace) => enlace.getAttribute('href')))
+      .toEqual(['/usuarios/15/estado', '/usuarios/22/estado']);
+  });
+
   it('la tabla continua siendo semantica', () => {
     iniciarYCompletar();
     fixture.detectChanges();
@@ -653,6 +691,33 @@ describe('ListadoUsuariosComponent', () => {
     fixture.detectChanges();
 
     expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+  });
+
+  it('el enlace de estado existe para usuarios activos', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'activo' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
+  });
+
+  it('el enlace de estado existe para usuarios bloqueados', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'bloqueado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
+  });
+
+  it('el enlace de estado existe para usuarios inactivos', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'inactivo' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
   });
 
   it('existen botones Anterior y Siguiente', () => {

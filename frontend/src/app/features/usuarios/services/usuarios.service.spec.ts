@@ -9,6 +9,7 @@ import { firstValueFrom } from 'rxjs';
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
   ActualizarUsuarioSolicitud,
+  CambiarEstadoUsuarioSolicitud,
   CrearUsuarioSolicitud,
   FiltrosListadoUsuarios,
   RespuestaListadoUsuarios,
@@ -715,6 +716,226 @@ describe('UsuariosService', () => {
     controladorHttp.expectOne(obtenerUrlApi('usuarios/15')).flush(crearRespuestaUsuario());
     await promesaRespuesta;
   });
+
+  it('cambiarEstadoUsuario ejecuta PATCH usuarios id estado', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'));
+
+    expect(solicitud.request.method).toBe('PATCH');
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoUsuario utiliza metodo PATCH', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'));
+
+    expect(solicitud.request.method).toBe('PATCH');
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoUsuario envia estado activo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'));
+
+    expect(solicitud.request.body).toEqual({ estado: 'activo' });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoUsuario envia estado bloqueado', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'bloqueado' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'));
+
+    expect(solicitud.request.body).toEqual({ estado: 'bloqueado' });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoUsuario envia estado inactivo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'inactivo' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'));
+
+    expect(solicitud.request.body).toEqual({ estado: 'inactivo' });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoUsuario no agrega propiedades adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'));
+
+    expect(Object.keys(solicitud.request.body)).toEqual(['estado']);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoUsuario no agrega identificador en el cuerpo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'));
+
+    expect('id' in solicitud.request.body).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoUsuario no agrega Authorization manualmente', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'));
+
+    expect(solicitud.request.headers.has('Authorization')).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoUsuario no modifica el objeto recibido', async () => {
+    const solicitudEstado = crearSolicitudCambioEstado({ estado: 'bloqueado' });
+    const solicitudOriginal = { ...solicitudEstado };
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, solicitudEstado),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'))
+      .flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+
+    expect(solicitudEstado).toEqual(solicitudOriginal);
+  });
+
+  it('cambiarEstadoUsuario devuelve RespuestaUsuario', async () => {
+    const respuesta = crearRespuestaUsuario(crearUsuario({ estado: 'bloqueado' }));
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'bloqueado' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado')).flush(respuesta);
+
+    await expect(promesaRespuesta).resolves.toEqual(respuesta);
+  });
+
+  it('cambiarEstadoUsuario conserva las relaciones del usuario', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'bloqueado' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado')).flush(
+      crearRespuestaUsuario(crearUsuario({
+        estudiante_id: 3,
+        docente_id: null,
+        estudiante: {
+          id: 3,
+          numero_matricula: '2026001',
+          nombres: 'Ana',
+          apellidos: 'Perez',
+          correo: 'ana@universidad.edu',
+          estado_academico: 'activo',
+        },
+        docente: null,
+      })),
+    );
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.estudiante_id).toBe(3);
+    expect(respuesta.data?.docente_id).toBeNull();
+    expect(respuesta.data?.estudiante?.id).toBe(3);
+    expect(respuesta.data?.docente).toBeNull();
+  });
+
+  it('cambiarEstadoUsuario propaga error 400', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15/estado'))
+      .flush({}, { status: 400, statusText: 'Solicitud incorrecta' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('cambiarEstadoUsuario propaga error 403', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15/estado'))
+      .flush({}, { status: 403, statusText: 'Prohibido' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('cambiarEstadoUsuario propaga error 404', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15/estado'))
+      .flush({}, { status: 404, statusText: 'No encontrado' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('cambiarEstadoUsuario propaga error 409', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15/estado'))
+      .flush({}, { status: 409, statusText: 'Conflicto' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('cambiarEstadoUsuario propaga error 429', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15/estado'))
+      .flush({}, { status: 429, statusText: 'Demasiadas solicitudes' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('cambiarEstadoUsuario no realiza solicitudes adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoUsuario(15, { estado: 'activo' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'))
+      .flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
 });
 
 function crearRespuestaListado(
@@ -785,6 +1006,15 @@ function crearSolicitudActualizacion(
     estudiante_id: null,
     docente_id: null,
     debe_cambiar_password: true,
+    ...parcial,
+  };
+}
+
+function crearSolicitudCambioEstado(
+  parcial: Partial<CambiarEstadoUsuarioSolicitud> = {},
+): CambiarEstadoUsuarioSolicitud {
+  return {
+    estado: 'activo',
     ...parcial,
   };
 }

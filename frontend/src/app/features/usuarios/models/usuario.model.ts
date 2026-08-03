@@ -82,6 +82,10 @@ export interface ActualizarUsuarioSolicitud {
   debe_cambiar_password?: boolean;
 }
 
+export interface CambiarEstadoUsuarioSolicitud {
+  estado: EstadoUsuario;
+}
+
 export interface RespuestaListadoUsuarios extends RespuestaApi<Usuario[]> {
   page: number;
   limit: number;

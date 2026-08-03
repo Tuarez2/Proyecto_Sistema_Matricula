@@ -30,6 +30,17 @@ export const rutasUsuarios: Routes = [
     title: 'Editar usuario',
   },
   {
+    path: ':id/estado',
+    loadComponent: () =>
+      import('./cambiar-estado-usuario/cambiar-estado-usuario.component')
+        .then((modulo) => modulo.CambiarEstadoUsuarioComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
+    },
+    title: 'Cambiar estado de usuario',
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./listado-usuarios/listado-usuarios.component')

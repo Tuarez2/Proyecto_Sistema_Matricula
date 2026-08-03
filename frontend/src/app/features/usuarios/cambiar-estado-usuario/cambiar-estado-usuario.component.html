@@ -1,0 +1,73 @@
+<section aria-labelledby="titulo-cambiar-estado">
+  <h1 id="titulo-cambiar-estado">
+    Cambiar estado de usuario
+  </h1>
+
+  <a routerLink="/usuarios">Volver a usuarios</a>
+
+  @if (cargandoUsuario()) {
+    <p role="status" aria-live="polite">Consultando usuario...</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert" aria-live="polite">{{ mensajeError() }}</p>
+  }
+
+  @if (mensajeAviso()) {
+    <p role="status" aria-live="polite">{{ mensajeAviso() }}</p>
+  }
+
+  @if (usuario(); as usuarioConsultado) {
+    <p>Identificador: {{ usuarioConsultado.id }}</p>
+    <p>Usuario: {{ obtenerNombreCompleto(usuarioConsultado) }}</p>
+    <p>Correo: {{ usuarioConsultado.correo }}</p>
+    <p>Rol: {{ usuarioConsultado.rol?.nombre || 'Sin rol' }}</p>
+    <p>Estado actual: {{ obtenerEtiquetaEstado(usuarioConsultado.estado) }}</p>
+
+    @if (esUsuarioActual()) {
+      <p role="status" aria-live="polite">
+        No puede modificar el estado de su propio usuario.
+      </p>
+    } @else {
+      <form
+        [formGroup]="formularioEstado"
+        (ngSubmit)="guardarEstado()"
+        novalidate
+      >
+        <div>
+          <label for="nuevoEstado">Nuevo estado</label>
+          <select
+            id="nuevoEstado"
+            formControlName="nuevoEstado"
+            [attr.aria-invalid]="formularioEstado.controls.nuevoEstado.invalid"
+            aria-describedby="error-nuevo-estado"
+          >
+            <option value="">Seleccione un estado</option>
+            <option [value]="ESTADOS_USUARIO.ACTIVO">Activo</option>
+            <option [value]="ESTADOS_USUARIO.BLOQUEADO">Bloqueado</option>
+            <option [value]="ESTADOS_USUARIO.INACTIVO">Inactivo</option>
+          </select>
+          @if (
+            formularioEstado.controls.nuevoEstado.touched &&
+            formularioEstado.controls.nuevoEstado.hasError('required')
+          ) {
+            <p id="error-nuevo-estado" role="alert">Seleccione un estado.</p>
+          }
+        </div>
+
+        <p>
+          Al bloquear o inactivar un usuario, sus sesiones activas serán cerradas.
+        </p>
+
+        <button type="submit" [disabled]="!puedeGuardar()">
+          @if (actualizandoEstado()) {
+            Guardando estado...
+          } @else {
+            Guardar estado
+          }
+        </button>
+        <a routerLink="/usuarios">Cancelar</a>
+      </form>
+    }
+  }
+</section>
