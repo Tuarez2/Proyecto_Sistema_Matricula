@@ -155,6 +155,9 @@
           <th scope="col">Inicio de matrícula</th>
           <th scope="col">Fin de matrícula</th>
           <th scope="col">Estado</th>
+          @if (esAdministrador()) {
+            <th scope="col">Acciones</th>
+          }
         </tr>
       </thead>
       <tbody>
@@ -167,6 +170,19 @@
             <td>{{ periodo.fecha_inicio_matricula }}</td>
             <td>{{ periodo.fecha_fin_matricula }}</td>
             <td>{{ obtenerEtiquetaEstado(periodo.estado) }}</td>
+            @if (esAdministrador()) {
+              <td>
+                <a
+                  [routerLink]="[
+                    '/periodos-academicos',
+                    periodo.id,
+                    'editar'
+                  ]"
+                >
+                  Editar
+                </a>
+              </td>
+            }
           </tr>
         }
       </tbody>

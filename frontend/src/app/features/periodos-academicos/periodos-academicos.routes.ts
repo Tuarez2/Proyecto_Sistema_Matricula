@@ -19,6 +19,17 @@ export const rutasPeriodosAcademicos: Routes = [
     title: 'Crear periodo académico',
   },
   {
+    path: ':id/editar',
+    loadComponent: () =>
+      import('./editar-periodo/editar-periodo.component')
+        .then((modulo) => modulo.EditarPeriodoComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
+    },
+    title: 'Editar periodo académico',
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./listado-periodos/listado-periodos.component')

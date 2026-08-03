@@ -500,7 +500,7 @@ describe('ListadoPeriodosComponent', () => {
     );
   });
 
-  it('no existe columna Acciones', () => {
+  it('sin usuario no existe columna Acciones', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
@@ -589,11 +589,144 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerEnlace('Crear periodo')).toBeTruthy();
   });
 
-  it('no existe Editar', () => {
+  it('ADMIN ve columna Acciones', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('Acciones');
+  });
+
+  it('ADMIN ve un enlace Editar por periodo', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearPeriodo({ id: 1 }),
+        crearPeriodo({ id: 2 }),
+      ],
+      total: 2,
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlaces('Editar')).toHaveLength(2);
+  });
+
+  it('el enlace Editar contiene el ID correcto', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 15 })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Editar')?.getAttribute('href')).toContain('15');
+  });
+
+  it('el enlace Editar apunta a periodos academicos id editar', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 15 })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Editar')?.getAttribute('href')).toBe(
+      '/periodos-academicos/15/editar',
+    );
+  });
+
+  it('varios periodos generan enlaces de edicion diferentes', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearPeriodo({ id: 15 }),
+        crearPeriodo({ id: 16 }),
+      ],
+      total: 2,
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlaces('Editar').map((enlace) => enlace.getAttribute('href')))
+      .toEqual([
+        '/periodos-academicos/15/editar',
+        '/periodos-academicos/16/editar',
+      ]);
+  });
+
+  it.each([
+    'GESTOR_MATRICULA',
+    'ESTUDIANTE',
+    'DOCENTE',
+  ])('%s no ve Acciones', (codigoRol) => {
+    usuarioActual.set(crearUsuarioConRol(codigoRol));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Acciones');
+    expect(obtenerEnlace('Editar')).toBeNull();
+  });
+
+  it('usuario sin rol no ve Acciones', () => {
+    usuarioActual.set(crearUsuario({ rol: null }));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Acciones');
+    expect(obtenerEnlace('Editar')).toBeNull();
+  });
+
+  it('sin usuario no ve Acciones', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
     expect(obtenerTexto()).not.toContain('Editar');
+    expect(obtenerTexto()).not.toContain('Acciones');
+  });
+
+  it('la columna Acciones aparece si la sesion cambia a ADMIN', () => {
+    iniciarYCompletar();
+    expect(obtenerTexto()).not.toContain('Acciones');
+
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('Acciones');
+    expect(obtenerEnlace('Editar')).toBeTruthy();
+  });
+
+  it('la columna Acciones desaparece si la sesion cambia a otro rol', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    expect(obtenerTexto()).toContain('Acciones');
+
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Acciones');
+    expect(obtenerEnlace('Editar')).toBeNull();
+  });
+
+  it('Crear periodo continua visible para ADMIN con Acciones', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerTexto()).toContain('Acciones');
+  });
+
+  it('no existe enlace Cambiar estado', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Cambiar estado');
+  });
+
+  it('no existe boton Eliminar', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Eliminar')).toBeNull();
   });
 
   it('no existe Cambiar estado', () => {
@@ -669,6 +802,14 @@ describe('ListadoPeriodosComponent', () => {
     ) as HTMLAnchorElement[];
 
     return enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null;
+  }
+
+  function obtenerEnlaces(texto: string): HTMLAnchorElement[] {
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('a'),
+    ) as HTMLAnchorElement[];
+
+    return enlaces.filter((enlace) => enlace.textContent?.includes(texto));
   }
 
   function obtenerTexto(): string {

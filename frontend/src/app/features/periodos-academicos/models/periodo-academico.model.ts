@@ -43,6 +43,15 @@ export interface CrearPeriodoAcademicoSolicitud {
   fecha_fin_matricula: string;
 }
 
+export interface ActualizarPeriodoAcademicoSolicitud {
+  codigo?: string;
+  nombre?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  fecha_inicio_matricula?: string;
+  fecha_fin_matricula?: string;
+}
+
 export interface RespuestaListadoPeriodos
   extends RespuestaApi<PeriodoAcademico[]> {
   page: number;

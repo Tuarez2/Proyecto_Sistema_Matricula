@@ -7,6 +7,7 @@ import { guardRoles } from '../../core/guards/roles.guard';
 import type { UsuarioAutenticado } from '../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
 import { CrearPeriodoComponent } from './crear-periodo/crear-periodo.component';
+import { EditarPeriodoComponent } from './editar-periodo/editar-periodo.component';
 import { ListadoPeriodosComponent } from './listado-periodos/listado-periodos.component';
 import { rutasPeriodosAcademicos } from './periodos-academicos.routes';
 
@@ -37,16 +38,12 @@ describe('rutasPeriodosAcademicos', () => {
     expect(obtenerRutaRaiz().data).toBeUndefined();
   });
 
-  it('contiene solo nuevo y listado', () => {
+  it('contiene nuevo, edicion y listado', () => {
     expect(rutasPeriodosAcademicos.map((ruta) => ruta.path)).toEqual([
       'nuevo',
+      ':id/editar',
       '',
     ]);
-  });
-
-  it('no contiene edicion', () => {
-    expect(rutasPeriodosAcademicos.some((ruta) => ruta.path?.includes('editar')))
-      .toBe(false);
   });
 
   it('no contiene cambio de estado', () => {
@@ -127,13 +124,80 @@ describe('rutasPeriodosAcademicos', () => {
     expect(ejecutarGuardRutaNuevo()).toBe(true);
   });
 
-  it('no existe ruta de edicion', () => {
-    expect(rutasPeriodosAcademicos.some((ruta) => ruta.path?.includes('editar')))
-      .toBe(false);
+  it('existe ruta de edicion', () => {
+    expect(obtenerRutaEditar().path).toBe(':id/editar');
+  });
+
+  it('la ruta edicion esta despues de nuevo', () => {
+    expect(rutasPeriodosAcademicos.indexOf(obtenerRutaEditar())).toBeGreaterThan(
+      rutasPeriodosAcademicos.indexOf(obtenerRutaNuevo()),
+    );
+  });
+
+  it('la ruta edicion esta antes de la ruta vacia', () => {
+    expect(rutasPeriodosAcademicos.indexOf(obtenerRutaEditar())).toBeLessThan(
+      rutasPeriodosAcademicos.indexOf(obtenerRutaRaiz()),
+    );
+  });
+
+  it('la ruta edicion utiliza loadComponent', () => {
+    expect(obtenerRutaEditar().loadComponent).toBeDefined();
+  });
+
+  it('la ruta edicion carga EditarPeriodoComponent', async () => {
+    const componente = await obtenerRutaEditar().loadComponent?.();
+
+    expect(componente).toBe(EditarPeriodoComponent);
+  });
+
+  it('la ruta edicion tiene titulo Editar periodo academico', () => {
+    expect(obtenerRutaEditar().title).toBe('Editar periodo académico');
+  });
+
+  it('la ruta edicion utiliza guardRoles', () => {
+    expect(obtenerRutaEditar().canActivate).toEqual([guardRoles]);
+  });
+
+  it('la ruta edicion permite unicamente ADMIN', () => {
+    expect(obtenerRutaEditar().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+    ]);
+  });
+
+  it('la ruta edicion usa CLAVE_ROLES_PERMITIDOS', () => {
+    expect(Object.keys(obtenerRutaEditar().data ?? {})).toContain(
+      CLAVE_ROLES_PERMITIDOS,
+    );
+  });
+
+  it('ADMIN puede editar', () => {
+    configurarAutenticacion('ADMIN');
+
+    expect(ejecutarGuardRutaEditar()).toBe(true);
+  });
+
+  it.each([
+    'GESTOR_MATRICULA',
+    'ESTUDIANTE',
+    'DOCENTE',
+  ])('%s no puede editar', (codigoRol) => {
+    configurarAutenticacion(codigoRol);
+
+    expect(ejecutarGuardRutaEditar()).toBe(false);
+  });
+
+  it('la ruta nuevo no se interpreta como ID', () => {
+    expect(rutasPeriodosAcademicos[0]).toBe(obtenerRutaNuevo());
+    expect(rutasPeriodosAcademicos[1]).toBe(obtenerRutaEditar());
   });
 
   it('no existe ruta de transicion', () => {
     expect(rutasPeriodosAcademicos.some((ruta) => ruta.path?.includes('transicion')))
+      .toBe(false);
+  });
+
+  it('no existe ruta de eliminacion', () => {
+    expect(rutasPeriodosAcademicos.some((ruta) => ruta.path?.includes('eliminar')))
       .toBe(false);
   });
 });
@@ -155,6 +219,18 @@ function obtenerRutaNuevo() {
 
   if (!ruta) {
     throw new Error('No existe la ruta nuevo de periodos academicos.');
+  }
+
+  return ruta;
+}
+
+function obtenerRutaEditar() {
+  const ruta = rutasPeriodosAcademicos.find(
+    (rutaActual) => rutaActual.path === ':id/editar',
+  );
+
+  if (!ruta) {
+    throw new Error('No existe la ruta editar de periodos academicos.');
   }
 
   return ruta;
@@ -195,6 +271,19 @@ function ejecutarGuardRutaNuevo(): boolean {
     guardRoles(
       ruta,
       { url: '/periodos-academicos/nuevo' } as RouterStateSnapshot,
+    ),
+  ) as boolean;
+}
+
+function ejecutarGuardRutaEditar(): boolean {
+  const ruta = new ActivatedRouteSnapshot();
+
+  ruta.data = obtenerRutaEditar().data ?? {};
+
+  return TestBed.runInInjectionContext(() =>
+    guardRoles(
+      ruta,
+      { url: '/periodos-academicos/15/editar' } as RouterStateSnapshot,
     ),
   ) as boolean;
 }

@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
+  ActualizarPeriodoAcademicoSolicitud,
   CrearPeriodoAcademicoSolicitud,
   FiltrosListadoPeriodos,
   PeriodoAcademico,
@@ -563,6 +564,307 @@ describe('PeriodosAcademicosService', () => {
       .flush(crearRespuestaPeriodo());
     await promesaRespuesta;
   });
+
+  it('obtenerPeriodoPorId ejecuta GET periodo academico por id', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.method).toBe('GET');
+    solicitud.flush(crearRespuestaPeriodo(crearPeriodo({ id: 15 })));
+    await promesaRespuesta;
+  });
+
+  it('obtenerPeriodoPorId no agrega parametros', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.params.keys()).toEqual([]);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('obtenerPeriodoPorId devuelve el periodo', async () => {
+    const periodo = crearPeriodo({ id: 15, codigo: '2027-1' });
+    const respuesta = crearRespuestaPeriodo(periodo);
+    const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15'))
+      .flush(respuesta);
+
+    await expect(promesaRespuesta).resolves.toEqual(respuesta);
+  });
+
+  it('obtenerPeriodoPorId conserva sus fechas', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15')).flush(
+      crearRespuestaPeriodo(crearPeriodo({
+        fecha_inicio: '2027-01-01',
+        fecha_fin: '2027-06-30',
+        fecha_inicio_matricula: '2027-01-01T08:00:00.000Z',
+        fecha_fin_matricula: '2027-01-31T23:00:00.000Z',
+      })),
+    );
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.fecha_inicio).toBe('2027-01-01');
+    expect(respuesta.data?.fecha_fin).toBe('2027-06-30');
+    expect(respuesta.data?.fecha_inicio_matricula)
+      .toBe('2027-01-01T08:00:00.000Z');
+    expect(respuesta.data?.fecha_fin_matricula)
+      .toBe('2027-01-31T23:00:00.000Z');
+  });
+
+  it('obtenerPeriodoPorId conserva el estado', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15')).flush(
+      crearRespuestaPeriodo(crearPeriodo({ estado: 'en_curso' })),
+    );
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.estado).toBe('en_curso');
+  });
+
+  it('obtenerPeriodoPorId tolera cursos en la respuesta', async () => {
+    type PeriodoConCursos = PeriodoAcademico & { cursos: [] };
+    const periodo: PeriodoConCursos = {
+      ...crearPeriodo({ id: 15 }),
+      cursos: [],
+    };
+    const respuesta: RespuestaPeriodoAcademico & { data: PeriodoConCursos } = {
+      success: true,
+      data: periodo,
+    };
+    const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15'))
+      .flush(respuesta);
+
+    await expect(promesaRespuesta).resolves.toEqual(respuesta);
+  });
+
+  it.each([403, 404])(
+    'obtenerPeriodoPorId propaga error %s',
+    async (estadoHttp) => {
+      const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+      controladorHttp
+        .expectOne(obtenerUrlApi('periodos-academicos/15'))
+        .flush({}, { status: estadoHttp, statusText: 'Error' });
+
+      await expect(promesaRespuesta).rejects.toBeTruthy();
+    },
+  );
+
+  it('obtenerPeriodoPorId no agrega Authorization manualmente', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.headers.has('Authorization')).toBe(false);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('obtenerPeriodoPorId no realiza solicitudes adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerPeriodoPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15'))
+      .flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('actualizarPeriodo ejecuta PUT periodo academico por id', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, crearSolicitudActualizacion()),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.method).toBe('PUT');
+    solicitud.flush(crearRespuestaPeriodo(crearPeriodo({ id: 15 })));
+    await promesaRespuesta;
+  });
+
+  it('actualizarPeriodo envia solamente nombre', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, { nombre: 'Periodo actualizado' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.body).toEqual({ nombre: 'Periodo actualizado' });
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('actualizarPeriodo envia solamente codigo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, { codigo: '2027-2' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.body).toEqual({ codigo: '2027-2' });
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('actualizarPeriodo envia solamente una fecha modificada', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, { fecha_inicio: '2027-01-02' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.body).toEqual({ fecha_inicio: '2027-01-02' });
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('actualizarPeriodo envia todos los campos editables juntos', async () => {
+    const solicitudActualizacion = crearSolicitudActualizacion();
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, solicitudActualizacion),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.body).toEqual(solicitudActualizacion);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it.each([
+    'estado',
+    'id',
+    'created_at',
+    'updated_at',
+    'cursos',
+  ])('actualizarPeriodo no envia %s', async (propiedad) => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, crearSolicitudActualizacion()),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(propiedad in solicitud.request.body).toBe(false);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('actualizarPeriodo conserva fechas ISO exactamente', async () => {
+    const solicitudActualizacion = crearSolicitudActualizacion({
+      fecha_inicio_matricula: '2027-01-01T08:30:00.000Z',
+      fecha_fin_matricula: '2027-01-31T23:45:00.000Z',
+    });
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, solicitudActualizacion),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.body).toEqual(solicitudActualizacion);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('actualizarPeriodo no modifica la solicitud recibida', async () => {
+    const solicitudActualizacion = crearSolicitudActualizacion({
+      codigo: '  2027-2  ',
+      nombre: '  Periodo   actualizado  ',
+    });
+    const solicitudOriginal = { ...solicitudActualizacion };
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, solicitudActualizacion),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15'))
+      .flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+
+    expect(solicitudActualizacion).toEqual(solicitudOriginal);
+  });
+
+  it('actualizarPeriodo devuelve el periodo actualizado', async () => {
+    const periodo = crearPeriodo({
+      id: 15,
+      nombre: 'Primer periodo 2027 actualizado',
+    });
+    const respuesta = crearRespuestaPeriodo(periodo);
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, { nombre: periodo.nombre }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15'))
+      .flush(respuesta);
+
+    await expect(promesaRespuesta).resolves.toEqual(respuesta);
+  });
+
+  it.each([400, 403, 404, 409, 429, 500])(
+    'actualizarPeriodo propaga error %s',
+    async (estadoHttp) => {
+      const promesaRespuesta = firstValueFrom(
+        servicio.actualizarPeriodo(15, crearSolicitudActualizacion()),
+      );
+
+      controladorHttp
+        .expectOne(obtenerUrlApi('periodos-academicos/15'))
+        .flush({}, { status: estadoHttp, statusText: 'Error' });
+
+      await expect(promesaRespuesta).rejects.toBeTruthy();
+    },
+  );
+
+  it('actualizarPeriodo no agrega Authorization manualmente', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, crearSolicitudActualizacion()),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15'),
+    );
+
+    expect(solicitud.request.headers.has('Authorization')).toBe(false);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('actualizarPeriodo no realiza solicitudes adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarPeriodo(15, crearSolicitudActualizacion()),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15'))
+      .flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
 });
 
 function crearPeriodo(
@@ -603,6 +905,20 @@ function crearSolicitudPeriodo(
   return {
     codigo: '2027-1',
     nombre: 'Primer periodo 2027',
+    fecha_inicio: '2027-01-01',
+    fecha_fin: '2027-06-30',
+    fecha_inicio_matricula: '2027-01-01T08:00:00.000Z',
+    fecha_fin_matricula: '2027-01-31T23:00:00.000Z',
+    ...parcial,
+  };
+}
+
+function crearSolicitudActualizacion(
+  parcial: Partial<ActualizarPeriodoAcademicoSolicitud> = {},
+): ActualizarPeriodoAcademicoSolicitud {
+  return {
+    codigo: '2027-1',
+    nombre: 'Primer periodo 2027 actualizado',
     fecha_inicio: '2027-01-01',
     fecha_fin: '2027-06-30',
     fecha_inicio_matricula: '2027-01-01T08:00:00.000Z',
