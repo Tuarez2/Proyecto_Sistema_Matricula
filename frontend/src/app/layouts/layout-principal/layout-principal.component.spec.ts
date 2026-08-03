@@ -89,6 +89,32 @@ describe('LayoutPrincipalComponent', () => {
     expect(obtenerEnlace('Usuarios')).toBeTruthy();
   });
 
+  it('existe enlace Periodos académicos', () => {
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Periodos académicos')).toBeTruthy();
+  });
+
+  it('el enlace Periodos académicos apunta a /periodos-academicos', () => {
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Periodos académicos')?.getAttribute('href')).toBe(
+      '/periodos-academicos',
+    );
+  });
+
+  it.each([
+    'ADMIN',
+    'GESTOR_MATRICULA',
+    'ESTUDIANTE',
+    'DOCENTE',
+  ])('%s puede ver Periodos académicos', (codigoRol) => {
+    usuarioActual.set(crearUsuarioConRol(codigoRol));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Periodos académicos')).toBeTruthy();
+  });
+
   it('el enlace Usuarios apunta a /usuarios', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     fixture.detectChanges();
@@ -158,6 +184,29 @@ describe('LayoutPrincipalComponent', () => {
     fixture.detectChanges();
 
     expect(obtenerEnlace('Inicio')).toBeTruthy();
+  });
+
+  it('el comportamiento del enlace Usuarios continua igual', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+    expect(obtenerEnlace('Usuarios')).toBeTruthy();
+
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeNull();
+  });
+
+  it('no existen enlaces de creacion de periodos', () => {
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeNull();
+  });
+
+  it('no existen enlaces de transicion de periodos', () => {
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeNull();
   });
 
   it('existe un main', () => {

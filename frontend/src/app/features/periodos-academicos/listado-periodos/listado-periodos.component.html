@@ -1,0 +1,190 @@
+<section aria-labelledby="titulo-periodos">
+  <h1 id="titulo-periodos">Periodos académicos</h1>
+
+  <form
+    [formGroup]="formularioFiltros"
+    (ngSubmit)="buscarPeriodos()"
+    novalidate
+  >
+    <div>
+      <label for="codigo">Código</label>
+      <input
+        id="codigo"
+        type="search"
+        formControlName="codigo"
+        maxlength="20"
+        [attr.aria-invalid]="formularioFiltros.controls.codigo.invalid"
+        aria-describedby="error-codigo"
+      />
+      @if (
+        formularioFiltros.controls.codigo.touched &&
+        formularioFiltros.controls.codigo.hasError('maxlength')
+      ) {
+        <p id="error-codigo" role="alert">El código no puede superar 20 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="nombre">Nombre</label>
+      <input
+        id="nombre"
+        type="search"
+        formControlName="nombre"
+        maxlength="100"
+        [attr.aria-invalid]="formularioFiltros.controls.nombre.invalid"
+        aria-describedby="error-nombre"
+      />
+      @if (
+        formularioFiltros.controls.nombre.touched &&
+        formularioFiltros.controls.nombre.hasError('maxlength')
+      ) {
+        <p id="error-nombre" role="alert">El nombre no puede superar 100 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="estado">Estado</label>
+      <select id="estado" formControlName="estado">
+        <option value="">Todos los estados</option>
+        <option [value]="ESTADOS_PERIODO_ACADEMICO.PLANIFICADO">Planificado</option>
+        <option [value]="ESTADOS_PERIODO_ACADEMICO.MATRICULA_ABIERTA">
+          Matrícula abierta
+        </option>
+        <option [value]="ESTADOS_PERIODO_ACADEMICO.EN_CURSO">En curso</option>
+        <option [value]="ESTADOS_PERIODO_ACADEMICO.CERRADO">Cerrado</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="anio">Año</label>
+      <input
+        id="anio"
+        type="number"
+        formControlName="anio"
+        min="1900"
+        max="2200"
+        step="1"
+        [attr.aria-invalid]="formularioFiltros.controls.anio.invalid"
+        aria-describedby="error-anio"
+      />
+      @if (
+        formularioFiltros.controls.anio.touched &&
+        formularioFiltros.controls.anio.hasError('min')
+      ) {
+        <p id="error-anio" role="alert">El año debe ser mayor o igual a 1900.</p>
+      }
+      @if (
+        formularioFiltros.controls.anio.touched &&
+        formularioFiltros.controls.anio.hasError('max')
+      ) {
+        <p id="error-anio" role="alert">El año debe ser menor o igual a 2200.</p>
+      }
+      @if (
+        formularioFiltros.controls.anio.touched &&
+        formularioFiltros.controls.anio.hasError('anioDecimal')
+      ) {
+        <p id="error-anio" role="alert">El año debe ser un entero.</p>
+      }
+    </div>
+
+    <div>
+      <label for="fechaInicio">Fecha de inicio</label>
+      <input
+        id="fechaInicio"
+        type="date"
+        formControlName="fechaInicio"
+        [attr.aria-invalid]="formularioFiltros.hasError('rangoFechasInvalido')"
+        aria-describedby="error-rango-fechas"
+      />
+    </div>
+
+    <div>
+      <label for="fechaFin">Fecha de fin</label>
+      <input
+        id="fechaFin"
+        type="date"
+        formControlName="fechaFin"
+        [attr.aria-invalid]="formularioFiltros.hasError('rangoFechasInvalido')"
+        aria-describedby="error-rango-fechas"
+      />
+      @if (
+        formularioFiltros.controls.fechaFin.touched &&
+        formularioFiltros.hasError('rangoFechasInvalido')
+      ) {
+        <p id="error-rango-fechas" role="alert">
+          La fecha de inicio no puede ser posterior a la fecha de fin.
+        </p>
+      }
+    </div>
+
+    <button type="submit" [disabled]="cargandoPeriodos()">Buscar</button>
+    <button
+      type="button"
+      [disabled]="cargandoPeriodos()"
+      (click)="limpiarFiltros()"
+    >
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (cargandoPeriodos()) {
+    <p role="status" aria-live="polite">Consultando periodos académicos...</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargandoPeriodos() && !mensajeError() && periodos().length === 0) {
+    <p>No se encontraron periodos académicos.</p>
+  }
+
+  @if (periodos().length > 0) {
+    <table>
+      <caption>Listado de periodos académicos</caption>
+      <thead>
+        <tr>
+          <th scope="col">Código</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Inicio del periodo</th>
+          <th scope="col">Fin del periodo</th>
+          <th scope="col">Inicio de matrícula</th>
+          <th scope="col">Fin de matrícula</th>
+          <th scope="col">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (periodo of periodos(); track periodo.id) {
+          <tr>
+            <td>{{ periodo.codigo }}</td>
+            <td>{{ periodo.nombre }}</td>
+            <td>{{ periodo.fecha_inicio }}</td>
+            <td>{{ periodo.fecha_fin }}</td>
+            <td>{{ periodo.fecha_inicio_matricula }}</td>
+            <td>{{ periodo.fecha_fin_matricula }}</td>
+            <td>{{ obtenerEtiquetaEstado(periodo.estado) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <nav aria-label="Paginación de periodos académicos">
+    <p>Página {{ totalPaginas() === 0 ? 0 : paginaActual() }} de {{ totalPaginas() }}</p>
+    <p>Total de periodos: {{ totalPeriodos() }}</p>
+    <button
+      type="button"
+      [disabled]="!puedeIrPaginaAnterior() || cargandoPeriodos()"
+      (click)="paginaAnterior()"
+    >
+      Anterior
+    </button>
+    <button
+      type="button"
+      [disabled]="!puedeIrPaginaSiguiente() || cargandoPeriodos()"
+      (click)="paginaSiguiente()"
+    >
+      Siguiente
+    </button>
+  </nav>
+</section>

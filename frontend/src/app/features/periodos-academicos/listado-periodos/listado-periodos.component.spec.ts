@@ -1,0 +1,607 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Observable, Subject } from 'rxjs';
+
+import type {
+  FiltrosListadoPeriodos,
+  PeriodoAcademico,
+  RespuestaListadoPeriodos,
+} from '../models/periodo-academico.model';
+import { PeriodosAcademicosService } from '../services/periodos-academicos.service';
+import { ListadoPeriodosComponent } from './listado-periodos.component';
+
+interface PeriodosAcademicosServiceMock {
+  listarPeriodos: ReturnType<
+    typeof vi.fn<
+      (filtros?: FiltrosListadoPeriodos) => Observable<RespuestaListadoPeriodos>
+    >
+  >;
+}
+
+describe('ListadoPeriodosComponent', () => {
+  let fixture: ComponentFixture<ListadoPeriodosComponent>;
+  let componente: ListadoPeriodosComponent;
+  let periodosAcademicosService: PeriodosAcademicosServiceMock;
+  let solicitudesPeriodos: Subject<RespuestaListadoPeriodos>[];
+
+  beforeEach(async () => {
+    solicitudesPeriodos = [];
+    periodosAcademicosService = {
+      listarPeriodos: vi.fn(() => {
+        const solicitud = new Subject<RespuestaListadoPeriodos>();
+        solicitudesPeriodos.push(solicitud);
+        return solicitud.asObservable();
+      }),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ListadoPeriodosComponent],
+      providers: [
+        {
+          provide: PeriodosAcademicosService,
+          useValue: periodosAcademicosService,
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ListadoPeriodosComponent);
+    componente = fixture.componentInstance;
+  });
+
+  it('crea el componente', () => {
+    expect(componente).toBeTruthy();
+  });
+
+  it('consulta periodos al iniciar', () => {
+    iniciarComponente();
+
+    expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(1);
+  });
+
+  it('usa pagina 1 al iniciar', () => {
+    iniciarComponente();
+
+    expect(obtenerUltimosFiltros()?.pagina).toBe(1);
+  });
+
+  it('usa limite 10 al iniciar', () => {
+    iniciarComponente();
+
+    expect(obtenerUltimosFiltros()?.limite).toBe(10);
+  });
+
+  it('el formulario inicia vacio', () => {
+    expect(componente.formularioFiltros.getRawValue()).toEqual({
+      codigo: '',
+      nombre: '',
+      estado: '',
+      anio: '',
+      fechaInicio: '',
+      fechaFin: '',
+    });
+  });
+
+  it('envia codigo', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+    componente.formularioFiltros.patchValue({ codigo: '2026-1' });
+
+    componente.buscarPeriodos();
+
+    expect(obtenerUltimosFiltros()?.codigo).toBe('2026-1');
+  });
+
+  it('envia nombre', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+    componente.formularioFiltros.patchValue({ nombre: 'Primer periodo' });
+
+    componente.buscarPeriodos();
+
+    expect(obtenerUltimosFiltros()?.nombre).toBe('Primer periodo');
+  });
+
+  it('envia estado', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+    componente.formularioFiltros.patchValue({ estado: 'en_curso' });
+
+    componente.buscarPeriodos();
+
+    expect(obtenerUltimosFiltros()?.estado).toBe('en_curso');
+  });
+
+  it('convierte anio a numero', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+    componente.formularioFiltros.patchValue({ anio: '2026' });
+
+    componente.buscarPeriodos();
+
+    expect(obtenerUltimosFiltros()?.anio).toBe(2026);
+  });
+
+  it('envia fecha inicial', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+    componente.formularioFiltros.patchValue({ fechaInicio: '2026-01-05' });
+
+    componente.buscarPeriodos();
+
+    expect(obtenerUltimosFiltros()?.fechaInicio).toBe('2026-01-05');
+  });
+
+  it('envia fecha final', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+    componente.formularioFiltros.patchValue({ fechaFin: '2026-06-30' });
+
+    componente.buscarPeriodos();
+
+    expect(obtenerUltimosFiltros()?.fechaFin).toBe('2026-06-30');
+  });
+
+  it('omite valores vacios', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+    componente.formularioFiltros.patchValue({
+      codigo: '   ',
+      nombre: '',
+      estado: '',
+      anio: '',
+      fechaInicio: '',
+      fechaFin: '',
+    });
+
+    componente.buscarPeriodos();
+
+    expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('buscar reinicia pagina', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 2, totalPages: 3 }));
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.buscarPeriodos();
+
+    expect(obtenerUltimosFiltros()?.pagina).toBe(1);
+  });
+
+  it('codigo maximo 20', () => {
+    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) });
+
+    expect(componente.formularioFiltros.controls.codigo.invalid).toBe(true);
+  });
+
+  it('nombre maximo 100', () => {
+    componente.formularioFiltros.patchValue({ nombre: 'a'.repeat(101) });
+
+    expect(componente.formularioFiltros.controls.nombre.invalid).toBe(true);
+  });
+
+  it('anio minimo 1900', () => {
+    componente.formularioFiltros.patchValue({ anio: '1899' });
+
+    expect(componente.formularioFiltros.controls.anio.hasError('min')).toBe(true);
+  });
+
+  it('anio maximo 2200', () => {
+    componente.formularioFiltros.patchValue({ anio: '2201' });
+
+    expect(componente.formularioFiltros.controls.anio.hasError('max')).toBe(true);
+  });
+
+  it('rechaza decimales', () => {
+    componente.formularioFiltros.patchValue({ anio: '2026.5' });
+
+    expect(componente.formularioFiltros.controls.anio.hasError('anioDecimal'))
+      .toBe(true);
+  });
+
+  it('rechaza rango de fechas invertido', () => {
+    componente.formularioFiltros.patchValue({
+      fechaInicio: '2026-06-30',
+      fechaFin: '2026-01-05',
+    });
+
+    expect(componente.formularioFiltros.hasError('rangoFechasInvalido'))
+      .toBe(true);
+  });
+
+  it('formulario invalido no consulta', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) });
+
+    componente.buscarPeriodos();
+
+    expect(periodosAcademicosService.listarPeriodos).not.toHaveBeenCalled();
+  });
+
+  it('limpiar filtros vuelve a consultar', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.limpiarFiltros();
+
+    expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(1);
+  });
+
+  it('limpiar conserva limite', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.limpiarFiltros();
+
+    expect(obtenerUltimosFiltros()?.limite).toBe(10);
+  });
+
+  it('guarda la lista', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 2 })],
+    }));
+
+    expect(componente.periodos()[0]?.id).toBe(2);
+  });
+
+  it('guarda paginacion', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      page: 2,
+      limit: 10,
+      total: 11,
+      totalPages: 2,
+    }));
+
+    expect(componente.paginaActual()).toBe(2);
+    expect(componente.limitePorPagina()).toBe(10);
+    expect(componente.totalPeriodos()).toBe(11);
+    expect(componente.totalPaginas()).toBe(2);
+  });
+
+  it('conserva orden recibido', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearPeriodo({ id: 3, codigo: '2026-2' }),
+        crearPeriodo({ id: 1, codigo: '2026-1' }),
+      ],
+    }));
+
+    expect(componente.periodos().map((periodo) => periodo.id)).toEqual([3, 1]);
+  });
+
+  it('muestra todos los estados', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearPeriodo({ id: 1, estado: 'planificado' }),
+        crearPeriodo({ id: 2, estado: 'matricula_abierta' }),
+        crearPeriodo({ id: 3, estado: 'en_curso' }),
+        crearPeriodo({ id: 4, estado: 'cerrado' }),
+      ],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('Planificado');
+    expect(obtenerTexto()).toContain('Matrícula abierta');
+    expect(obtenerTexto()).toContain('En curso');
+    expect(obtenerTexto()).toContain('Cerrado');
+  });
+
+  it('muestra etiqueta Planificado', () => {
+    expect(componente.obtenerEtiquetaEstado('planificado')).toBe('Planificado');
+  });
+
+  it('muestra etiqueta Matricula abierta', () => {
+    expect(componente.obtenerEtiquetaEstado('matricula_abierta'))
+      .toBe('Matrícula abierta');
+  });
+
+  it('muestra etiqueta En curso', () => {
+    expect(componente.obtenerEtiquetaEstado('en_curso')).toBe('En curso');
+  });
+
+  it('muestra etiqueta Cerrado', () => {
+    expect(componente.obtenerEtiquetaEstado('cerrado')).toBe('Cerrado');
+  });
+
+  it('muestra mensaje sin resultados', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('No se encontraron periodos académicos.');
+  });
+
+  it('anterior deshabilitado en pagina 1', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Anterior')?.disabled).toBe(true);
+  });
+
+  it('siguiente deshabilitado en ultima pagina', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 1 }));
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Siguiente')?.disabled).toBe(true);
+  });
+
+  it('siguiente incrementa y consulta', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 2 }));
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.paginaSiguiente();
+
+    expect(obtenerUltimosFiltros()?.pagina).toBe(2);
+  });
+
+  it('anterior decrementa y consulta', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 2, totalPages: 3 }));
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.paginaAnterior();
+
+    expect(obtenerUltimosFiltros()?.pagina).toBe(1);
+  });
+
+  it('no supera total de paginas', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 2, totalPages: 2 }));
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.paginaSiguiente();
+
+    expect(periodosAcademicosService.listarPeriodos).not.toHaveBeenCalled();
+  });
+
+  it('no baja de pagina 1', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 2 }));
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.paginaAnterior();
+
+    expect(periodosAcademicosService.listarPeriodos).not.toHaveBeenCalled();
+  });
+
+  it('no pagina durante carga', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 2 }));
+    componente.paginaSiguiente();
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.paginaSiguiente();
+
+    expect(periodosAcademicosService.listarPeriodos).not.toHaveBeenCalled();
+  });
+
+  it('activa carga', () => {
+    iniciarComponente();
+
+    expect(componente.cargandoPeriodos()).toBe(true);
+  });
+
+  it('desactiva carga al completar', () => {
+    iniciarComponente();
+    completarPeriodos();
+
+    expect(componente.cargandoPeriodos()).toBe(false);
+  });
+
+  it('evita consultas duplicadas', () => {
+    iniciarComponente();
+
+    componente.cargarPeriodos();
+
+    expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    [new HttpErrorResponse({ status: 0 }), 'No fue posible conectar con el servidor.'],
+    [new HttpErrorResponse({ status: 400 }), 'Revise los filtros ingresados.'],
+    [
+      new HttpErrorResponse({ status: 403 }),
+      'No tiene permisos para consultar periodos académicos.',
+    ],
+    [
+      new HttpErrorResponse({ status: 429 }),
+      'Demasiadas solicitudes. Intente nuevamente más tarde.',
+    ],
+    [
+      new HttpErrorResponse({ status: 500 }),
+      'Ocurrió un error en el servidor al consultar los periodos.',
+    ],
+  ])('maneja errores', (error, mensaje) => {
+    iniciarComponente();
+    solicitudesPeriodos[0].error(error);
+
+    expect(componente.mensajeError()).toBe(mensaje);
+    expect(componente.cargandoPeriodos()).toBe(false);
+  });
+
+  it('permite reintentar', () => {
+    iniciarComponente();
+    solicitudesPeriodos[0].error(new HttpErrorResponse({ status: 500 }));
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.buscarPeriodos();
+
+    expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(1);
+  });
+
+  it('no elimina filtros ante error', () => {
+    iniciarYCompletar();
+    componente.formularioFiltros.patchValue({ codigo: '2026-1' });
+    componente.buscarPeriodos();
+    solicitudesPeriodos[solicitudesPeriodos.length - 1].error(
+      new HttpErrorResponse({ status: 500 }),
+    );
+
+    expect(componente.formularioFiltros.controls.codigo.value).toBe('2026-1');
+  });
+
+  it('existe h1', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('h1')?.textContent).toContain('Periodos académicos');
+  });
+
+  it('existe formulario', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('form')).toBeTruthy();
+  });
+
+  it('existen seis filtros', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('input[formControlName="codigo"]')).toBeTruthy();
+    expect(obtenerElemento('input[formControlName="nombre"]')).toBeTruthy();
+    expect(obtenerElemento('select[formControlName="estado"]')).toBeTruthy();
+    expect(obtenerElemento('input[formControlName="anio"]')).toBeTruthy();
+    expect(obtenerElemento('input[formControlName="fechaInicio"]')).toBeTruthy();
+    expect(obtenerElemento('input[formControlName="fechaFin"]')).toBeTruthy();
+  });
+
+  it('existe tabla semantica', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('table')).toBeTruthy();
+    expect(obtenerElemento('th[scope="col"]')).toBeTruthy();
+  });
+
+  it('existe caption', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('caption')?.textContent).toContain(
+      'Listado de periodos académicos',
+    );
+  });
+
+  it('no existe columna Acciones', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Acciones');
+  });
+
+  it('no existe Crear periodo', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Crear periodo');
+  });
+
+  it('no existe Editar', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Editar');
+  });
+
+  it('no existe Cambiar estado', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Cambiar estado');
+  });
+
+  it('existen botones de paginacion', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Anterior')).toBeTruthy();
+    expect(obtenerBoton('Siguiente')).toBeTruthy();
+  });
+
+  it('existe estado de carga accesible', () => {
+    iniciarComponente();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('[role="status"]')?.textContent).toContain(
+      'Consultando periodos académicos...',
+    );
+  });
+
+  it('existe error con role alert', () => {
+    iniciarComponente();
+    solicitudesPeriodos[0].error(new HttpErrorResponse({ status: 500 }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('[role="alert"]')?.textContent).toContain(
+      'Ocurrió un error en el servidor al consultar los periodos.',
+    );
+  });
+
+  function iniciarComponente(): void {
+    fixture.detectChanges();
+  }
+
+  function iniciarYCompletar(respuesta = crearRespuestaListado()): void {
+    iniciarComponente();
+    completarPeriodos(respuesta);
+    fixture.detectChanges();
+  }
+
+  function completarPeriodos(respuesta = crearRespuestaListado()): void {
+    solicitudesPeriodos[solicitudesPeriodos.length - 1].next(respuesta);
+    solicitudesPeriodos[solicitudesPeriodos.length - 1].complete();
+  }
+
+  function obtenerUltimosFiltros(): FiltrosListadoPeriodos | undefined {
+    const llamadas = periodosAcademicosService.listarPeriodos.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
+  }
+
+  function obtenerElemento<T extends Element = Element>(selector: string): T | null {
+    return fixture.nativeElement.querySelector(selector) as T | null;
+  }
+
+  function obtenerBoton(texto: string): HTMLButtonElement | null {
+    const botones = Array.from(
+      fixture.nativeElement.querySelectorAll('button'),
+    ) as HTMLButtonElement[];
+
+    return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function obtenerTexto(): string {
+    return fixture.nativeElement.textContent ?? '';
+  }
+});
+
+function crearPeriodo(
+  parcial: Partial<PeriodoAcademico> = {},
+): PeriodoAcademico {
+  return {
+    id: 1,
+    codigo: '2026-1',
+    nombre: 'Primer periodo 2026',
+    fecha_inicio: '2026-01-05',
+    fecha_fin: '2026-06-30',
+    fecha_inicio_matricula: '2025-12-01T08:00:00.000Z',
+    fecha_fin_matricula: '2025-12-20T23:59:59.000Z',
+    estado: 'planificado',
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    ...parcial,
+  };
+}
+
+function crearRespuestaListado(
+  parcial: Partial<RespuestaListadoPeriodos> = {},
+): RespuestaListadoPeriodos {
+  return {
+    success: true,
+    data: [crearPeriodo()],
+    page: 1,
+    limit: 10,
+    total: 1,
+    totalPages: 1,
+    ...parcial,
+  };
+}

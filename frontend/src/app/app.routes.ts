@@ -29,6 +29,12 @@ export const routes: Routes = [
           import('./features/usuarios/usuarios.routes')
             .then((modulo) => modulo.rutasUsuarios),
       },
+      {
+        path: 'periodos-academicos',
+        loadChildren: () =>
+          import('./features/periodos-academicos/periodos-academicos.routes')
+            .then((modulo) => modulo.rutasPeriodosAcademicos),
+      },
     ],
   },
   {

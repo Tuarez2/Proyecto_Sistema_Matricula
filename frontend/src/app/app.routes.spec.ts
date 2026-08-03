@@ -94,6 +94,28 @@ describe('routes', () => {
     expect(obtenerRutaLayout().children?.some((ruta) => ruta.path === '')).toBe(true);
   });
 
+  it('existe la ruta hija periodos-academicos', () => {
+    expect(obtenerRutaPeriodosAcademicos()).toBeTruthy();
+  });
+
+  it('la ruta periodos-academicos usa loadChildren', () => {
+    expect(obtenerRutaPeriodosAcademicos().loadChildren).toBeDefined();
+  });
+
+  it('la ruta periodos-academicos se encuentra dentro del layout', () => {
+    expect(obtenerRutaLayout().children).toContain(obtenerRutaPeriodosAcademicos());
+  });
+
+  it('la ruta periodos-academicos no altera rutas existentes', () => {
+    expect(obtenerRutaUsuarios()).toBeTruthy();
+    expect(obtenerRutaLayout().children?.some((ruta) => ruta.path === '')).toBe(true);
+  });
+
+  it('la integracion central de periodos no agrega roles', () => {
+    expect(obtenerRutaPeriodosAcademicos().canActivate).toBeUndefined();
+    expect(obtenerRutaPeriodosAcademicos().data).toBeUndefined();
+  });
+
   it('no se crearon ciclos de redireccion', async () => {
     await crearHarness(false, '/');
     const router = TestBed.inject(Router);
@@ -152,6 +174,18 @@ describe('routes', () => {
 
     if (!ruta) {
       throw new Error('No existe ruta de usuarios.');
+    }
+
+    return ruta;
+  }
+
+  function obtenerRutaPeriodosAcademicos() {
+    const ruta = obtenerRutaLayout().children?.find(
+      (rutaActual) => rutaActual.path === 'periodos-academicos',
+    );
+
+    if (!ruta) {
+      throw new Error('No existe ruta de periodos academicos.');
     }
 
     return ruta;
