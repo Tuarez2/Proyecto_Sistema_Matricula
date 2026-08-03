@@ -7,10 +7,12 @@ import { Observable, Subject } from 'rxjs';
 import type { UsuarioAutenticado } from '../../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import type {
+  EstadoPeriodoAcademico,
   FiltrosListadoPeriodos,
   PeriodoAcademico,
   RespuestaListadoPeriodos,
 } from '../models/periodo-academico.model';
+import { TRANSICIONES_PERIODO_ACADEMICO } from '../models/periodo-academico.model';
 import { PeriodosAcademicosService } from '../services/periodos-academicos.service';
 import { ListadoPeriodosComponent } from './listado-periodos.component';
 
@@ -713,12 +715,148 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerTexto()).toContain('Acciones');
   });
 
-  it('no existe enlace Cambiar estado', () => {
+  it('ADMIN ve Cambiar estado en un periodo planificado', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 15, estado: 'planificado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
+  });
+
+  it('Cambiar estado apunta a periodos academicos id estado', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 15, estado: 'planificado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')?.getAttribute('href')).toBe(
+      '/periodos-academicos/15/estado',
+    );
+  });
+
+  it('ADMIN ve Cambiar estado en matricula abierta', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ estado: 'matricula_abierta' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
+  });
+
+  it('ADMIN ve Cambiar estado en curso', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ estado: 'en_curso' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
+  });
+
+  it('no aparece Cambiar estado para periodo cerrado', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ estado: 'cerrado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeNull();
+  });
+
+  it('IDs distintos generan enlaces Cambiar estado diferentes', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearPeriodo({ id: 15, estado: 'planificado' }),
+        crearPeriodo({ id: 16, estado: 'en_curso' }),
+      ],
+      total: 2,
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlaces('Cambiar estado').map((enlace) => enlace.getAttribute('href')))
+      .toEqual([
+        '/periodos-academicos/15/estado',
+        '/periodos-academicos/16/estado',
+      ]);
+  });
+
+  it.each([
+    'GESTOR_MATRICULA',
+    'ESTUDIANTE',
+    'DOCENTE',
+  ])('%s no ve Cambiar estado', (codigoRol) => {
+    usuarioActual.set(crearUsuarioConRol(codigoRol));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ estado: 'planificado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeNull();
+  });
+
+  it('usuario sin rol no ve Cambiar estado', () => {
+    usuarioActual.set(crearUsuario({ rol: null }));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ estado: 'planificado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeNull();
+  });
+
+  it('sin usuario no ve Cambiar estado', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ estado: 'planificado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeNull();
+  });
+
+  it('Cambiar estado aparece al cambiar la sesion a ADMIN', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ estado: 'planificado' })],
+    }));
+    expect(obtenerEnlace('Cambiar estado')).toBeNull();
+
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
+  });
+
+  it('Cambiar estado desaparece al cambiar a otro rol', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ estado: 'planificado' })],
+    }));
+    expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
+
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar estado')).toBeNull();
+  });
+
+  it('el enlace Editar continua existiendo para ADMIN', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerTexto()).not.toContain('Cambiar estado');
+    expect(obtenerEnlace('Editar')).toBeTruthy();
+  });
+
+  it('Crear periodo continua existiendo para ADMIN', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
   });
 
   it('no existe boton Eliminar', () => {
@@ -729,11 +867,13 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerBoton('Eliminar')).toBeNull();
   });
 
-  it('no existe Cambiar estado', () => {
-    iniciarYCompletar();
-    fixture.detectChanges();
-
-    expect(obtenerTexto()).not.toContain('Cambiar estado');
+  it('no duplica el mapa de transiciones', () => {
+    (Object.keys(TRANSICIONES_PERIODO_ACADEMICO) as EstadoPeriodoAcademico[])
+      .forEach((estado) => {
+        expect(componente.tieneTransicionesDisponibles(estado)).toBe(
+          TRANSICIONES_PERIODO_ACADEMICO[estado].length > 0,
+        );
+      });
   });
 
   it('existen botones de paginacion', () => {

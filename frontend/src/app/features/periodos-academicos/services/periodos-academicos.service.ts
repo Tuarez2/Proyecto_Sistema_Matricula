@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
   ActualizarPeriodoAcademicoSolicitud,
+  CambiarEstadoPeriodoAcademicoSolicitud,
   CrearPeriodoAcademicoSolicitud,
   FiltrosListadoPeriodos,
   RespuestaListadoPeriodos,
@@ -54,6 +55,18 @@ export class PeriodosAcademicosService {
     return this.http.put<RespuestaPeriodoAcademico>(
       obtenerUrlApi(`periodos-academicos/${idPeriodo}`),
       solicitud,
+    );
+  }
+
+  cambiarEstadoPeriodo(
+    idPeriodo: number,
+    solicitud: CambiarEstadoPeriodoAcademicoSolicitud,
+  ): Observable<RespuestaPeriodoAcademico> {
+    return this.http.patch<RespuestaPeriodoAcademico>(
+      obtenerUrlApi(`periodos-academicos/${idPeriodo}/estado`),
+      {
+        estado: solicitud.estado,
+      },
     );
   }
 

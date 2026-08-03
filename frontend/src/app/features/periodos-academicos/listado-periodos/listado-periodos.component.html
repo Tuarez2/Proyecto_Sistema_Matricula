@@ -181,6 +181,17 @@
                 >
                   Editar
                 </a>
+                @if (tieneTransicionesDisponibles(periodo.estado)) {
+                  <a
+                    [routerLink]="[
+                      '/periodos-academicos',
+                      periodo.id,
+                      'estado'
+                    ]"
+                  >
+                    Cambiar estado
+                  </a>
+                }
               </td>
             }
           </tr>

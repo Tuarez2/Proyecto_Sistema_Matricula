@@ -9,6 +9,7 @@ import { firstValueFrom } from 'rxjs';
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
   ActualizarPeriodoAcademicoSolicitud,
+  CambiarEstadoPeriodoAcademicoSolicitud,
   CrearPeriodoAcademicoSolicitud,
   FiltrosListadoPeriodos,
   PeriodoAcademico,
@@ -865,6 +866,192 @@ describe('PeriodosAcademicosService', () => {
       .flush(crearRespuestaPeriodo());
     await promesaRespuesta;
   });
+
+  it('cambiarEstadoPeriodo ejecuta PATCH estado del periodo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15/estado'),
+    );
+
+    expect(solicitud.request.method).toBe('PATCH');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoPeriodo utiliza metodo PATCH', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15/estado'),
+    );
+
+    expect(solicitud.request.method).toBe('PATCH');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it.each([
+    'matricula_abierta',
+    'en_curso',
+    'cerrado',
+  ] as const)('cambiarEstadoPeriodo envia estado %s', async (estado) => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15/estado'),
+    );
+
+    expect(solicitud.request.body).toEqual({ estado });
+    solicitud.flush(crearRespuestaPeriodo(crearPeriodo({ estado })));
+    await promesaRespuesta;
+  });
+
+  it.each([
+    'id',
+    'estadoActual',
+    'codigo',
+    'nombre',
+    'fecha_inicio',
+    'fecha_fin',
+    'created_at',
+    'updated_at',
+  ])('cambiarEstadoPeriodo no envia %s', async (propiedad) => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15/estado'),
+    );
+
+    expect(propiedad in solicitud.request.body).toBe(false);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoPeriodo no agrega propiedades adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15/estado'),
+    );
+
+    expect(Object.keys(solicitud.request.body)).toEqual(['estado']);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoPeriodo no modifica la solicitud recibida', async () => {
+    const solicitudCambio = crearSolicitudCambioEstado();
+    const solicitudOriginal = { ...solicitudCambio };
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, solicitudCambio),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15/estado'))
+      .flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+
+    expect(solicitudCambio).toEqual(solicitudOriginal);
+  });
+
+  it('cambiarEstadoPeriodo no agrega Authorization manualmente', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos/15/estado'),
+    );
+
+    expect(solicitud.request.headers.has('Authorization')).toBe(false);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('cambiarEstadoPeriodo devuelve el periodo actualizado', async () => {
+    const periodo = crearPeriodo({ id: 15, estado: 'matricula_abierta' });
+    const respuesta = crearRespuestaPeriodo(periodo);
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15/estado'))
+      .flush(respuesta);
+
+    await expect(promesaRespuesta).resolves.toEqual(respuesta);
+  });
+
+  it('cambiarEstadoPeriodo conserva las fechas', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15/estado'))
+      .flush(crearRespuestaPeriodo(crearPeriodo({
+        fecha_inicio: '2027-01-01',
+        fecha_fin: '2027-06-30',
+        fecha_inicio_matricula: '2027-01-01T08:00:00.000Z',
+        fecha_fin_matricula: '2027-01-31T23:00:00.000Z',
+        estado: 'matricula_abierta',
+      })));
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.fecha_inicio).toBe('2027-01-01');
+    expect(respuesta.data?.fecha_fin).toBe('2027-06-30');
+    expect(respuesta.data?.fecha_inicio_matricula)
+      .toBe('2027-01-01T08:00:00.000Z');
+    expect(respuesta.data?.fecha_fin_matricula)
+      .toBe('2027-01-31T23:00:00.000Z');
+  });
+
+  it('cambiarEstadoPeriodo conserva el estado de la respuesta', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15/estado'))
+      .flush(crearRespuestaPeriodo(crearPeriodo({ estado: 'matricula_abierta' })));
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.estado).toBe('matricula_abierta');
+  });
+
+  it.each([400, 403, 404, 409, 429, 500])(
+    'cambiarEstadoPeriodo propaga error %s',
+    async (estadoHttp) => {
+      const promesaRespuesta = firstValueFrom(
+        servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+      );
+
+      controladorHttp
+        .expectOne(obtenerUrlApi('periodos-academicos/15/estado'))
+        .flush({}, { status: estadoHttp, statusText: 'Error' });
+
+      await expect(promesaRespuesta).rejects.toBeTruthy();
+    },
+  );
+
+  it('cambiarEstadoPeriodo no realiza solicitudes adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarEstadoPeriodo(15, { estado: 'matricula_abierta' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos/15/estado'))
+      .flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
 });
 
 function crearPeriodo(
@@ -923,6 +1110,15 @@ function crearSolicitudActualizacion(
     fecha_fin: '2027-06-30',
     fecha_inicio_matricula: '2027-01-01T08:00:00.000Z',
     fecha_fin_matricula: '2027-01-31T23:00:00.000Z',
+    ...parcial,
+  };
+}
+
+function crearSolicitudCambioEstado(
+  parcial: Partial<CambiarEstadoPeriodoAcademicoSolicitud> = {},
+): CambiarEstadoPeriodoAcademicoSolicitud {
+  return {
+    estado: 'matricula_abierta',
     ...parcial,
   };
 }

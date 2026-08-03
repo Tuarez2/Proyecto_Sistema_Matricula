@@ -24,6 +24,7 @@ import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import {
   ESTADOS_PERIODO_ACADEMICO,
+  TRANSICIONES_PERIODO_ACADEMICO,
   type EstadoPeriodoAcademico,
   type FiltrosListadoPeriodos,
   type PeriodoAcademico,
@@ -185,6 +186,10 @@ export class ListadoPeriodosComponent implements OnInit {
     }
 
     return 'Estado desconocido';
+  }
+
+  tieneTransicionesDisponibles(estado: EstadoPeriodoAcademico): boolean {
+    return TRANSICIONES_PERIODO_ACADEMICO[estado].length > 0;
   }
 
   private obtenerFiltrosPeriodos(): FiltrosListadoPeriodos {
