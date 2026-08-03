@@ -19,6 +19,17 @@ export const rutasUsuarios: Routes = [
     title: 'Crear usuario',
   },
   {
+    path: ':id/editar',
+    loadComponent: () =>
+      import('./editar-usuario/editar-usuario.component')
+        .then((modulo) => modulo.EditarUsuarioComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
+    },
+    title: 'Editar usuario',
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./listado-usuarios/listado-usuarios.component')

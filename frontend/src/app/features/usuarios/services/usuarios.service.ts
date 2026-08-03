@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
+  ActualizarUsuarioSolicitud,
   CrearUsuarioSolicitud,
   FiltrosListadoUsuarios,
   RespuestaListadoUsuarios,
@@ -30,6 +31,24 @@ export class UsuariosService {
     datosUsuario: CrearUsuarioSolicitud,
   ): Observable<RespuestaUsuario> {
     return this.http.post<RespuestaUsuario>(obtenerUrlApi('usuarios'), datosUsuario);
+  }
+
+  obtenerUsuarioPorId(
+    idUsuario: number,
+  ): Observable<RespuestaUsuario> {
+    return this.http.get<RespuestaUsuario>(
+      obtenerUrlApi(`usuarios/${idUsuario}`),
+    );
+  }
+
+  actualizarUsuario(
+    idUsuario: number,
+    datosUsuario: ActualizarUsuarioSolicitud,
+  ): Observable<RespuestaUsuario> {
+    return this.http.put<RespuestaUsuario>(
+      obtenerUrlApi(`usuarios/${idUsuario}`),
+      datosUsuario,
+    );
   }
 
   private construirParametros(filtros: FiltrosListadoUsuarios): HttpParams {

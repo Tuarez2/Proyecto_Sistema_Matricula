@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
+  ActualizarUsuarioSolicitud,
   CrearUsuarioSolicitud,
   FiltrosListadoUsuarios,
   RespuestaListadoUsuarios,
@@ -417,6 +418,303 @@ describe('UsuariosService', () => {
     controladorHttp.expectOne(obtenerUrlApi('usuarios')).flush(crearRespuestaUsuario());
     await promesaRespuesta;
   });
+
+  it('obtenerUsuarioPorId ejecuta GET usuarios id', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.method).toBe('GET');
+    solicitud.flush(crearRespuestaUsuario(crearUsuario({ id: 15 })));
+    await promesaRespuesta;
+  });
+
+  it('obtenerUsuarioPorId no agrega parametros', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.params.keys()).toEqual([]);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('obtenerUsuarioPorId devuelve el usuario', async () => {
+    const usuario = crearUsuario({ id: 15 });
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15'))
+      .flush(crearRespuestaUsuario(usuario));
+
+    await expect(promesaRespuesta).resolves.toEqual(crearRespuestaUsuario(usuario));
+  });
+
+  it('obtenerUsuarioPorId conserva relaciones nulas', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15')).flush(
+      crearRespuestaUsuario(crearUsuario({
+        estudiante_id: null,
+        docente_id: null,
+        estudiante: null,
+        docente: null,
+      })),
+    );
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.estudiante_id).toBeNull();
+    expect(respuesta.data?.docente_id).toBeNull();
+    expect(respuesta.data?.estudiante).toBeNull();
+    expect(respuesta.data?.docente).toBeNull();
+  });
+
+  it('obtenerUsuarioPorId conserva el rol', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15')).flush(
+      crearRespuestaUsuario(crearUsuario({
+        rol: {
+          id: 2,
+          codigo: 'GESTOR_MATRICULA',
+          nombre: 'Gestor de matrícula',
+          activo: true,
+        },
+      })),
+    );
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.rol?.codigo).toBe('GESTOR_MATRICULA');
+  });
+
+  it('obtenerUsuarioPorId propaga un error 404', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15'))
+      .flush({}, { status: 404, statusText: 'No encontrado' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('obtenerUsuarioPorId propaga un error 403', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15'))
+      .flush({}, { status: 403, statusText: 'Prohibido' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('obtenerUsuarioPorId no agrega Authorization manualmente', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.headers.has('Authorization')).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('obtenerUsuarioPorId no realiza solicitudes adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(servicio.obtenerUsuarioPorId(15));
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15')).flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario ejecuta PUT usuarios id', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.method).toBe('PUT');
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario envia solamente nombres', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.body).toEqual({ nombres: 'Ana' });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario envia solamente correo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { correo: 'ana@universidad.edu' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.body).toEqual({ correo: 'ana@universidad.edu' });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario envia todos los campos editables juntos', async () => {
+    const datosUsuario = crearSolicitudActualizacion();
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, datosUsuario),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.body).toEqual(datosUsuario);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario conserva estudiante_id null', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { estudiante_id: null }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.body).toEqual({ estudiante_id: null });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario conserva docente_id null', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { docente_id: null }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.body).toEqual({ docente_id: null });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario envia debe_cambiar_password', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { debe_cambiar_password: true }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.body).toEqual({ debe_cambiar_password: true });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario no agrega estado', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect('estado' in solicitud.request.body).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario no agrega password', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect('password' in solicitud.request.body).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario no modifica el objeto recibido', async () => {
+    const datosUsuario = crearSolicitudActualizacion({ nombres: '  Ana  ' });
+    const datosOriginales = { ...datosUsuario };
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, datosUsuario),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15')).flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+
+    expect(datosUsuario).toEqual(datosOriginales);
+  });
+
+  it('actualizarUsuario devuelve el usuario actualizado', async () => {
+    const usuario = crearUsuario({ nombres: 'Ana' });
+    const respuesta = crearRespuestaUsuario(usuario);
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15')).flush(respuesta);
+
+    await expect(promesaRespuesta).resolves.toEqual(respuesta);
+  });
+
+  it('actualizarUsuario propaga un error 400', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15'))
+      .flush({}, { status: 400, statusText: 'Solicitud incorrecta' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('actualizarUsuario propaga un error 404', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15'))
+      .flush({}, { status: 404, statusText: 'No encontrado' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('actualizarUsuario propaga un error 409', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    controladorHttp
+      .expectOne(obtenerUrlApi('usuarios/15'))
+      .flush({}, { status: 409, statusText: 'Conflicto' });
+
+    await expect(promesaRespuesta).rejects.toBeTruthy();
+  });
+
+  it('actualizarUsuario no agrega Authorization manualmente', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15'));
+
+    expect(solicitud.request.headers.has('Authorization')).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('actualizarUsuario no realiza solicitudes adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.actualizarUsuario(15, { nombres: 'Ana' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15')).flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
 });
 
 function crearRespuestaListado(
@@ -433,7 +731,7 @@ function crearRespuestaListado(
   };
 }
 
-function crearUsuario(): Usuario {
+function crearUsuario(parcial: Partial<Usuario> = {}): Usuario {
   return {
     id: 1,
     nombres: 'Administrador',
@@ -455,6 +753,7 @@ function crearUsuario(): Usuario {
     },
     estudiante: null,
     docente: null,
+    ...parcial,
   };
 }
 
@@ -467,6 +766,21 @@ function crearSolicitudUsuario(
     correo: 'ana.perez@universidad.edu',
     password: 'contrasena-segura',
     estado: 'activo',
+    rol_id: 2,
+    estudiante_id: null,
+    docente_id: null,
+    debe_cambiar_password: true,
+    ...parcial,
+  };
+}
+
+function crearSolicitudActualizacion(
+  parcial: Partial<ActualizarUsuarioSolicitud> = {},
+): ActualizarUsuarioSolicitud {
+  return {
+    nombres: 'Ana Maria',
+    apellidos: 'Perez Lopez',
+    correo: 'ana.perez@universidad.edu',
     rol_id: 2,
     estudiante_id: null,
     docente_id: null,

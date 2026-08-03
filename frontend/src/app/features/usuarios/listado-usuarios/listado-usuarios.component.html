@@ -84,6 +84,7 @@
           <th scope="col">Rol</th>
           <th scope="col">Estado</th>
           <th scope="col">Cambio de contraseña pendiente</th>
+          <th scope="col">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -100,6 +101,11 @@
               } @else {
                 No
               }
+            </td>
+            <td>
+              <a [routerLink]="['/usuarios', usuario.id, 'editar']">
+                Editar
+              </a>
             </td>
           </tr>
         }

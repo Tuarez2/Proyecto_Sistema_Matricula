@@ -566,18 +566,34 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerElemento('caption')?.textContent).toContain('Listado de usuarios');
   });
 
-  it('no existe columna Acciones', () => {
+  it('existe columna Acciones', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerTexto()).not.toContain('Acciones');
+    expect(obtenerTexto()).toContain('Acciones');
   });
 
-  it('no existen enlaces de edicion', () => {
+  it('cada usuario tiene enlace Editar', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerTexto()).not.toContain('Editar');
+    expect(obtenerEnlaces('Editar').length).toBe(1);
+  });
+
+  it('el enlace Editar incluye el identificador', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Editar')?.getAttribute('href')).toContain('/usuarios/15');
+  });
+
+  it('el enlace Editar apunta a usuarios id editar', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Editar')?.getAttribute('href')).toBe(
+      '/usuarios/15/editar',
+    );
   });
 
   it('no existen botones de estado', () => {
@@ -591,7 +607,14 @@ describe('ListadoUsuariosComponent', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerBoton('Restablecer contraseña')).toBeNull();
+    expect(obtenerBoton('Cambiar contraseña')).toBeNull();
+  });
+
+  it('no existen botones Eliminar', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Eliminar')).toBeNull();
   });
 
   it('el enlace Crear usuario se mantiene visible sin resultados', () => {
@@ -601,6 +624,28 @@ describe('ListadoUsuariosComponent', () => {
     fixture.detectChanges();
 
     expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+  });
+
+  it('los enlaces usan el identificador correcto con varios usuarios', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearUsuario({ id: 15 }),
+        crearUsuario({ id: 22, correo: 'otro@universidad.edu' }),
+      ],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlaces('Editar').map((enlace) => enlace.getAttribute('href')))
+      .toEqual(['/usuarios/15/editar', '/usuarios/22/editar']);
+  });
+
+  it('la tabla continua siendo semantica', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('table')).toBeTruthy();
+    expect(obtenerElemento('caption')?.textContent).toContain('Listado de usuarios');
+    expect(obtenerElemento('th[scope="col"]')).toBeTruthy();
   });
 
   it('el enlace Crear usuario se mantiene visible durante la carga', () => {
@@ -672,11 +717,15 @@ describe('ListadoUsuariosComponent', () => {
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {
+    return obtenerEnlaces(texto)[0] ?? null;
+  }
+
+  function obtenerEnlaces(texto: string): HTMLAnchorElement[] {
     const enlaces = Array.from(
       fixture.nativeElement.querySelectorAll('a'),
     ) as HTMLAnchorElement[];
 
-    return enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null;
+    return enlaces.filter((enlace) => enlace.textContent?.includes(texto));
   }
 
   function obtenerTexto(): string {

@@ -72,6 +72,16 @@ export interface CrearUsuarioSolicitud {
   debe_cambiar_password: boolean;
 }
 
+export interface ActualizarUsuarioSolicitud {
+  nombres?: string;
+  apellidos?: string;
+  correo?: string;
+  rol_id?: number;
+  estudiante_id?: number | null;
+  docente_id?: number | null;
+  debe_cambiar_password?: boolean;
+}
+
 export interface RespuestaListadoUsuarios extends RespuestaApi<Usuario[]> {
   page: number;
   limit: number;

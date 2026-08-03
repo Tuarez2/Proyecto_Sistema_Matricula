@@ -7,6 +7,7 @@ import { guardRoles } from '../../core/guards/roles.guard';
 import type { UsuarioAutenticado } from '../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
 import { CrearUsuarioComponent } from './crear-usuario/crear-usuario.component';
+import { EditarUsuarioComponent } from './editar-usuario/editar-usuario.component';
 import { ListadoUsuariosComponent } from './listado-usuarios/listado-usuarios.component';
 import { rutasUsuarios } from './usuarios.routes';
 
@@ -89,12 +90,50 @@ describe('rutasUsuarios', () => {
     );
   });
 
-  it('no contiene parametros dinamicos', () => {
-    expect(rutasUsuarios.some((ruta) => ruta.path?.includes(':'))).toBe(false);
+  it('existe una ruta editar', () => {
+    expect(obtenerRutaEditar().path).toBe(':id/editar');
   });
 
-  it('no contiene rutas de edicion', () => {
-    expect(rutasUsuarios.some((ruta) => ruta.path?.includes('editar'))).toBe(false);
+  it('la ruta editar esta despues de nuevo', () => {
+    expect(rutasUsuarios.indexOf(obtenerRutaEditar())).toBeGreaterThan(
+      rutasUsuarios.indexOf(obtenerRutaNuevo()),
+    );
+  });
+
+  it('la ruta editar esta antes de la ruta vacia', () => {
+    expect(rutasUsuarios.indexOf(obtenerRutaEditar())).toBeLessThan(
+      rutasUsuarios.indexOf(obtenerRutaRaiz()),
+    );
+  });
+
+  it('la ruta editar utiliza loadComponent', () => {
+    expect(obtenerRutaEditar().loadComponent).toBeDefined();
+  });
+
+  it('la ruta editar carga EditarUsuarioComponent', async () => {
+    const componente = await obtenerRutaEditar().loadComponent?.();
+
+    expect(componente).toBe(EditarUsuarioComponent);
+  });
+
+  it('la ruta editar tiene titulo Editar usuario', () => {
+    expect(obtenerRutaEditar().title).toBe('Editar usuario');
+  });
+
+  it('la ruta editar utiliza guardRoles', () => {
+    expect(obtenerRutaEditar().canActivate).toEqual([guardRoles]);
+  });
+
+  it('la ruta editar permite unicamente ADMIN', () => {
+    expect(obtenerRutaEditar().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+    ]);
+  });
+
+  it('la ruta editar usa CLAVE_ROLES_PERMITIDOS', () => {
+    expect(Object.keys(obtenerRutaEditar().data ?? {})).toContain(
+      CLAVE_ROLES_PERMITIDOS,
+    );
   });
 
   it('no contiene rutas de contrasena', () => {
@@ -107,6 +146,10 @@ describe('rutasUsuarios', () => {
 
   it('no contiene rutas de cambio de contrasena', () => {
     expect(rutasUsuarios.some((ruta) => ruta.path?.includes('contrasena'))).toBe(false);
+  });
+
+  it('no contiene rutas de eliminacion', () => {
+    expect(rutasUsuarios.some((ruta) => ruta.path?.includes('eliminar'))).toBe(false);
   });
 
   it('la ruta del listado continua existiendo', () => {
@@ -123,6 +166,24 @@ describe('rutasUsuarios', () => {
     configurarAutenticacion('DOCENTE');
 
     expect(ejecutarGuardRutaNuevo()).toBe(false);
+  });
+
+  it('un administrador puede activar usuarios editar', () => {
+    configurarAutenticacion('ADMIN');
+
+    expect(ejecutarGuardRutaEditar()).toBe(true);
+  });
+
+  it('otro rol no puede activar usuarios editar', () => {
+    configurarAutenticacion('DOCENTE');
+
+    expect(ejecutarGuardRutaEditar()).toBe(false);
+  });
+
+  it('la ruta nuevo no es interpretada como identificador', () => {
+    expect(rutasUsuarios.indexOf(obtenerRutaNuevo())).toBeLessThan(
+      rutasUsuarios.indexOf(obtenerRutaEditar()),
+    );
   });
 
   it('no contiene redirects', () => {
@@ -150,7 +211,18 @@ function obtenerRutaNuevo() {
   return ruta;
 }
 
+function obtenerRutaEditar() {
+  const ruta = rutasUsuarios.find((rutaActual) => rutaActual.path === ':id/editar');
+
+  if (!ruta) {
+    throw new Error('No existe la ruta editar de usuarios.');
+  }
+
+  return ruta;
+}
+
 function configurarAutenticacion(codigoRol: string): void {
+  TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       {
@@ -182,5 +254,15 @@ function ejecutarGuardRutaNuevo(): boolean {
 
   return TestBed.runInInjectionContext(() =>
     guardRoles(ruta, { url: '/usuarios/nuevo' } as RouterStateSnapshot),
+  ) as boolean;
+}
+
+function ejecutarGuardRutaEditar(): boolean {
+  const ruta = new ActivatedRouteSnapshot();
+
+  ruta.data = obtenerRutaEditar().data ?? {};
+
+  return TestBed.runInInjectionContext(() =>
+    guardRoles(ruta, { url: '/usuarios/15/editar' } as RouterStateSnapshot),
   ) as boolean;
 }
