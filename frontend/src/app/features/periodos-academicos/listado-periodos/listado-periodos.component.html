@@ -1,6 +1,10 @@
 <section aria-labelledby="titulo-periodos">
   <h1 id="titulo-periodos">Periodos académicos</h1>
 
+  @if (esAdministrador()) {
+    <a routerLink="/periodos-academicos/nuevo">Crear periodo</a>
+  }
+
   <form
     [formGroup]="formularioFiltros"
     (ngSubmit)="buscarPeriodos()"

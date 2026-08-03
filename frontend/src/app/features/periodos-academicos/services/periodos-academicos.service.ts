@@ -4,8 +4,10 @@ import { Observable } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
+  CrearPeriodoAcademicoSolicitud,
   FiltrosListadoPeriodos,
   RespuestaListadoPeriodos,
+  RespuestaPeriodoAcademico,
 } from '../models/periodo-academico.model';
 
 @Injectable({
@@ -24,6 +26,15 @@ export class PeriodosAcademicosService {
       {
         params,
       },
+    );
+  }
+
+  crearPeriodo(
+    solicitud: CrearPeriodoAcademicoSolicitud,
+  ): Observable<RespuestaPeriodoAcademico> {
+    return this.http.post<RespuestaPeriodoAcademico>(
+      obtenerUrlApi('periodos-academicos'),
+      solicitud,
     );
   }
 

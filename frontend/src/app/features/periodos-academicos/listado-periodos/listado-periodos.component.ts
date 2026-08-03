@@ -17,8 +17,11 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
+import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import {
   ESTADOS_PERIODO_ACADEMICO,
   type EstadoPeriodoAcademico,
@@ -29,13 +32,17 @@ import { PeriodosAcademicosService } from '../services/periodos-academicos.servi
 
 @Component({
   selector: 'app-listado-periodos',
-  imports: [ReactiveFormsModule],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+  ],
   templateUrl: './listado-periodos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListadoPeriodosComponent implements OnInit {
   private readonly constructorFormulario = inject(FormBuilder);
   private readonly periodosAcademicosService = inject(PeriodosAcademicosService);
+  private readonly autenticacionService = inject(AutenticacionService);
   private readonly referenciaDestruccion = inject(DestroyRef);
   private readonly estadoPeriodos = signal<PeriodoAcademico[]>([]);
   private readonly estadoCargandoPeriodos = signal(false);
@@ -61,6 +68,11 @@ export class ListadoPeriodosComponent implements OnInit {
       this.totalPaginas() > 0 &&
       this.paginaActual() < this.totalPaginas() &&
       !this.cargandoPeriodos(),
+  );
+  readonly esAdministrador = computed(
+    () =>
+      this.autenticacionService.usuarioActual()
+        ?.rol?.codigo === CODIGOS_ROL.ADMIN,
   );
   readonly formularioFiltros = this.constructorFormulario.nonNullable.group(
     {

@@ -34,6 +34,15 @@ export interface FiltrosListadoPeriodos {
   limite?: number;
 }
 
+export interface CrearPeriodoAcademicoSolicitud {
+  codigo: string;
+  nombre: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  fecha_inicio_matricula: string;
+  fecha_fin_matricula: string;
+}
+
 export interface RespuestaListadoPeriodos
   extends RespuestaApi<PeriodoAcademico[]> {
   page: number;
@@ -41,3 +50,5 @@ export interface RespuestaListadoPeriodos
   total: number;
   totalPages: number;
 }
+
+export type RespuestaPeriodoAcademico = RespuestaApi<PeriodoAcademico>;

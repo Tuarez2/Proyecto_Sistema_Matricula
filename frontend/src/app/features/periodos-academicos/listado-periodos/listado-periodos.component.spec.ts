@@ -1,7 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Observable, Subject } from 'rxjs';
 
+import type { UsuarioAutenticado } from '../../../core/models/autenticacion.model';
+import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import type {
   FiltrosListadoPeriodos,
   PeriodoAcademico,
@@ -18,10 +22,16 @@ interface PeriodosAcademicosServiceMock {
   >;
 }
 
+interface AutenticacionServiceMock {
+  usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
+}
+
 describe('ListadoPeriodosComponent', () => {
   let fixture: ComponentFixture<ListadoPeriodosComponent>;
   let componente: ListadoPeriodosComponent;
   let periodosAcademicosService: PeriodosAcademicosServiceMock;
+  let autenticacionService: AutenticacionServiceMock;
+  let usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
   let solicitudesPeriodos: Subject<RespuestaListadoPeriodos>[];
 
   beforeEach(async () => {
@@ -33,13 +43,22 @@ describe('ListadoPeriodosComponent', () => {
         return solicitud.asObservable();
       }),
     };
+    usuarioActual = signal<UsuarioAutenticado | null>(null);
+    autenticacionService = {
+      usuarioActual,
+    };
 
     await TestBed.configureTestingModule({
       imports: [ListadoPeriodosComponent],
       providers: [
+        provideRouter([]),
         {
           provide: PeriodosAcademicosService,
           useValue: periodosAcademicosService,
+        },
+        {
+          provide: AutenticacionService,
+          useValue: autenticacionService,
         },
       ],
     }).compileComponents();
@@ -488,11 +507,86 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerTexto()).not.toContain('Acciones');
   });
 
-  it('no existe Crear periodo', () => {
+  it('ADMIN ve Crear periodo', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerTexto()).not.toContain('Crear periodo');
+    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+  });
+
+  it('el enlace Crear periodo apunta a periodos academicos nuevo', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')?.getAttribute('href')).toBe(
+      '/periodos-academicos/nuevo',
+    );
+  });
+
+  it.each([
+    'GESTOR_MATRICULA',
+    'ESTUDIANTE',
+    'DOCENTE',
+  ])('%s no ve Crear periodo', (codigoRol) => {
+    usuarioActual.set(crearUsuarioConRol(codigoRol));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeNull();
+  });
+
+  it('usuario sin rol no ve Crear periodo', () => {
+    usuarioActual.set(crearUsuario({ rol: null }));
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeNull();
+  });
+
+  it('sin usuario no ve Crear periodo', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeNull();
+  });
+
+  it('Crear periodo aparece si la sesion cambia a ADMIN', () => {
+    iniciarYCompletar();
+    expect(obtenerEnlace('Crear periodo')).toBeNull();
+
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+  });
+
+  it('Crear periodo desaparece si la sesion cambia a otro rol', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeNull();
+  });
+
+  it('Crear periodo continua visible sin resultados para ADMIN', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+  });
+
+  it('Crear periodo continua visible durante carga para ADMIN', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarComponente();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
   });
 
   it('no existe Editar', () => {
@@ -569,6 +663,14 @@ describe('ListadoPeriodosComponent', () => {
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
   }
 
+  function obtenerEnlace(texto: string): HTMLAnchorElement | null {
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('a'),
+    ) as HTMLAnchorElement[];
+
+    return enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null;
+  }
+
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
   }
@@ -590,6 +692,35 @@ function crearPeriodo(
     updated_at: '2026-01-01T00:00:00.000Z',
     ...parcial,
   };
+}
+
+function crearUsuario(
+  parcial: Partial<UsuarioAutenticado> = {},
+): UsuarioAutenticado {
+  return {
+    id: 1,
+    nombres: 'Persona',
+    apellidos: 'Prueba',
+    correo: 'persona.prueba@universidad.edu',
+    estado: 'ACTIVO',
+    debe_cambiar_password: false,
+    rol: {
+      id: 1,
+      codigo: 'ADMIN',
+      nombre: 'Administrador',
+    },
+    ...parcial,
+  };
+}
+
+function crearUsuarioConRol(codigoRol: string): UsuarioAutenticado {
+  return crearUsuario({
+    rol: {
+      id: 1,
+      codigo: codigoRol,
+      nombre: codigoRol,
+    },
+  });
 }
 
 function crearRespuestaListado(

@@ -8,9 +8,11 @@ import { firstValueFrom } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
+  CrearPeriodoAcademicoSolicitud,
   FiltrosListadoPeriodos,
   PeriodoAcademico,
   RespuestaListadoPeriodos,
+  RespuestaPeriodoAcademico,
 } from '../models/periodo-academico.model';
 import { PeriodosAcademicosService } from './periodos-academicos.service';
 
@@ -299,6 +301,268 @@ describe('PeriodosAcademicosService', () => {
       .flush(crearRespuestaListado());
     await promesaRespuesta;
   });
+
+  it('crearPeriodo ejecuta POST periodos academicos', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo()),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.method).toBe('POST');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo utiliza metodo POST', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo()),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.method).toBe('POST');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo envia codigo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo({ codigo: '2027-1' })),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.body.codigo).toBe('2027-1');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo envia nombre', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo({
+        nombre: 'Primer periodo 2027',
+      })),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.body.nombre).toBe('Primer periodo 2027');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo envia fecha_inicio', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo({
+        fecha_inicio: '2027-01-01',
+      })),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.body.fecha_inicio).toBe('2027-01-01');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo envia fecha_fin', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo({
+        fecha_fin: '2027-06-30',
+      })),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.body.fecha_fin).toBe('2027-06-30');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo envia fecha_inicio_matricula', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo({
+        fecha_inicio_matricula: '2027-01-01T08:00:00.000Z',
+      })),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.body.fecha_inicio_matricula)
+      .toBe('2027-01-01T08:00:00.000Z');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo envia fecha_fin_matricula', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo({
+        fecha_fin_matricula: '2027-01-31T23:00:00.000Z',
+      })),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.body.fecha_fin_matricula)
+      .toBe('2027-01-31T23:00:00.000Z');
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo no envia estado', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo()),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect('estado' in solicitud.request.body).toBe(false);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo no envia propiedades adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo()),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(Object.keys(solicitud.request.body)).toEqual([
+      'codigo',
+      'nombre',
+      'fecha_inicio',
+      'fecha_fin',
+      'fecha_inicio_matricula',
+      'fecha_fin_matricula',
+    ]);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo no modifica la solicitud', async () => {
+    const solicitudPeriodo = crearSolicitudPeriodo({
+      codigo: '  2027-1  ',
+      nombre: '  Primer   periodo 2027  ',
+    });
+    const solicitudOriginal = { ...solicitudPeriodo };
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(solicitudPeriodo),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos'))
+      .flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+
+    expect(solicitudPeriodo).toEqual(solicitudOriginal);
+  });
+
+  it('crearPeriodo no agrega Authorization manualmente', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo()),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.headers.has('Authorization')).toBe(false);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo conserva las fechas exactamente', async () => {
+    const solicitudPeriodo = crearSolicitudPeriodo({
+      fecha_inicio: '2027-01-01',
+      fecha_fin: '2027-06-30',
+      fecha_inicio_matricula: '2027-01-01T08:30:00.000Z',
+      fecha_fin_matricula: '2027-01-31T23:45:00.000Z',
+    });
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(solicitudPeriodo),
+    );
+
+    const solicitud = controladorHttp.expectOne(
+      obtenerUrlApi('periodos-academicos'),
+    );
+
+    expect(solicitud.request.body).toEqual(solicitudPeriodo);
+    solicitud.flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
+
+  it('crearPeriodo devuelve el periodo creado', async () => {
+    const periodo = crearPeriodo({ id: 15, codigo: '2027-1' });
+    const respuesta = crearRespuestaPeriodo(periodo);
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo()),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos'))
+      .flush(respuesta);
+
+    await expect(promesaRespuesta).resolves.toEqual(respuesta);
+  });
+
+  it('crearPeriodo conserva estado planificado de la respuesta', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo()),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos')).flush(
+      crearRespuestaPeriodo(crearPeriodo({ estado: 'planificado' })),
+    );
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.estado).toBe('planificado');
+  });
+
+  it.each([400, 403, 409, 429, 500])(
+    'crearPeriodo propaga error %s',
+    async (estadoHttp) => {
+      const promesaRespuesta = firstValueFrom(
+        servicio.crearPeriodo(crearSolicitudPeriodo()),
+      );
+
+      controladorHttp
+        .expectOne(obtenerUrlApi('periodos-academicos'))
+        .flush({}, { status: estadoHttp, statusText: 'Error' });
+
+      await expect(promesaRespuesta).rejects.toBeTruthy();
+    },
+  );
+
+  it('crearPeriodo no realiza solicitudes adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.crearPeriodo(crearSolicitudPeriodo()),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('periodos-academicos'))
+      .flush(crearRespuestaPeriodo());
+    await promesaRespuesta;
+  });
 });
 
 function crearPeriodo(
@@ -330,5 +594,37 @@ function crearRespuestaListado(
     total: 1,
     totalPages: 1,
     ...parcial,
+  };
+}
+
+function crearSolicitudPeriodo(
+  parcial: Partial<CrearPeriodoAcademicoSolicitud> = {},
+): CrearPeriodoAcademicoSolicitud {
+  return {
+    codigo: '2027-1',
+    nombre: 'Primer periodo 2027',
+    fecha_inicio: '2027-01-01',
+    fecha_fin: '2027-06-30',
+    fecha_inicio_matricula: '2027-01-01T08:00:00.000Z',
+    fecha_fin_matricula: '2027-01-31T23:00:00.000Z',
+    ...parcial,
+  };
+}
+
+function crearRespuestaPeriodo(
+  periodo = crearPeriodo({
+    codigo: '2027-1',
+    nombre: 'Primer periodo 2027',
+    fecha_inicio: '2027-01-01',
+    fecha_fin: '2027-06-30',
+    fecha_inicio_matricula: '2027-01-01T08:00:00.000Z',
+    fecha_fin_matricula: '2027-01-31T23:00:00.000Z',
+    estado: 'planificado',
+  }),
+): RespuestaPeriodoAcademico {
+  return {
+    success: true,
+    message: 'Periodo academico creado correctamente.',
+    data: periodo,
   };
 }

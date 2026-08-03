@@ -1,3 +1,12 @@
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+
+import { CLAVE_ROLES_PERMITIDOS, CODIGOS_ROL } from '../../core/config/codigos-rol';
+import { guardRoles } from '../../core/guards/roles.guard';
+import type { UsuarioAutenticado } from '../../core/models/autenticacion.model';
+import { AutenticacionService } from '../../core/services/autenticacion.service';
+import { CrearPeriodoComponent } from './crear-periodo/crear-periodo.component';
 import { ListadoPeriodosComponent } from './listado-periodos/listado-periodos.component';
 import { rutasPeriodosAcademicos } from './periodos-academicos.routes';
 
@@ -28,9 +37,11 @@ describe('rutasPeriodosAcademicos', () => {
     expect(obtenerRutaRaiz().data).toBeUndefined();
   });
 
-  it('no contiene ruta nuevo', () => {
-    expect(rutasPeriodosAcademicos.some((ruta) => ruta.path === 'nuevo'))
-      .toBe(false);
+  it('contiene solo nuevo y listado', () => {
+    expect(rutasPeriodosAcademicos.map((ruta) => ruta.path)).toEqual([
+      'nuevo',
+      '',
+    ]);
   });
 
   it('no contiene edicion', () => {
@@ -52,7 +63,78 @@ describe('rutasPeriodosAcademicos', () => {
   });
 
   it('la ruta continua protegida por el layout padre', () => {
-    expect(rutasPeriodosAcademicos.length).toBe(1);
+    expect(obtenerRutaRaiz().canActivate).toBeUndefined();
+  });
+
+  it('existe ruta nuevo', () => {
+    expect(obtenerRutaNuevo().path).toBe('nuevo');
+  });
+
+  it('la ruta nuevo esta antes de la ruta vacia', () => {
+    expect(rutasPeriodosAcademicos.indexOf(obtenerRutaNuevo())).toBeLessThan(
+      rutasPeriodosAcademicos.indexOf(obtenerRutaRaiz()),
+    );
+  });
+
+  it('la ruta nuevo utiliza loadComponent', () => {
+    expect(obtenerRutaNuevo().loadComponent).toBeDefined();
+  });
+
+  it('la ruta nuevo carga CrearPeriodoComponent', async () => {
+    const componente = await obtenerRutaNuevo().loadComponent?.();
+
+    expect(componente).toBe(CrearPeriodoComponent);
+  });
+
+  it('la ruta nuevo tiene titulo Crear periodo academico', () => {
+    expect(obtenerRutaNuevo().title).toBe('Crear periodo académico');
+  });
+
+  it('la ruta nuevo utiliza guardRoles', () => {
+    expect(obtenerRutaNuevo().canActivate).toEqual([guardRoles]);
+  });
+
+  it('la ruta nuevo permite unicamente ADMIN', () => {
+    expect(obtenerRutaNuevo().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+    ]);
+  });
+
+  it('la ruta nuevo usa CLAVE_ROLES_PERMITIDOS', () => {
+    expect(Object.keys(obtenerRutaNuevo().data ?? {})).toContain(
+      CLAVE_ROLES_PERMITIDOS,
+    );
+  });
+
+  it('la ruta del listado continua sin guardRoles', () => {
+    expect(obtenerRutaRaiz().canActivate).toBeUndefined();
+  });
+
+  it.each([
+    'GESTOR_MATRICULA',
+    'ESTUDIANTE',
+    'DOCENTE',
+  ])('%s puede consultar listado pero no crear', (codigoRol) => {
+    configurarAutenticacion(codigoRol);
+
+    expect(obtenerRutaRaiz().canActivate).toBeUndefined();
+    expect(ejecutarGuardRutaNuevo()).toBe(false);
+  });
+
+  it('ADMIN puede crear', () => {
+    configurarAutenticacion('ADMIN');
+
+    expect(ejecutarGuardRutaNuevo()).toBe(true);
+  });
+
+  it('no existe ruta de edicion', () => {
+    expect(rutasPeriodosAcademicos.some((ruta) => ruta.path?.includes('editar')))
+      .toBe(false);
+  });
+
+  it('no existe ruta de transicion', () => {
+    expect(rutasPeriodosAcademicos.some((ruta) => ruta.path?.includes('transicion')))
+      .toBe(false);
   });
 });
 
@@ -64,4 +146,55 @@ function obtenerRutaRaiz() {
   }
 
   return ruta;
+}
+
+function obtenerRutaNuevo() {
+  const ruta = rutasPeriodosAcademicos.find(
+    (rutaActual) => rutaActual.path === 'nuevo',
+  );
+
+  if (!ruta) {
+    throw new Error('No existe la ruta nuevo de periodos academicos.');
+  }
+
+  return ruta;
+}
+
+function configurarAutenticacion(codigoRol: string): void {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      {
+        provide: AutenticacionService,
+        useValue: {
+          usuarioActual: signal<UsuarioAutenticado | null>({
+            id: 1,
+            nombres: 'Persona',
+            apellidos: 'Prueba',
+            correo: 'persona.prueba@universidad.edu',
+            estado: 'ACTIVO',
+            debe_cambiar_password: false,
+            rol: {
+              id: 1,
+              codigo: codigoRol,
+              nombre: codigoRol,
+            },
+          }).asReadonly(),
+        },
+      },
+    ],
+  });
+}
+
+function ejecutarGuardRutaNuevo(): boolean {
+  const ruta = new ActivatedRouteSnapshot();
+
+  ruta.data = obtenerRutaNuevo().data ?? {};
+
+  return TestBed.runInInjectionContext(() =>
+    guardRoles(
+      ruta,
+      { url: '/periodos-academicos/nuevo' } as RouterStateSnapshot,
+    ),
+  ) as boolean;
 }
