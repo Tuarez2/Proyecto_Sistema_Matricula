@@ -1,0 +1,130 @@
+<section aria-labelledby="titulo-cambiar-contrasena">
+  <h1 id="titulo-cambiar-contrasena">
+    Cambiar contraseña de usuario
+  </h1>
+
+  <a routerLink="/usuarios">Volver a usuarios</a>
+
+  @if (cargandoUsuario()) {
+    <p role="status" aria-live="polite">Consultando usuario...</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert" aria-live="polite">{{ mensajeError() }}</p>
+  }
+
+  @if (mensajeAviso()) {
+    <p role="status" aria-live="polite">{{ mensajeAviso() }}</p>
+  }
+
+  @if (usuario(); as usuarioConsultado) {
+    <p>Identificador: {{ usuarioConsultado.id }}</p>
+    <p>Usuario: {{ obtenerNombreCompleto(usuarioConsultado) }}</p>
+    <p>Correo: {{ usuarioConsultado.correo }}</p>
+    <p>Rol: {{ usuarioConsultado.rol?.nombre || 'Sin rol' }}</p>
+    <p>Estado actual: {{ obtenerEtiquetaEstado(usuarioConsultado.estado) }}</p>
+
+    <p role="status" aria-live="polite">
+      Al cambiar la contraseña, todas las sesiones activas de este usuario serán cerradas.
+    </p>
+
+    @if (esUsuarioActual()) {
+      <p role="status" aria-live="polite">
+        Está cambiando su propia contraseña. Su sesión actual se cerrará al guardar.
+      </p>
+    }
+
+    <form
+      [formGroup]="formularioContrasena"
+      (ngSubmit)="guardarContrasena()"
+      novalidate
+    >
+      <div>
+        <label for="nuevaContrasena">Nueva contraseña</label>
+        <input
+          id="nuevaContrasena"
+          type="password"
+          formControlName="nuevaContrasena"
+          minlength="10"
+          maxlength="128"
+          autocomplete="new-password"
+          [attr.aria-invalid]="formularioContrasena.controls.nuevaContrasena.invalid"
+          aria-describedby="error-nueva-contrasena"
+        />
+        @if (
+          formularioContrasena.controls.nuevaContrasena.touched &&
+          formularioContrasena.controls.nuevaContrasena.hasError('required')
+        ) {
+          <p id="error-nueva-contrasena" role="alert">
+            La nueva contraseña es obligatoria.
+          </p>
+        }
+        @if (
+          formularioContrasena.controls.nuevaContrasena.touched &&
+          formularioContrasena.controls.nuevaContrasena.hasError('minlength')
+        ) {
+          <p id="error-nueva-contrasena" role="alert">
+            La contraseña debe tener al menos 10 caracteres.
+          </p>
+        }
+        @if (
+          formularioContrasena.controls.nuevaContrasena.touched &&
+          formularioContrasena.controls.nuevaContrasena.hasError('maxlength')
+        ) {
+          <p id="error-nueva-contrasena" role="alert">
+            La contraseña no puede superar 128 caracteres.
+          </p>
+        }
+      </div>
+
+      <div>
+        <label for="confirmacionContrasena">Confirmar nueva contraseña</label>
+        <input
+          id="confirmacionContrasena"
+          type="password"
+          formControlName="confirmacionContrasena"
+          maxlength="128"
+          autocomplete="new-password"
+          [attr.aria-invalid]="
+            formularioContrasena.controls.confirmacionContrasena.invalid ||
+            formularioContrasena.hasError('contrasenasNoCoinciden')
+          "
+          aria-describedby="error-confirmacion-contrasena"
+        />
+        @if (
+          formularioContrasena.controls.confirmacionContrasena.touched &&
+          formularioContrasena.controls.confirmacionContrasena.hasError('required')
+        ) {
+          <p id="error-confirmacion-contrasena" role="alert">
+            La confirmación es obligatoria.
+          </p>
+        }
+        @if (
+          formularioContrasena.controls.confirmacionContrasena.touched &&
+          formularioContrasena.controls.confirmacionContrasena.hasError('maxlength')
+        ) {
+          <p id="error-confirmacion-contrasena" role="alert">
+            La confirmación no puede superar 128 caracteres.
+          </p>
+        }
+        @if (
+          formularioContrasena.controls.confirmacionContrasena.touched &&
+          formularioContrasena.hasError('contrasenasNoCoinciden')
+        ) {
+          <p id="error-confirmacion-contrasena" role="alert">
+            Las contraseñas no coinciden.
+          </p>
+        }
+      </div>
+
+      <button type="submit" [disabled]="!puedeGuardar()">
+        @if (actualizandoContrasena()) {
+          Guardando contraseña...
+        } @else {
+          Guardar contraseña
+        }
+      </button>
+      <a routerLink="/usuarios">Cancelar</a>
+    </form>
+  }
+</section>

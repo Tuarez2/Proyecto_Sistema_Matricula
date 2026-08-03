@@ -9,6 +9,7 @@ import { firstValueFrom } from 'rxjs';
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
   ActualizarUsuarioSolicitud,
+  CambiarContrasenaUsuarioSolicitud,
   CambiarEstadoUsuarioSolicitud,
   CrearUsuarioSolicitud,
   FiltrosListadoUsuarios,
@@ -933,6 +934,201 @@ describe('UsuariosService', () => {
     );
 
     controladorHttp.expectOne(obtenerUrlApi('usuarios/15/estado'))
+      .flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario ejecuta PATCH usuarios id password', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+
+    expect(solicitud.request.method).toBe('PATCH');
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario utiliza metodo PATCH', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+
+    expect(solicitud.request.method).toBe('PATCH');
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario envia exactamente password', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+
+    expect(solicitud.request.body).toEqual({ password: 'contrasena123' });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario conserva espacios interiores', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena con espacios' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+
+    expect(solicitud.request.body).toEqual({
+      password: 'contrasena con espacios',
+    });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario conserva espacios exteriores', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: '  contrasena123  ' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+
+    expect(solicitud.request.body).toEqual({
+      password: '  contrasena123  ',
+    });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario no aplica trim', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: '  abc def  ' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+
+    expect(solicitud.request.body).not.toEqual({ password: 'abc def' });
+    expect(solicitud.request.body).toEqual({ password: '  abc def  ' });
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario no envia confirmacion', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+    const cuerpo = solicitud.request.body as Record<string, unknown>;
+
+    expect('confirmacion' in cuerpo).toBe(false);
+    expect('confirmacionContrasena' in cuerpo).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario no envia id', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+    const cuerpo = solicitud.request.body as Record<string, unknown>;
+
+    expect('id' in cuerpo).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario no agrega otras propiedades', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+
+    expect(Object.keys(solicitud.request.body)).toEqual(['password']);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario no agrega Authorization manualmente', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'));
+
+    expect(solicitud.request.headers.has('Authorization')).toBe(false);
+    solicitud.flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+  });
+
+  it('cambiarContrasenaUsuario no modifica el objeto recibido', async () => {
+    const solicitudContrasena: CambiarContrasenaUsuarioSolicitud = {
+      password: '  contrasena123  ',
+    };
+    const solicitudOriginal = { ...solicitudContrasena };
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, solicitudContrasena),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'))
+      .flush(crearRespuestaUsuario());
+    await promesaRespuesta;
+
+    expect(solicitudContrasena).toEqual(solicitudOriginal);
+  });
+
+  it('cambiarContrasenaUsuario devuelve el usuario actualizado', async () => {
+    const usuario = crearUsuario({ nombres: 'Ana' });
+    const respuesta = crearRespuestaUsuario(usuario);
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password')).flush(respuesta);
+
+    await expect(promesaRespuesta).resolves.toEqual(respuesta);
+  });
+
+  it('cambiarContrasenaUsuario conserva debe_cambiar_password false', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password')).flush(
+      crearRespuestaUsuario(crearUsuario({ debe_cambiar_password: false })),
+    );
+
+    const respuesta = await promesaRespuesta;
+
+    expect(respuesta.data?.debe_cambiar_password).toBe(false);
+  });
+
+  it.each([400, 403, 404, 429, 500])(
+    'cambiarContrasenaUsuario propaga error %s',
+    async (estadoHttp) => {
+      const promesaRespuesta = firstValueFrom(
+        servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+      );
+
+      controladorHttp
+        .expectOne(obtenerUrlApi('usuarios/15/password'))
+        .flush({}, { status: estadoHttp, statusText: 'Error' });
+
+      await expect(promesaRespuesta).rejects.toBeTruthy();
+    },
+  );
+
+  it('cambiarContrasenaUsuario no realiza solicitudes adicionales', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.cambiarContrasenaUsuario(15, { password: 'contrasena123' }),
+    );
+
+    controladorHttp.expectOne(obtenerUrlApi('usuarios/15/password'))
       .flush(crearRespuestaUsuario());
     await promesaRespuesta;
   });

@@ -6,6 +6,7 @@ import { CLAVE_ROLES_PERMITIDOS, CODIGOS_ROL } from '../../core/config/codigos-r
 import { guardRoles } from '../../core/guards/roles.guard';
 import type { UsuarioAutenticado } from '../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
+import { CambiarContrasenaUsuarioComponent } from './cambiar-contrasena-usuario/cambiar-contrasena-usuario.component';
 import { CambiarEstadoUsuarioComponent } from './cambiar-estado-usuario/cambiar-estado-usuario.component';
 import { CrearUsuarioComponent } from './crear-usuario/crear-usuario.component';
 import { EditarUsuarioComponent } from './editar-usuario/editar-usuario.component';
@@ -183,16 +184,58 @@ describe('rutasUsuarios', () => {
     );
   });
 
-  it('no contiene rutas de contrasena', () => {
+  it('existe una ruta contrasena', () => {
+    expect(obtenerRutaContrasena().path).toBe(':id/contrasena');
+  });
+
+  it('la ruta contrasena esta despues de estado', () => {
+    expect(rutasUsuarios.indexOf(obtenerRutaContrasena())).toBeGreaterThan(
+      rutasUsuarios.indexOf(obtenerRutaEstado()),
+    );
+  });
+
+  it('la ruta contrasena esta antes de la ruta vacia', () => {
+    expect(rutasUsuarios.indexOf(obtenerRutaContrasena())).toBeLessThan(
+      rutasUsuarios.indexOf(obtenerRutaRaiz()),
+    );
+  });
+
+  it('la ruta contrasena utiliza loadComponent', () => {
+    expect(obtenerRutaContrasena().loadComponent).toBeDefined();
+  });
+
+  it('la ruta contrasena carga CambiarContrasenaUsuarioComponent', async () => {
+    const componente = await obtenerRutaContrasena().loadComponent?.();
+
+    expect(componente).toBe(CambiarContrasenaUsuarioComponent);
+  });
+
+  it('la ruta contrasena tiene titulo Cambiar contraseña de usuario', () => {
+    expect(obtenerRutaContrasena().title).toBe('Cambiar contraseña de usuario');
+  });
+
+  it('la ruta contrasena utiliza guardRoles', () => {
+    expect(obtenerRutaContrasena().canActivate).toEqual([guardRoles]);
+  });
+
+  it('la ruta contrasena permite unicamente ADMIN', () => {
+    expect(obtenerRutaContrasena().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+    ]);
+  });
+
+  it('la ruta contrasena usa CLAVE_ROLES_PERMITIDOS', () => {
+    expect(Object.keys(obtenerRutaContrasena().data ?? {})).toContain(
+      CLAVE_ROLES_PERMITIDOS,
+    );
+  });
+
+  it('no contiene ruta frontend password', () => {
     expect(rutasUsuarios.some((ruta) => ruta.path?.includes('password'))).toBe(false);
   });
 
   it('no contiene rutas de estado distintas a cambio de estado', () => {
     expect(rutasUsuarios.filter((ruta) => ruta.path?.includes('estado')).length).toBe(1);
-  });
-
-  it('no contiene rutas de cambio de contrasena', () => {
-    expect(rutasUsuarios.some((ruta) => ruta.path?.includes('contrasena'))).toBe(false);
   });
 
   it('no contiene rutas de eliminacion', () => {
@@ -239,20 +282,38 @@ describe('rutasUsuarios', () => {
     expect(ejecutarGuardRutaEstado()).toBe(false);
   });
 
+  it('un administrador puede activar usuarios contrasena', () => {
+    configurarAutenticacion('ADMIN');
+
+    expect(ejecutarGuardRutaContrasena()).toBe(true);
+  });
+
+  it('otro rol no puede activar usuarios contrasena', () => {
+    configurarAutenticacion('DOCENTE');
+
+    expect(ejecutarGuardRutaContrasena()).toBe(false);
+  });
+
   it('la ruta nuevo no es interpretada como identificador', () => {
     expect(rutasUsuarios.indexOf(obtenerRutaNuevo())).toBeLessThan(
       rutasUsuarios.indexOf(obtenerRutaEditar()),
     );
   });
 
-  it('un id invalido puede cargar la ruta estado', () => {
-    expect(obtenerRutaEstado().path).toBe(':id/estado');
+  it('un id invalido queda a cargo del componente de contrasena', () => {
+    expect(obtenerRutaContrasena().path).toBe(':id/contrasena');
   });
 
-  it('nuevo editar y listado continuan funcionando', async () => {
+  it('nuevo editar estado y listado continuan funcionando', async () => {
     expect(await obtenerRutaNuevo().loadComponent?.()).toBe(CrearUsuarioComponent);
     expect(await obtenerRutaEditar().loadComponent?.()).toBe(EditarUsuarioComponent);
+    expect(await obtenerRutaEstado().loadComponent?.())
+      .toBe(CambiarEstadoUsuarioComponent);
     expect(await obtenerRutaRaiz().loadComponent?.()).toBe(ListadoUsuariosComponent);
+  });
+
+  it('la ruta vacia continua existiendo', () => {
+    expect(obtenerRutaRaiz().path).toBe('');
   });
 
   it('no contiene redirects', () => {
@@ -295,6 +356,18 @@ function obtenerRutaEstado() {
 
   if (!ruta) {
     throw new Error('No existe la ruta estado de usuarios.');
+  }
+
+  return ruta;
+}
+
+function obtenerRutaContrasena() {
+  const ruta = rutasUsuarios.find(
+    (rutaActual) => rutaActual.path === ':id/contrasena',
+  );
+
+  if (!ruta) {
+    throw new Error('No existe la ruta contrasena de usuarios.');
   }
 
   return ruta;
@@ -353,5 +426,15 @@ function ejecutarGuardRutaEstado(): boolean {
 
   return TestBed.runInInjectionContext(() =>
     guardRoles(ruta, { url: '/usuarios/15/estado' } as RouterStateSnapshot),
+  ) as boolean;
+}
+
+function ejecutarGuardRutaContrasena(): boolean {
+  const ruta = new ActivatedRouteSnapshot();
+
+  ruta.data = obtenerRutaContrasena().data ?? {};
+
+  return TestBed.runInInjectionContext(() =>
+    guardRoles(ruta, { url: '/usuarios/15/contrasena' } as RouterStateSnapshot),
   ) as boolean;
 }

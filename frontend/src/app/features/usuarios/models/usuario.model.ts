@@ -86,6 +86,10 @@ export interface CambiarEstadoUsuarioSolicitud {
   estado: EstadoUsuario;
 }
 
+export interface CambiarContrasenaUsuarioSolicitud {
+  password: string;
+}
+
 export interface RespuestaListadoUsuarios extends RespuestaApi<Usuario[]> {
   page: number;
   limit: number;

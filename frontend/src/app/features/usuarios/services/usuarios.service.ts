@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
   ActualizarUsuarioSolicitud,
+  CambiarContrasenaUsuarioSolicitud,
   CambiarEstadoUsuarioSolicitud,
   CrearUsuarioSolicitud,
   FiltrosListadoUsuarios,
@@ -60,6 +61,18 @@ export class UsuariosService {
       obtenerUrlApi(`usuarios/${idUsuario}/estado`),
       {
         estado: solicitud.estado,
+      },
+    );
+  }
+
+  cambiarContrasenaUsuario(
+    idUsuario: number,
+    solicitud: CambiarContrasenaUsuarioSolicitud,
+  ): Observable<RespuestaUsuario> {
+    return this.http.patch<RespuestaUsuario>(
+      obtenerUrlApi(`usuarios/${idUsuario}/password`),
+      {
+        password: solicitud.password,
       },
     );
   }

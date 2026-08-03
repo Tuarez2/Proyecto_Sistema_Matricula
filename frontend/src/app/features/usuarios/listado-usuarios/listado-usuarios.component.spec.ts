@@ -587,6 +587,13 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerEnlaces('Cambiar estado').length).toBe(1);
   });
 
+  it('cada usuario tiene enlace Cambiar contraseña', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlaces('Cambiar contraseña').length).toBe(1);
+  });
+
   it('el enlace Editar incluye el identificador', () => {
     iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
     fixture.detectChanges();
@@ -618,6 +625,33 @@ describe('ListadoUsuariosComponent', () => {
 
     expect(obtenerEnlace('Cambiar estado')?.getAttribute('href')).toBe(
       '/usuarios/15/estado',
+    );
+  });
+
+  it('el enlace Cambiar contraseña incluye el identificador', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar contraseña')?.getAttribute('href')).toContain(
+      '/usuarios/15',
+    );
+  });
+
+  it('el enlace Cambiar contraseña apunta a usuarios id contrasena', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar contraseña')?.getAttribute('href')).toBe(
+      '/usuarios/15/contrasena',
+    );
+  });
+
+  it('el enlace Cambiar contraseña no apunta a password', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario({ id: 15 })] }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar contraseña')?.getAttribute('href')).not.toContain(
+      '/password',
     );
   });
 
@@ -677,6 +711,20 @@ describe('ListadoUsuariosComponent', () => {
       .toEqual(['/usuarios/15/estado', '/usuarios/22/estado']);
   });
 
+  it('los enlaces de contrasena usan identificadores correctos con varios usuarios', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearUsuario({ id: 15 }),
+        crearUsuario({ id: 22, correo: 'otro@universidad.edu' }),
+      ],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlaces('Cambiar contraseña').map(
+      (enlace) => enlace.getAttribute('href'),
+    )).toEqual(['/usuarios/15/contrasena', '/usuarios/22/contrasena']);
+  });
+
   it('la tabla continua siendo semantica', () => {
     iniciarYCompletar();
     fixture.detectChanges();
@@ -702,6 +750,15 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
   });
 
+  it('el enlace de contrasena existe para usuarios activos', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'activo' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar contraseña')).toBeTruthy();
+  });
+
   it('el enlace de estado existe para usuarios bloqueados', () => {
     iniciarYCompletar(crearRespuestaListado({
       data: [crearUsuario({ estado: 'bloqueado' })],
@@ -711,6 +768,15 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
   });
 
+  it('el enlace de contrasena existe para usuarios bloqueados', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'bloqueado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar contraseña')).toBeTruthy();
+  });
+
   it('el enlace de estado existe para usuarios inactivos', () => {
     iniciarYCompletar(crearRespuestaListado({
       data: [crearUsuario({ estado: 'inactivo' })],
@@ -718,6 +784,15 @@ describe('ListadoUsuariosComponent', () => {
     fixture.detectChanges();
 
     expect(obtenerEnlace('Cambiar estado')).toBeTruthy();
+  });
+
+  it('el enlace de contrasena existe para usuarios inactivos', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'inactivo' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Cambiar contraseña')).toBeTruthy();
   });
 
   it('existen botones Anterior y Siguiente', () => {
