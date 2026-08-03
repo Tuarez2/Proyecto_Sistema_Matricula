@@ -1,10 +1,85 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { finalize } from 'rxjs';
+
+import { AutenticacionService } from '../../core/services/autenticacion.service';
 
 @Component({
   selector: 'app-layout-principal',
-  imports: [RouterOutlet],
+  imports: [
+    RouterLink,
+    RouterOutlet,
+  ],
   templateUrl: './layout-principal.component.html',
   styleUrl: './layout-principal.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LayoutPrincipalComponent {}
+export class LayoutPrincipalComponent {
+  private readonly autenticacionService = inject(AutenticacionService);
+  private readonly enrutador = inject(Router);
+  private readonly referenciaDestruccion = inject(DestroyRef);
+  private readonly estadoCerrandoSesion = signal(false);
+
+  readonly usuarioActual = this.autenticacionService.usuarioActual;
+  readonly cerrandoSesion = this.estadoCerrandoSesion.asReadonly();
+  readonly nombreCompletoUsuario = computed(() => {
+    const usuario = this.usuarioActual?.() ?? null;
+
+    if (!usuario) {
+      return 'Usuario';
+    }
+
+    const nombreCompleto = [
+      usuario.nombres.trim(),
+      usuario.apellidos.trim(),
+    ]
+      .filter((parteNombre) => parteNombre.length > 0)
+      .join(' ');
+
+    return nombreCompleto || 'Usuario';
+  });
+  readonly nombreRolUsuario = computed(() => {
+    const rol = this.usuarioActual?.()?.rol;
+
+    if (!rol) {
+      return 'Sin rol asignado';
+    }
+
+    const nombreRol = rol.nombre.trim();
+
+    if (nombreRol) {
+      return nombreRol;
+    }
+
+    return rol.codigo.trim() || 'Sin rol asignado';
+  });
+
+  cerrarSesion(): void {
+    if (this.cerrandoSesion()) {
+      return;
+    }
+
+    this.estadoCerrandoSesion.set(true);
+    this.autenticacionService.cerrarSesion()
+      .pipe(
+        takeUntilDestroyed(this.referenciaDestruccion),
+        finalize(() => this.estadoCerrandoSesion.set(false)),
+      )
+      .subscribe({
+        next: () => this.completarCierreSesion(),
+        error: () => this.completarCierreSesion(),
+      });
+  }
+
+  private completarCierreSesion(): void {
+    void this.enrutador.navigateByUrl('/iniciar-sesion');
+  }
+}

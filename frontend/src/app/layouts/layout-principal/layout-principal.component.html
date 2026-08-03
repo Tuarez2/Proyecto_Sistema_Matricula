@@ -1,17 +1,28 @@
-<header class="encabezado-principal">
-  <div class="contenedor">
-    <p>Sistema de Matrícula Universitaria</p>
-  </div>
+<header>
+  <p>Sistema de Matrícula Universitaria</p>
+
+  <nav aria-label="Navegación principal">
+    <a routerLink="/">Inicio</a>
+  </nav>
+
+  <section aria-label="Sesión actual">
+    <p>{{ nombreCompletoUsuario() }}</p>
+    <p>{{ nombreRolUsuario() }}</p>
+
+    <button
+      type="button"
+      [disabled]="cerrandoSesion()"
+      (click)="cerrarSesion()"
+    >
+      @if (cerrandoSesion()) {
+        Cerrando sesión...
+      } @else {
+        Cerrar sesión
+      }
+    </button>
+  </section>
 </header>
 
-<main class="contenido-principal">
-  <div class="contenedor">
-    <router-outlet />
-  </div>
+<main>
+  <router-outlet />
 </main>
-
-<footer class="pie-principal">
-  <div class="contenedor">
-    <p>Frontend Angular inicial</p>
-  </div>
-</footer>
