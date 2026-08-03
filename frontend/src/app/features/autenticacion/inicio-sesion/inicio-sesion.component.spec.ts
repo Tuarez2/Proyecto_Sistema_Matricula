@@ -1,6 +1,6 @@
 import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, ParamMap, Router } from '@angular/router';
 import { Observable, Subject, throwError } from 'rxjs';
 
 import type {
@@ -53,6 +53,7 @@ describe('InicioSesionComponent', () => {
   let componente: InicioSesionComponent;
   let autenticacionService: AutenticacionServiceMock;
   let router: RouterMock;
+  let rutaActiva: { snapshot: { queryParamMap: ParamMap } };
 
   beforeEach(async () => {
     autenticacionService = {
@@ -60,6 +61,11 @@ describe('InicioSesionComponent', () => {
     };
     router = {
       navigateByUrl: vi.fn(() => Promise.resolve(true)),
+    };
+    rutaActiva = {
+      snapshot: {
+        queryParamMap: convertToParamMap({}),
+      },
     };
 
     await TestBed.configureTestingModule({
@@ -72,6 +78,10 @@ describe('InicioSesionComponent', () => {
         {
           provide: Router,
           useValue: router,
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: rutaActiva,
         },
       ],
     }).compileComponents();
@@ -265,6 +275,96 @@ describe('InicioSesionComponent', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/');
   });
 
+  it('sin parametro retorno navega a raiz', () => {
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
+  it('con retorno usuarios navega a usuarios', () => {
+    cambiarRetorno('/usuarios');
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/usuarios');
+  });
+
+  it('conserva query params internos en retorno', () => {
+    cambiarRetorno('/usuarios?pagina=2');
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/usuarios?pagina=2');
+  });
+
+  it.each([
+    'https://sitio-externo.com',
+    'http://sitio-externo.com',
+    '//sitio-externo.com',
+    'iniciar-sesion',
+    '/iniciar-sesion',
+    '/iniciar-sesion?retorno=/',
+  ])('rechaza retorno invalido %s y navega a raiz', (retornoInvalido) => {
+    cambiarRetorno(retornoInvalido);
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
+  it('no navega a una URL externa', () => {
+    cambiarRetorno('https://sitio-externo.com');
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).not.toHaveBeenCalledWith('https://sitio-externo.com');
+  });
+
+  it('no utiliza el correo rol ni datos del backend para construir el retorno', () => {
+    cambiarRetorno('/usuarios');
+    const solicitud = prepararSolicitudPendiente();
+    const datosAutenticacion = crearDatosAutenticacion();
+    const respuesta: RespuestaInicioSesion = {
+      success: true,
+      data: datosAutenticacion,
+    };
+
+    datosAutenticacion.user.correo = 'otra.persona@universidad.edu';
+    datosAutenticacion.user.rol = {
+      id: 1,
+      codigo: 'ADMIN',
+      nombre: 'Administrador',
+    };
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(respuesta);
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/usuarios');
+  });
+
   it('no muestra error despues de una respuesta correcta', () => {
     const solicitud = prepararSolicitudPendiente();
 
@@ -300,6 +400,19 @@ describe('InicioSesionComponent', () => {
     solicitud.complete();
   });
 
+  it('la prevencion de doble envio continua funcionando con retorno configurado', () => {
+    cambiarRetorno('/usuarios');
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    componente.enviarFormulario();
+
+    expect(autenticacionService.iniciarSesion).toHaveBeenCalledTimes(1);
+
+    solicitud.complete();
+  });
+
   it('permite un nuevo intento despues de finalizar la solicitud anterior', () => {
     const primeraSolicitud = new Subject<RespuestaInicioSesion>();
     const segundaSolicitud = new Subject<RespuestaInicioSesion>();
@@ -319,6 +432,14 @@ describe('InicioSesionComponent', () => {
   });
 
   it('ante error no navega', () => {
+    prepararError(new HttpErrorResponse({ status: 401 }));
+
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('los errores de login continuan sin navegar con retorno configurado', () => {
+    cambiarRetorno('/usuarios');
+
     prepararError(new HttpErrorResponse({ status: 401 }));
 
     expect(router.navigateByUrl).not.toHaveBeenCalled();
@@ -538,6 +659,10 @@ describe('InicioSesionComponent', () => {
     autenticacionService.iniciarSesion.mockReturnValueOnce(throwError(() => error));
     completarFormularioValido();
     componente.enviarFormulario();
+  }
+
+  function cambiarRetorno(retorno: string): void {
+    rutaActiva.snapshot.queryParamMap = convertToParamMap({ retorno });
   }
 
   function obtenerCredencialesEnviadas(): CredencialesInicioSesion {

@@ -1,11 +1,12 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig } from '@angular/core';
+import { ApplicationConfig, inject, provideAppInitializer } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { interceptorErroresHttp } from './core/interceptors/errores-http.interceptor';
 import { interceptorRenovacionSesion } from './core/interceptors/renovacion-sesion.interceptor';
 import { interceptorTokenAcceso } from './core/interceptors/token-acceso.interceptor';
+import { AutenticacionService } from './core/services/autenticacion.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,6 +17,10 @@ export const appConfig: ApplicationConfig = {
         interceptorRenovacionSesion,
       ]),
     ),
+    provideAppInitializer(() => {
+      const autenticacionService = inject(AutenticacionService);
+      return autenticacionService.inicializarSesion();
+    }),
     provideRouter(routes),
   ],
 };

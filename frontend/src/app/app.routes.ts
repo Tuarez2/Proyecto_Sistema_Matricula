@@ -1,14 +1,17 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
+
+import { guardAutenticacion } from './core/guards/autenticacion.guard';
 
 export const routes: Routes = [
   {
-    path: '',
+    matcher: coincidirRutaAutenticacion,
     loadChildren: () =>
       import('./features/autenticacion/autenticacion.routes')
         .then((modulo) => modulo.rutasAutenticacion),
   },
   {
     path: '',
+    canActivate: [guardAutenticacion],
     loadComponent: () =>
       import('./layouts/layout-principal/layout-principal.component')
         .then((modulo) => modulo.LayoutPrincipalComponent),
@@ -30,3 +33,13 @@ export const routes: Routes = [
     title: 'Página no encontrada',
   },
 ];
+
+function coincidirRutaAutenticacion(segmentos: UrlSegment[]): UrlMatchResult | null {
+  if (segmentos[0]?.path === 'iniciar-sesion') {
+    return {
+      consumed: [],
+    };
+  }
+
+  return null;
+}

@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, Injectable, inject, signal } from '@angular/core';
-import { finalize, Observable, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, Observable, of, tap, throwError } from 'rxjs';
 
 import { obtenerUrlApi } from '../config/configuracion-api';
 import type {
@@ -27,6 +27,26 @@ export class AutenticacionService {
   readonly sesionActual = this.estadoSesion.asReadonly();
   readonly usuarioActual = computed(() => this.estadoSesion()?.user ?? null);
   readonly estaAutenticado = computed(() => this.estadoSesion() !== null);
+
+  inicializarSesion(): Observable<void> {
+    if (!this.estaAutenticado()) {
+      return of(void 0);
+    }
+
+    return this.consultarPerfil().pipe(
+      map(() => void 0),
+      catchError((errorInicializacion: unknown) => {
+        if (
+          errorInicializacion instanceof HttpErrorResponse &&
+          errorInicializacion.status === 401
+        ) {
+          this.limpiarSesion();
+        }
+
+        return of(void 0);
+      }),
+    );
+  }
 
   iniciarSesion(
     credenciales: CredencialesInicioSesion,

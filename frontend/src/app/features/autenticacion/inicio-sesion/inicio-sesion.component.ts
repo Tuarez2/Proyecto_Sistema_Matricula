@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import type { CredencialesInicioSesion } from '../../../core/models/autenticacion.model';
@@ -24,6 +24,7 @@ export class InicioSesionComponent {
   private readonly constructorFormulario = inject(FormBuilder);
   private readonly autenticacionService = inject(AutenticacionService);
   private readonly router = inject(Router);
+  private readonly rutaActiva = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly enviandoFormulario = signal(false);
@@ -71,8 +72,9 @@ export class InicioSesionComponent {
       )
       .subscribe({
         next: () => {
+          const rutaRetorno = this.obtenerRutaRetornoSegura();
           this.mensajeError.set(null);
-          void this.router.navigateByUrl('/');
+          void this.router.navigateByUrl(rutaRetorno);
         },
         error: (error: unknown) => {
           this.mensajeError.set(this.obtenerMensajeError(error));
@@ -114,6 +116,27 @@ export class InicioSesionComponent {
     }
 
     return 'No fue posible iniciar sesión.';
+  }
+
+  private obtenerRutaRetornoSegura(): string {
+    const rutaRetorno = this.rutaActiva.snapshot.queryParamMap.get('retorno');
+
+    if (rutaRetorno && this.esRutaRetornoSegura(rutaRetorno)) {
+      return rutaRetorno;
+    }
+
+    return '/';
+  }
+
+  private esRutaRetornoSegura(ruta: string): boolean {
+    return (
+      ruta.length > 0 &&
+      ruta.startsWith('/') &&
+      !ruta.startsWith('//') &&
+      ruta !== '/iniciar-sesion' &&
+      !ruta.startsWith('/iniciar-sesion?') &&
+      !/^[a-z][a-z\d+\-.]*:/i.test(ruta)
+    );
   }
 
   private obtenerMensajeBackend(cuerpoError: unknown): string | null {

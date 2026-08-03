@@ -10,16 +10,18 @@ import {
 import { Observable } from 'rxjs';
 
 import type {
+  RespuestaPerfilAutenticado,
   RespuestaRenovacionSesion,
   UsuarioAutenticado,
 } from '../models/autenticacion.model';
 import { AutenticacionService } from '../services/autenticacion.service';
-import { guardAutenticacion } from './autenticacion.guard';
+import { guardInvitado } from './invitado.guard';
 
 interface AutenticacionServiceMock {
   estaAutenticado: Signal<boolean>;
   usuarioActual: Signal<UsuarioAutenticado | null>;
   limpiarSesion: ReturnType<typeof vi.fn<() => void>>;
+  consultarPerfil: ReturnType<typeof vi.fn<() => Observable<RespuestaPerfilAutenticado>>>;
   renovarSesion: ReturnType<typeof vi.fn<() => Observable<RespuestaRenovacionSesion>>>;
 }
 
@@ -28,7 +30,7 @@ interface RouterNavegacion {
   navigateByUrl: ReturnType<typeof vi.fn>;
 }
 
-describe('guardAutenticacion', () => {
+describe('guardInvitado', () => {
   let estadoAutenticacion: ReturnType<typeof signal<boolean>>;
   let autenticacionService: AutenticacionServiceMock;
   let router: Router;
@@ -39,7 +41,8 @@ describe('guardAutenticacion', () => {
     autenticacionService = {
       estaAutenticado: estadoAutenticacion.asReadonly(),
       usuarioActual: signal<UsuarioAutenticado | null>(null).asReadonly(),
-      limpiarSesion: vi.fn(),
+      limpiarSesion: vi.fn(() => estadoAutenticacion.set(false)),
+      consultarPerfil: vi.fn(),
       renovarSesion: vi.fn(),
     };
 
@@ -60,91 +63,83 @@ describe('guardAutenticacion', () => {
     };
   });
 
-  it('devuelve true cuando el usuario esta autenticado', () => {
-    estadoAutenticacion.set(true);
-
-    expect(ejecutarGuard('/')).toBe(true);
-  });
-
-  it('devuelve un UrlTree cuando no esta autenticado', () => {
+  it('devuelve true cuando no existe sesion', () => {
     estadoAutenticacion.set(false);
 
-    expect(ejecutarGuard('/')).toBeInstanceOf(UrlTree);
+    expect(ejecutarGuard()).toBe(true);
   });
 
-  it('el UrlTree apunta a iniciar-sesion', () => {
-    const resultado = ejecutarGuard('/');
+  it('devuelve un UrlTree cuando existe sesion', () => {
+    estadoAutenticacion.set(true);
 
-    expect(serializarResultado(resultado)).toContain('/iniciar-sesion');
+    expect(ejecutarGuard()).toBeInstanceOf(UrlTree);
   });
 
-  it('conserva / como parametro retorno', () => {
-    const resultado = ejecutarGuard('/');
+  it('el UrlTree apunta a raiz', () => {
+    estadoAutenticacion.set(true);
 
-    expect(serializarResultado(resultado)).toBe('/iniciar-sesion?retorno=%2F');
+    const resultado = ejecutarGuard();
+
+    expect(serializarResultado(resultado)).toBe('/');
   });
 
-  it('conserva /usuarios como parametro retorno', () => {
-    const resultado = ejecutarGuard('/usuarios');
-
-    expect(serializarResultado(resultado)).toBe(
-      '/iniciar-sesion?retorno=%2Fusuarios',
-    );
-  });
-
-  it('conserva query params en la URL de retorno original', () => {
-    const resultado = ejecutarGuard('/usuarios?pagina=2');
-
-    expect(serializarResultado(resultado)).toBe(
-      '/iniciar-sesion?retorno=%2Fusuarios%3Fpagina%3D2',
-    );
-  });
-
-  it('consulta el estado actual en cada ejecucion', () => {
+  it('consulta el valor actual en cada ejecucion', () => {
     estadoAutenticacion.set(false);
-    expect(ejecutarGuard('/')).toBeInstanceOf(UrlTree);
+    expect(ejecutarGuard()).toBe(true);
 
     estadoAutenticacion.set(true);
-    expect(ejecutarGuard('/')).toBe(true);
+    expect(ejecutarGuard()).toBeInstanceOf(UrlTree);
   });
 
-  it('no ejecuta navigate', () => {
-    ejecutarGuard('/');
+  it('permite volver al login despues de ejecutar limpiarSesion', () => {
+    estadoAutenticacion.set(true);
+    expect(ejecutarGuard()).toBeInstanceOf(UrlTree);
 
-    expect(routerNavegacion.navigate).not.toHaveBeenCalled();
+    autenticacionService.limpiarSesion();
+
+    expect(ejecutarGuard()).toBe(true);
   });
 
-  it('no ejecuta navigateByUrl', () => {
-    ejecutarGuard('/');
+  it('no limpia la sesion por si mismo', () => {
+    estadoAutenticacion.set(true);
 
-    expect(routerNavegacion.navigateByUrl).not.toHaveBeenCalled();
-  });
-
-  it('no limpia la sesion', () => {
-    ejecutarGuard('/');
+    ejecutarGuard();
 
     expect(autenticacionService.limpiarSesion).not.toHaveBeenCalled();
   });
 
+  it('no consulta el perfil', () => {
+    ejecutarGuard();
+
+    expect(autenticacionService.consultarPerfil).not.toHaveBeenCalled();
+  });
+
   it('no renueva la sesion', () => {
-    ejecutarGuard('/');
+    ejecutarGuard();
 
     expect(autenticacionService.renovarSesion).not.toHaveBeenCalled();
+  });
+
+  it('no ejecuta navegacion imperativa', () => {
+    ejecutarGuard();
+
+    expect(routerNavegacion.navigate).not.toHaveBeenCalled();
+    expect(routerNavegacion.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it('puede ejecutarse varias veces', () => {
     estadoAutenticacion.set(false);
 
-    expect(ejecutarGuard('/')).toBeInstanceOf(UrlTree);
-    expect(ejecutarGuard('/usuarios')).toBeInstanceOf(UrlTree);
-    expect(ejecutarGuard('/periodos-academicos')).toBeInstanceOf(UrlTree);
+    expect(ejecutarGuard()).toBe(true);
+    expect(ejecutarGuard()).toBe(true);
+    expect(ejecutarGuard()).toBe(true);
   });
 
-  function ejecutarGuard(url: string): boolean | UrlTree {
-    const estado = { url } as RouterStateSnapshot;
+  function ejecutarGuard(): boolean | UrlTree {
+    const estado = { url: '/iniciar-sesion' } as RouterStateSnapshot;
 
     return TestBed.runInInjectionContext(() =>
-      guardAutenticacion(new ActivatedRouteSnapshot(), estado),
+      guardInvitado(new ActivatedRouteSnapshot(), estado),
     ) as boolean | UrlTree;
   }
 

@@ -241,6 +241,169 @@ describe('AutenticacionService', () => {
     expect(almacenamientoSesion.obtenerSesion()).toEqual(sesionEsperada);
   });
 
+  it('inicializarSesion sin sesion local completa sin consultar el perfil', () => {
+    configurarPrueba();
+    const servicio = TestBed.inject(AutenticacionService);
+    let inicializacionCompleta = false;
+
+    servicio.inicializarSesion().subscribe({
+      complete: () => {
+        inicializacionCompleta = true;
+      },
+    });
+
+    controladorHttp!.expectNone(obtenerUrlApi('auth/me'));
+    expect(inicializacionCompleta).toBe(true);
+    expect(servicio.sesionActual()).toBeNull();
+    expect(servicio.estaAutenticado()).toBe(false);
+  });
+
+  it('inicializarSesion con sesion local consulta el perfil y conserva tokens', () => {
+    const datosSesion = crearDatosSesion('inicializacion');
+    const { almacenamientoSesion } = configurarPrueba();
+
+    almacenamientoSesion.guardarSesion(datosSesion);
+    const servicio = TestBed.inject(AutenticacionService);
+    const usuarioActualizado = crearUsuarioActualizado();
+    let inicializacionCompleta = false;
+
+    servicio.inicializarSesion().subscribe({
+      complete: () => {
+        inicializacionCompleta = true;
+      },
+    });
+
+    const solicitud = controladorHttp!.expectOne(obtenerUrlApi('auth/me'));
+    solicitud.flush({
+      success: true,
+      data: {
+        user: usuarioActualizado,
+      },
+    } satisfies RespuestaPerfilAutenticado);
+
+    const sesionEsperada: DatosAutenticacion = {
+      ...datosSesion,
+      user: usuarioActualizado,
+    };
+
+    expect(inicializacionCompleta).toBe(true);
+    expect(servicio.sesionActual()).toEqual(sesionEsperada);
+    expect(almacenamientoSesion.obtenerSesion()).toEqual(sesionEsperada);
+  });
+
+  it('inicializarSesion ante 401 definitivo limpia la sesion y completa', () => {
+    const datosSesion = crearDatosSesion('invalida');
+    const { almacenamientoSesion } = configurarPrueba();
+
+    almacenamientoSesion.guardarSesion(datosSesion);
+    const servicio = TestBed.inject(AutenticacionService);
+    let inicializacionCompleta = false;
+    let errorRecibido: unknown;
+
+    servicio.inicializarSesion().subscribe({
+      complete: () => {
+        inicializacionCompleta = true;
+      },
+      error: (error: unknown) => {
+        errorRecibido = error;
+      },
+    });
+
+    controladorHttp!
+      .expectOne(obtenerUrlApi('auth/me'))
+      .flush({}, { status: 401, statusText: 'No autorizado' });
+
+    expect(inicializacionCompleta).toBe(true);
+    expect(errorRecibido).toBeUndefined();
+    expect(almacenamientoSesion.obtenerSesion()).toBeNull();
+    expect(servicio.estaAutenticado()).toBe(false);
+  });
+
+  it('inicializarSesion ante error de conexion completa y conserva la sesion', () => {
+    const datosSesion = crearDatosSesion('conexion');
+    const { almacenamientoSesion } = configurarPrueba();
+
+    almacenamientoSesion.guardarSesion(datosSesion);
+    const servicio = TestBed.inject(AutenticacionService);
+    let inicializacionCompleta = false;
+
+    servicio.inicializarSesion().subscribe({
+      complete: () => {
+        inicializacionCompleta = true;
+      },
+    });
+
+    controladorHttp!
+      .expectOne(obtenerUrlApi('auth/me'))
+      .flush({}, { status: 0, statusText: 'Error de conexion' });
+
+    expect(inicializacionCompleta).toBe(true);
+    expect(almacenamientoSesion.obtenerSesion()).toEqual(datosSesion);
+    expect(servicio.sesionActual()).toEqual(datosSesion);
+  });
+
+  it('inicializarSesion ante error 500 completa y conserva la sesion', () => {
+    const datosSesion = crearDatosSesion('servidor');
+    const { almacenamientoSesion } = configurarPrueba();
+
+    almacenamientoSesion.guardarSesion(datosSesion);
+    const servicio = TestBed.inject(AutenticacionService);
+    let inicializacionCompleta = false;
+
+    servicio.inicializarSesion().subscribe({
+      complete: () => {
+        inicializacionCompleta = true;
+      },
+    });
+
+    controladorHttp!
+      .expectOne(obtenerUrlApi('auth/me'))
+      .flush({}, { status: 500, statusText: 'Error del servidor' });
+
+    expect(inicializacionCompleta).toBe(true);
+    expect(almacenamientoSesion.obtenerSesion()).toEqual(datosSesion);
+    expect(servicio.sesionActual()).toEqual(datosSesion);
+  });
+
+  it('inicializarSesion puede ejecutarse varias veces sin crear estados inconsistentes', () => {
+    const datosSesion = crearDatosSesion('varias');
+    const { almacenamientoSesion } = configurarPrueba();
+
+    almacenamientoSesion.guardarSesion(datosSesion);
+    const servicio = TestBed.inject(AutenticacionService);
+
+    servicio.inicializarSesion().subscribe();
+    controladorHttp!.expectOne(obtenerUrlApi('auth/me')).flush({
+      success: true,
+      data: {
+        user: datosSesion.user,
+      },
+    } satisfies RespuestaPerfilAutenticado);
+
+    servicio.inicializarSesion().subscribe();
+    controladorHttp!.expectOne(obtenerUrlApi('auth/me')).flush({
+      success: true,
+      data: {
+        user: datosSesion.user,
+      },
+    } satisfies RespuestaPerfilAutenticado);
+
+    expect(servicio.sesionActual()).toEqual(datosSesion);
+    expect(servicio.estaAutenticado()).toBe(true);
+  });
+
+  it('inicializarSesion no realiza subscribe interno', () => {
+    const datosSesion = crearDatosSesion('sin-subscribe');
+    const { almacenamientoSesion } = configurarPrueba();
+
+    almacenamientoSesion.guardarSesion(datosSesion);
+    const servicio = TestBed.inject(AutenticacionService);
+
+    servicio.inicializarSesion();
+
+    controladorHttp!.expectNone(obtenerUrlApi('auth/me'));
+  });
+
   it('cierra sesion y limpia la sesion local cuando la respuesta es correcta', () => {
     const datosSesion = crearDatosSesion('logout');
     const { almacenamientoSesion } = configurarPrueba();
