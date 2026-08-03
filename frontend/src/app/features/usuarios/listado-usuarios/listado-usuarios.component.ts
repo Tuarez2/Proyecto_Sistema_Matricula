@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import type { Rol } from '../models/rol.model';
@@ -24,7 +25,10 @@ import { UsuariosService } from '../services/usuarios.service';
 
 @Component({
   selector: 'app-listado-usuarios',
-  imports: [ReactiveFormsModule],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+  ],
   templateUrl: './listado-usuarios.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

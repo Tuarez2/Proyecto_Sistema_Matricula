@@ -60,9 +60,23 @@ export interface FiltrosListadoUsuarios {
   limite?: number;
 }
 
+export interface CrearUsuarioSolicitud {
+  nombres: string;
+  apellidos: string;
+  correo: string;
+  password: string;
+  estado: EstadoUsuario;
+  rol_id: number;
+  estudiante_id: number | null;
+  docente_id: number | null;
+  debe_cambiar_password: boolean;
+}
+
 export interface RespuestaListadoUsuarios extends RespuestaApi<Usuario[]> {
   page: number;
   limit: number;
   total: number;
   totalPages: number;
 }
+
+export type RespuestaUsuario = RespuestaApi<Usuario>;

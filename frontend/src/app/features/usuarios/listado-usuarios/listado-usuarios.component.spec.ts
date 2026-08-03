@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Observable, Subject } from 'rxjs';
 
 import type { RespuestaRoles, Rol } from '../models/rol.model';
@@ -51,6 +52,7 @@ describe('ListadoUsuariosComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ListadoUsuariosComponent],
       providers: [
+        provideRouter([]),
         {
           provide: UsuariosService,
           useValue: usuariosService,
@@ -492,6 +494,22 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerElemento('h1')?.textContent).toContain('Usuarios');
   });
 
+  it('existe enlace Crear usuario', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+  });
+
+  it('el enlace Crear usuario apunta a usuarios nuevo', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear usuario')?.getAttribute('href')).toBe(
+      '/usuarios/nuevo',
+    );
+  });
+
   it('existe formulario de filtros', () => {
     iniciarYCompletar();
     fixture.detectChanges();
@@ -555,6 +573,43 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerTexto()).not.toContain('Acciones');
   });
 
+  it('no existen enlaces de edicion', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).not.toContain('Editar');
+  });
+
+  it('no existen botones de estado', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Cambiar estado')).toBeNull();
+  });
+
+  it('no existen botones de contrasena', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Restablecer contraseña')).toBeNull();
+  });
+
+  it('el enlace Crear usuario se mantiene visible sin resultados', () => {
+    iniciarComponente();
+    completarRoles();
+    completarUsuarios(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+  });
+
+  it('el enlace Crear usuario se mantiene visible durante la carga', () => {
+    iniciarComponente();
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+  });
+
   it('existen botones Anterior y Siguiente', () => {
     iniciarYCompletar();
     fixture.detectChanges();
@@ -614,6 +669,14 @@ describe('ListadoUsuariosComponent', () => {
     ) as HTMLButtonElement[];
 
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function obtenerEnlace(texto: string): HTMLAnchorElement | null {
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('a'),
+    ) as HTMLAnchorElement[];
+
+    return enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null;
   }
 
   function obtenerTexto(): string {

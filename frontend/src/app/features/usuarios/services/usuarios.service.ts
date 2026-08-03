@@ -4,8 +4,10 @@ import { Observable } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
+  CrearUsuarioSolicitud,
   FiltrosListadoUsuarios,
   RespuestaListadoUsuarios,
+  RespuestaUsuario,
 } from '../models/usuario.model';
 
 @Injectable({
@@ -22,6 +24,12 @@ export class UsuariosService {
     return this.http.get<RespuestaListadoUsuarios>(obtenerUrlApi('usuarios'), {
       params,
     });
+  }
+
+  crearUsuario(
+    datosUsuario: CrearUsuarioSolicitud,
+  ): Observable<RespuestaUsuario> {
+    return this.http.post<RespuestaUsuario>(obtenerUrlApi('usuarios'), datosUsuario);
   }
 
   private construirParametros(filtros: FiltrosListadoUsuarios): HttpParams {
