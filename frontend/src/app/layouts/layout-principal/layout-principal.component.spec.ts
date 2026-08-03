@@ -82,6 +82,84 @@ describe('LayoutPrincipalComponent', () => {
     expect(obtenerElemento('a')?.textContent?.trim()).toBe('Inicio');
   });
 
+  it('un administrador ve el enlace Usuarios', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeTruthy();
+  });
+
+  it('el enlace Usuarios apunta a /usuarios', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')?.getAttribute('href')).toBe('/usuarios');
+  });
+
+  it('GESTOR_MATRICULA no ve Usuarios', () => {
+    usuarioActual.set(crearUsuarioConRol('GESTOR_MATRICULA'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeNull();
+  });
+
+  it('ESTUDIANTE no ve Usuarios', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeNull();
+  });
+
+  it('DOCENTE no ve Usuarios', () => {
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeNull();
+  });
+
+  it('usuario sin rol no ve Usuarios', () => {
+    usuarioActual.set(crearUsuario({ rol: null }));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeNull();
+  });
+
+  it('sin usuario no se muestra Usuarios', () => {
+    usuarioActual.set(null);
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeNull();
+  });
+
+  it('el enlace aparece si la señal cambia a administrador', () => {
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+    expect(obtenerEnlace('Usuarios')).toBeNull();
+
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeTruthy();
+  });
+
+  it('el enlace desaparece si cambia a otro rol', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+    expect(obtenerEnlace('Usuarios')).toBeTruthy();
+
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeNull();
+  });
+
+  it('el enlace Inicio continua existiendo', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Inicio')).toBeTruthy();
+  });
+
   it('existe un main', () => {
     expect(obtenerElemento('main')).toBeTruthy();
   });
@@ -394,6 +472,14 @@ describe('LayoutPrincipalComponent', () => {
     return obtenerElemento<HTMLButtonElement>('button');
   }
 
+  function obtenerEnlace(texto: string): HTMLAnchorElement | null {
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('a'),
+    ) as HTMLAnchorElement[];
+
+    return enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null;
+  }
+
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
   }
@@ -424,6 +510,16 @@ function crearUsuario(
     },
     ...usuarioParcial,
   };
+}
+
+function crearUsuarioConRol(codigoRol: string): UsuarioAutenticado {
+  return crearUsuario({
+    rol: {
+      id: 1,
+      codigo: codigoRol,
+      nombre: codigoRol,
+    },
+  });
 }
 
 function crearRespuestaCierrePendiente(): Subject<RespuestaCierreSesion> {

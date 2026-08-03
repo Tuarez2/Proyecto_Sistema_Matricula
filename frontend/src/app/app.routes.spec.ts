@@ -82,6 +82,18 @@ describe('routes', () => {
     expect(obtenerRutaLayout().data).toBeUndefined();
   });
 
+  it('la ruta usuarios esta dentro del layout', () => {
+    expect(obtenerRutaUsuarios()).toBeTruthy();
+  });
+
+  it('la ruta usuarios utiliza carga diferida', () => {
+    expect(obtenerRutaUsuarios().loadChildren).toBeDefined();
+  });
+
+  it('la ruta usuarios no altera la ruta de inicio', () => {
+    expect(obtenerRutaLayout().children?.some((ruta) => ruta.path === '')).toBe(true);
+  });
+
   it('no se crearon ciclos de redireccion', async () => {
     await crearHarness(false, '/');
     const router = TestBed.inject(Router);
@@ -128,6 +140,18 @@ describe('routes', () => {
 
     if (!ruta) {
       throw new Error('No existe ruta de layout.');
+    }
+
+    return ruta;
+  }
+
+  function obtenerRutaUsuarios() {
+    const ruta = obtenerRutaLayout().children?.find(
+      (rutaActual) => rutaActual.path === 'usuarios',
+    );
+
+    if (!ruta) {
+      throw new Error('No existe ruta de usuarios.');
     }
 
     return ruta;

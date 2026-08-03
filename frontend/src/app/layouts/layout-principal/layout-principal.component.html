@@ -3,6 +3,9 @@
 
   <nav aria-label="Navegación principal">
     <a routerLink="/">Inicio</a>
+    @if (esAdministrador()) {
+      <a routerLink="/usuarios">Usuarios</a>
+    }
   </nav>
 
   <section aria-label="Sesión actual">

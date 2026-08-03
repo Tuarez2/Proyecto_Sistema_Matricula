@@ -23,6 +23,12 @@ export const routes: Routes = [
             .then((modulo) => modulo.InicioComponent),
         title: 'Inicio',
       },
+      {
+        path: 'usuarios',
+        loadChildren: () =>
+          import('./features/usuarios/usuarios.routes')
+            .then((modulo) => modulo.rutasUsuarios),
+      },
     ],
   },
   {

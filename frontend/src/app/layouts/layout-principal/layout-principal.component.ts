@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { CODIGOS_ROL } from '../../core/config/codigos-rol';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
 
 @Component({
@@ -30,6 +31,9 @@ export class LayoutPrincipalComponent {
 
   readonly usuarioActual = this.autenticacionService.usuarioActual;
   readonly cerrandoSesion = this.estadoCerrandoSesion.asReadonly();
+  readonly esAdministrador = computed(
+    () => this.usuarioActual?.()?.rol?.codigo === CODIGOS_ROL.ADMIN,
+  );
   readonly nombreCompletoUsuario = computed(() => {
     const usuario = this.usuarioActual?.() ?? null;
 
