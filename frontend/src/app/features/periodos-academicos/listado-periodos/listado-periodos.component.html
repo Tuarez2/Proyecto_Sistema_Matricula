@@ -144,33 +144,31 @@
   }
 
   @if (periodos().length > 0) {
-    <table>
-      <caption>Listado de periodos académicos</caption>
-      <thead>
-        <tr>
-          <th scope="col">Código</th>
-          <th scope="col">Nombre</th>
-          <th scope="col">Inicio del periodo</th>
-          <th scope="col">Fin del periodo</th>
-          <th scope="col">Inicio de matrícula</th>
-          <th scope="col">Fin de matrícula</th>
-          <th scope="col">Estado</th>
-          @if (esAdministrador()) {
-            <th scope="col">Acciones</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (periodo of periodos(); track periodo.id) {
+    @if (esAdministrador()) {
+      <table>
+        <caption>Listado de periodos académicos</caption>
+        <thead>
           <tr>
-            <td>{{ periodo.codigo }}</td>
-            <td>{{ periodo.nombre }}</td>
-            <td>{{ periodo.fecha_inicio }}</td>
-            <td>{{ periodo.fecha_fin }}</td>
-            <td>{{ periodo.fecha_inicio_matricula }}</td>
-            <td>{{ periodo.fecha_fin_matricula }}</td>
-            <td>{{ obtenerEtiquetaEstado(periodo.estado) }}</td>
-            @if (esAdministrador()) {
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Inicio del periodo</th>
+            <th scope="col">Fin del periodo</th>
+            <th scope="col">Inicio de matrícula</th>
+            <th scope="col">Fin de matrícula</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (periodo of periodos(); track periodo.id) {
+            <tr>
+              <td>{{ periodo.codigo }}</td>
+              <td>{{ periodo.nombre }}</td>
+              <td>{{ periodo.fecha_inicio }}</td>
+              <td>{{ periodo.fecha_fin }}</td>
+              <td>{{ periodo.fecha_inicio_matricula }}</td>
+              <td>{{ periodo.fecha_fin_matricula }}</td>
+              <td>{{ obtenerEtiquetaEstado(periodo.estado) }}</td>
               <td>
                 <a
                   [routerLink]="[
@@ -193,11 +191,39 @@
                   </a>
                 }
               </td>
-            }
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <table>
+        <caption>Listado de periodos académicos</caption>
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Inicio del periodo</th>
+            <th scope="col">Fin del periodo</th>
+            <th scope="col">Inicio de matrícula</th>
+            <th scope="col">Fin de matrícula</th>
+            <th scope="col">Estado</th>
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (periodo of periodos(); track periodo.id) {
+            <tr>
+              <td>{{ periodo.codigo }}</td>
+              <td>{{ periodo.nombre }}</td>
+              <td>{{ periodo.fecha_inicio }}</td>
+              <td>{{ periodo.fecha_fin }}</td>
+              <td>{{ periodo.fecha_inicio_matricula }}</td>
+              <td>{{ periodo.fecha_fin_matricula }}</td>
+              <td>{{ obtenerEtiquetaEstado(periodo.estado) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
   }
 
   <nav aria-label="Paginación de periodos académicos">
