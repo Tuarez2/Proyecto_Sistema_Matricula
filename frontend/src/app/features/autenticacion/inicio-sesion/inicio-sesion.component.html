@@ -1,0 +1,67 @@
+<section aria-labelledby="titulo-inicio-sesion">
+  <h1 id="titulo-inicio-sesion">Iniciar sesión</h1>
+
+  <form [formGroup]="formularioInicioSesion" (ngSubmit)="enviarFormulario()" novalidate>
+    <div>
+      <label for="correo">Correo</label>
+      <input
+        id="correo"
+        type="email"
+        formControlName="correo"
+        autocomplete="username"
+        maxlength="150"
+        aria-describedby="correo-errores"
+        [attr.aria-invalid]="controlCorreo.touched && controlCorreo.invalid ? 'true' : null"
+      />
+
+      <div id="correo-errores">
+        @if (controlCorreo.touched && controlCorreo.hasError('required')) {
+          <p>Correo obligatorio.</p>
+        }
+
+        @if (controlCorreo.touched && controlCorreo.hasError('email')) {
+          <p>Formato inválido.</p>
+        }
+
+        @if (controlCorreo.touched && controlCorreo.hasError('maxlength')) {
+          <p>Máximo 150 caracteres.</p>
+        }
+      </div>
+    </div>
+
+    <div>
+      <label for="contrasena">Contraseña</label>
+      <input
+        id="contrasena"
+        type="password"
+        formControlName="contrasena"
+        autocomplete="current-password"
+        maxlength="128"
+        aria-describedby="contrasena-errores"
+        [attr.aria-invalid]="controlContrasena.touched && controlContrasena.invalid ? 'true' : null"
+      />
+
+      <div id="contrasena-errores">
+        @if (controlContrasena.touched && controlContrasena.hasError('required')) {
+          <p>Contraseña obligatoria.</p>
+        }
+
+        @if (controlContrasena.touched && controlContrasena.hasError('maxlength')) {
+          <p>Máximo 128 caracteres.</p>
+        }
+      </div>
+    </div>
+
+    @if (mensajeError()) {
+      <p role="alert" aria-live="polite">{{ mensajeError() }}</p>
+    }
+
+    <button type="submit" [disabled]="enviandoFormulario()">
+      @if (enviandoFormulario()) {
+        Iniciando sesión...
+      } @else {
+        Iniciar sesión
+      }
+    </button>
+  </form>
+</section>
