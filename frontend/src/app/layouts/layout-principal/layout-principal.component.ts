@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { CODIGOS_ROL } from '../../core/config/codigos-rol';
@@ -17,6 +17,7 @@ import { AutenticacionService } from '../../core/services/autenticacion.service'
   selector: 'app-layout-principal',
   imports: [
     RouterLink,
+    RouterLinkActive,
     RouterOutlet,
   ],
   templateUrl: './layout-principal.component.html',

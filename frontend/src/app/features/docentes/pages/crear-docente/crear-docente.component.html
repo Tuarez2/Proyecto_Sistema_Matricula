@@ -1,1 +1,8 @@
-<p>crear-docente works!</p>
+<section class="pagina-docente">
+  <h1>Registrar docente</h1>
+
+  <app-docente-form
+    (onSave)="guardar($event)"
+    (onCancel)="cancelar()"
+  />
+</section>

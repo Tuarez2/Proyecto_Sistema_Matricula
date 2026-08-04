@@ -1,32 +1,43 @@
-<header>
-  <p>Sistema de Matrícula Universitaria</p>
+<header class="encabezado-principal">
+  <div class="contenedor barra-superior">
+    <p class="marca">Sistema de Matrícula Universitaria</p>
 
-  <nav aria-label="Navegación principal">
-    <a routerLink="/">Inicio</a>
-    <a routerLink="/periodos-academicos">Periodos académicos</a>
-    @if (esAdministrador()) {
-      <a routerLink="/usuarios">Usuarios</a>
-    }
-  </nav>
-
-  <section aria-label="Sesión actual">
-    <p>{{ nombreCompletoUsuario() }}</p>
-    <p>{{ nombreRolUsuario() }}</p>
-
-    <button
-      type="button"
-      [disabled]="cerrandoSesion()"
-      (click)="cerrarSesion()"
-    >
-      @if (cerrandoSesion()) {
-        Cerrando sesión...
-      } @else {
-        Cerrar sesión
+    <nav class="navegacion-principal" aria-label="Navegación principal">
+      <a routerLink="/" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
+      <a routerLink="/periodos-academicos" routerLinkActive="activo">Periodos</a>
+      <a routerLink="/facultades" routerLinkActive="activo">Facultades</a>
+      <a routerLink="/carreras" routerLinkActive="activo">Carreras</a>
+      <a routerLink="/asignaturas" routerLinkActive="activo">Asignaturas</a>
+      <a routerLink="/malla-curricular" routerLinkActive="activo">Malla</a>
+      <a routerLink="/cursos" routerLinkActive="activo">Cursos</a>
+      <a routerLink="/estudiantes" routerLinkActive="activo">Estudiantes</a>
+      <a routerLink="/docentes" routerLinkActive="activo">Docentes</a>
+      @if (esAdministrador()) {
+        <a routerLink="/usuarios" routerLinkActive="activo">Usuarios</a>
       }
-    </button>
-  </section>
+    </nav>
+
+    <section class="sesion-actual" aria-label="Sesión actual">
+      <div>
+        <p class="nombre-usuario">{{ nombreCompletoUsuario() }}</p>
+        <p class="rol-usuario">{{ nombreRolUsuario() }}</p>
+      </div>
+
+      <button
+        type="button"
+        [disabled]="cerrandoSesion()"
+        (click)="cerrarSesion()"
+      >
+        @if (cerrandoSesion()) {
+          Cerrando sesión...
+        } @else {
+          Cerrar sesión
+        }
+      </button>
+    </section>
+  </div>
 </header>
 
-<main>
+<main class="contenido-principal contenedor">
   <router-outlet />
 </main>

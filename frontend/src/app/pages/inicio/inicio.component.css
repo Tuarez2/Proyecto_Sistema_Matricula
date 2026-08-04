@@ -1,4 +1,4 @@
-.pagina-inicio {
+/* .pagina-inicio {
   padding: 3rem 0;
 }
 
@@ -12,3 +12,26 @@
   margin: 0;
   color: #4b5563;
 }
+
+.modulos-inicio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.modulos-inicio a {
+  display: block;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 700;
+  padding: 1rem;
+  text-decoration: none;
+}
+
+.modulos-inicio a:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+} */
