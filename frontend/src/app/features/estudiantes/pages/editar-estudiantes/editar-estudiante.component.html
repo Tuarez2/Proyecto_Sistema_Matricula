@@ -1,0 +1,10 @@
+<div class="container py-4">
+  <h3 class="mb-4">Editar Estudiante</h3>
+  <app-estudiante-form 
+    *ngIf="estudiante" 
+    [initialData]="estudiante" 
+    [isEditMode]="true" 
+    (onSubmitForm)="actualizarEstudiante($event)" 
+    (onCancel)="cancelar()">
+  </app-estudiante-form>
+</div>

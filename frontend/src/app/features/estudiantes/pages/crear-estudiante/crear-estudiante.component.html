@@ -1,0 +1,8 @@
+<div class="container py-4">
+  <h3 class="mb-4">Registrar Nuevo Estudiante</h3>
+  <app-estudiante-form
+    [isEditMode]="false"
+    (onSubmitForm)="guardarEstudiante($event)"
+    (onCancel)="cancelar()">
+  </app-estudiante-form>
+</div>
