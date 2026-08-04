@@ -80,3 +80,7 @@ function coincidirRutaAutenticacion(segmentos: UrlSegment[]): UrlMatchResult | n
   path: 'estudiantes',
   loadChildren: () => import('./features/estudiantes/estudiantes.routes').then(m => m.ESTUDIANTES_ROUTES);
 }
+{
+  path: 'docentes',
+  loadChildren: () => import('./features/docentes/docentes.routes').then(m => m.DOCENTES_ROUTES)
+}

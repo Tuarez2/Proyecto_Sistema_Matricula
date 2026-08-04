@@ -1,1 +1,6 @@
-<p>alert-message works!</p>
+<div *ngIf="message" [class]="'alert alert-' + type + ' alert-dismissible fade show shadow-sm d-flex align-items-center'" role="alert">
+  <div class="flex-grow-1">
+    <strong *ngIf="title">{{ title }}: </strong> {{ message }}
+  </div>
+  <button *ngIf="dismissible" type="button" class="btn-close" (click)="close()"></button>
+</div>
