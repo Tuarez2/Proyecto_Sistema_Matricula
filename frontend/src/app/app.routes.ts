@@ -43,6 +43,14 @@ export const routes: Routes = [
         path: 'carreras',
         loadChildren: () => import('./features/carreras/carreras.routes').then((modulo) => modulo.rutasCarreras),
       },
+      {
+        path: 'asignaturas',
+        loadChildren: () => import('./features/asignaturas/asignaturas.routes').then((modulo) => modulo.rutasAsignaturas),
+      },
+      {
+        path: 'malla-curricular',
+        loadChildren: () => import('./features/malla-curricular/malla-curricular.routes').then((modulo) => modulo.rutasMallaCurricular),
+      },
     ],
   },
   {

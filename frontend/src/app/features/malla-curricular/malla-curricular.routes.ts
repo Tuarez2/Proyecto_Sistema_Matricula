@@ -1,0 +1,1 @@
+import { Routes } from '@angular/router';export const rutasMallaCurricular:Routes=[{path:'',loadComponent:()=>import('./gestion-malla/gestion-malla.component').then(m=>m.GestionMallaComponent),title:'Malla curricular'}];
