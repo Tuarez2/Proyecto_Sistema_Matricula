@@ -1,0 +1,1 @@
+import { Routes } from '@angular/router'; export const rutasCarreras: Routes = [{ path: '', loadComponent: () => import('./listado-carreras/listado-carreras.component').then(m => m.ListadoCarrerasComponent), title: 'Carreras' }];
