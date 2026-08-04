@@ -9,16 +9,17 @@ import { EstudianteFormComponent } from '../../components/estudiante-form/estudi
   selector: 'app-crear-estudiante',
   standalone: true,
   imports: [CommonModule, EstudianteFormComponent],
-  templateUrl: './crear-estudiante.component.html',
-  styleUrls: ['./crear-estudiante.component.css']
+  template: `
+    <div class="container py-4">
+      <h2 class="mb-4">🎓 Registrar Nuevo Estudiante</h2>
+      <app-estudiante-form (onSave)="guardar($event)" (onCancel)="cancelar()"></app-estudiante-form>
+    </div>
+  `
 })
 export class CrearEstudianteComponent {
-  constructor(
-    private estudiantesService: EstudiantesService,
-    private router: Router
-  ) {}
+  constructor(private estudiantesService: EstudiantesService, private router: Router) {}
 
-  guardarEstudiante(estudiante: Estudiante): void {
+  guardar(estudiante: Estudiante): void {
     this.estudiantesService.crearEstudiante(estudiante).subscribe(() => {
       this.router.navigate(['/estudiantes']);
     });

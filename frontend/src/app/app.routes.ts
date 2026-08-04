@@ -1,5 +1,4 @@
 import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
-
 import { guardAutenticacion } from './core/guards/autenticacion.guard';
 
 export const routes: Routes = [
@@ -55,6 +54,14 @@ export const routes: Routes = [
         path: 'cursos',
         loadChildren: () => import('./features/cursos/cursos.routes').then((modulo) => modulo.rutasCursos),
       },
+      {
+        path: 'estudiantes',
+        loadChildren: () => import('./features/estudiantes/estudiantes.routes').then(m => m.ESTUDIANTES_ROUTES),
+      },
+      {
+        path: 'docentes',
+        loadChildren: () => import('./features/docentes/docentes.routes').then(m => m.DOCENTES_ROUTES),
+      },
     ],
   },
   {
@@ -74,13 +81,4 @@ function coincidirRutaAutenticacion(segmentos: UrlSegment[]): UrlMatchResult | n
   }
 
   return null;
-}
-
-{
-  path: 'estudiantes',
-  loadChildren: () => import('./features/estudiantes/estudiantes.routes').then(m => m.ESTUDIANTES_ROUTES);
-}
-{
-  path: 'docentes',
-  loadChildren: () => import('./features/docentes/docentes.routes').then(m => m.DOCENTES_ROUTES)
 }

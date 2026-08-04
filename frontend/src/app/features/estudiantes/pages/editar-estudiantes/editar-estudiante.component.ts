@@ -9,8 +9,18 @@ import { EstudianteFormComponent } from '../../components/estudiante-form/estudi
   selector: 'app-editar-estudiante',
   standalone: true,
   imports: [CommonModule, EstudianteFormComponent],
-  templateUrl: './editar-estudiante.component.html',
-  styleUrls: ['./editar-estudiante.component.css']
+  template: `
+    <div class="container py-4">
+      <h2 class="mb-4">✏️ Editar Estudiante</h2>
+      <app-estudiante-form 
+        *ngIf="estudiante" 
+        [initialData]="estudiante" 
+        [isEdit]="true" 
+        (onSave)="guardar($event)" 
+        (onCancel)="cancelar()">
+      </app-estudiante-form>
+    </div>
+  `
 })
 export class EditarEstudianteComponent implements OnInit {
   estudiante?: Estudiante;
@@ -18,21 +28,20 @@ export class EditarEstudianteComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
-    private estudiantesService: EstudiantesService
+    private estudiantesService: EstudiantesService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
-    const idParam = this.route.snapshot.paramMap.get('id');
-    if (idParam) {
-      this.estudianteId = Number(idParam);
+    this.estudianteId = Number(this.route.snapshot.paramMap.get('id'));
+    if (this.estudianteId) {
       this.estudiantesService.getEstudianteById(this.estudianteId).subscribe(data => {
         this.estudiante = data;
       });
     }
   }
 
-  actualizarEstudiante(estudiante: Estudiante): void {
+  guardar(estudiante: Estudiante): void {
     this.estudiantesService.actualizarEstudiante(this.estudianteId, estudiante).subscribe(() => {
       this.router.navigate(['/estudiantes']);
     });
