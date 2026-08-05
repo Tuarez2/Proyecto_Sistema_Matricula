@@ -142,17 +142,14 @@ export class CrearMatriculaComponent implements OnInit {
   }
 
   private cargarEstudiantes(): void {
-    this.estudiantesService.listarEstudiantes()
+    this.estudiantesService.listarEstudiantes({
+      estado_academico: ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO,
+      limite: 100,
+    })
       .pipe(takeUntilDestroyed(this.referenciaDestruccion))
       .subscribe({
         next: (respuesta) => {
-          this.estadoEstudiantes.set(
-            (respuesta.data ?? []).filter(
-              (estudiante) =>
-                estudiante.estado_academico ===
-                ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO,
-            ),
-          );
+          this.estadoEstudiantes.set(respuesta.data ?? []);
           this.finalizarCargaCatalogos();
         },
         error: (error: unknown) => {

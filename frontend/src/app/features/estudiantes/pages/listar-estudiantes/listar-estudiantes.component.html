@@ -6,45 +6,110 @@
   }
 
   <form
-    [formGroup]="formularioFiltros"
+    [formGroup]="filtros"
     (ngSubmit)="buscarEstudiantes()"
     novalidate
   >
     <div>
-      <label for="busqueda">Búsqueda</label>
+      <label for="numero_matricula">Número de matrícula</label>
       <input
-        id="busqueda"
+        id="numero_matricula"
         type="search"
-        formControlName="busqueda"
-        maxlength="150"
+        formControlName="numero_matricula"
+        maxlength="30"
       />
       @if (
-        formularioFiltros.controls.busqueda.touched &&
-        formularioFiltros.controls.busqueda.hasError('maxlength')
+        filtros.controls.numero_matricula.touched &&
+        filtros.controls.numero_matricula.hasError('maxlength')
       ) {
-        <p role="alert">La búsqueda no puede superar 150 caracteres.</p>
+        <p role="alert">La matrícula no puede superar 30 caracteres.</p>
       }
     </div>
 
     <div>
-      <label for="carreraId">Carrera</label>
-      <select id="carreraId" formControlName="carreraId">
+      <label for="identificacion">Identificación</label>
+      <input
+        id="identificacion"
+        type="search"
+        formControlName="identificacion"
+        maxlength="20"
+      />
+      @if (
+        filtros.controls.identificacion.touched &&
+        filtros.controls.identificacion.hasError('maxlength')
+      ) {
+        <p role="alert">La identificación no puede superar 20 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="nombres">Nombres</label>
+      <input
+        id="nombres"
+        type="search"
+        formControlName="nombres"
+        maxlength="100"
+      />
+      @if (
+        filtros.controls.nombres.touched &&
+        filtros.controls.nombres.hasError('maxlength')
+      ) {
+        <p role="alert">Los nombres no pueden superar 100 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="apellidos">Apellidos</label>
+      <input
+        id="apellidos"
+        type="search"
+        formControlName="apellidos"
+        maxlength="100"
+      />
+      @if (
+        filtros.controls.apellidos.touched &&
+        filtros.controls.apellidos.hasError('maxlength')
+      ) {
+        <p role="alert">Los apellidos no pueden superar 100 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="carrera_id">Carrera</label>
+      <select id="carrera_id" formControlName="carrera_id">
         <option value="">Todas las carreras</option>
-        @for (carrera of carrerasDisponibles(); track carrera.id) {
+        @for (carrera of carreras(); track carrera.id) {
           <option [value]="carrera.id">{{ carrera.nombre }}</option>
         }
       </select>
     </div>
 
     <div>
-      <label for="estadoAcademico">Estado académico</label>
-      <select id="estadoAcademico" formControlName="estadoAcademico">
+      <label for="estado_academico">Estado académico</label>
+      <select id="estado_academico" formControlName="estado_academico">
         <option value="">Todos los estados</option>
         <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO">Activo</option>
         <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO">Inactivo</option>
         <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.SUSPENDIDO">Suspendido</option>
         <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.EGRESADO">Egresado</option>
       </select>
+    </div>
+
+    <div>
+      <label for="nivel_academico_actual">Nivel académico</label>
+      <input
+        id="nivel_academico_actual"
+        type="number"
+        formControlName="nivel_academico_actual"
+        min="1"
+        max="100"
+      />
+      @if (
+        filtros.controls.nivel_academico_actual.touched &&
+        filtros.controls.nivel_academico_actual.invalid
+      ) {
+        <p role="alert">El nivel académico debe ser un entero positivo.</p>
+      }
     </div>
 
     <button type="submit" [disabled]="cargandoEstudiantes()">Buscar</button>
@@ -69,11 +134,11 @@
     <p role="alert">{{ mensajeError() }}</p>
   }
 
-  @if (!cargandoEstudiantes() && !mensajeError() && estudiantesFiltrados().length === 0) {
+  @if (!cargandoEstudiantes() && !mensajeError() && estudiantes().length === 0) {
     <p>No se encontraron estudiantes.</p>
   }
 
-  @if (estudiantesFiltrados().length > 0) {
+  @if (estudiantes().length > 0) {
     <table>
       <caption>Listado de estudiantes</caption>
       <thead>
@@ -91,7 +156,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (estudiante of estudiantesPagina(); track estudiante.id) {
+        @for (estudiante of estudiantes(); track estudiante.id) {
           <tr>
             <td>{{ estudiante.numero_matricula }}</td>
             <td>{{ estudiante.identificacion }}</td>

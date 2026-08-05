@@ -1,7 +1,11 @@
-import { body } from 'express-validator';
+import { body, query } from 'express-validator';
 
 import { ACADEMIC_STATUS } from '../constants/domain.constants.js';
-import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
+import {
+  validarCamposPermitidos,
+  validarFiltrosPermitidos,
+  validarIdParam
+} from './common.validator.js';
 
 const camposPermitidos = [
   'carrera_id',
@@ -14,6 +18,19 @@ const camposPermitidos = [
   'fecha_nacimiento',
   'estado_academico',
   'nivel_academico_actual'
+];
+
+const camposListado = [
+  'numero_matricula',
+  'identificacion',
+  'nombres',
+  'apellidos',
+  'correo',
+  'carrera_id',
+  'estado_academico',
+  'nivel_academico_actual',
+  'page',
+  'limit'
 ];
 
 const reglas = [
@@ -51,10 +68,71 @@ export const validarCreacionEstudiante = [
 
 export const validarActualizacionEstudiante = [validarCamposPermitidos(camposPermitidos, { requireAtLeastOne: true }), ...reglas];
 
+export const validarListadoEstudiantes = [
+  validarFiltrosPermitidos(camposListado),
+  query('numero_matricula')
+    .optional()
+    .isString()
+    .withMessage('El filtro numero_matricula debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 30 })
+    .withMessage('El filtro numero_matricula tiene una longitud invalida.'),
+  query('identificacion')
+    .optional()
+    .isString()
+    .withMessage('El filtro identificacion debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 20 })
+    .withMessage('El filtro identificacion tiene una longitud invalida.'),
+  query('nombres')
+    .optional()
+    .isString()
+    .withMessage('El filtro nombres debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('El filtro nombres tiene una longitud invalida.'),
+  query('apellidos')
+    .optional()
+    .isString()
+    .withMessage('El filtro apellidos debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('El filtro apellidos tiene una longitud invalida.'),
+  query('correo')
+    .optional()
+    .isString()
+    .withMessage('El filtro correo debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 150 })
+    .withMessage('El filtro correo tiene una longitud invalida.'),
+  query('carrera_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('El filtro carrera debe ser un entero positivo.')
+    .toInt(),
+  query('estado_academico')
+    .optional()
+    .isIn(Object.values(ACADEMIC_STATUS))
+    .withMessage('El estado academico no es valido.'),
+  query('nivel_academico_actual')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('El nivel academico actual debe ser un entero positivo.')
+    .toInt(),
+  query('page').optional().isInt({ min: 1 }).withMessage('La pagina debe ser un entero positivo.').toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('El limite debe estar entre 1 y 100.').toInt()
+];
+
 export { validarIdParam };
 
 export default {
   validarCreacionEstudiante,
   validarActualizacionEstudiante,
+  validarListadoEstudiantes,
   validarIdParam
 };

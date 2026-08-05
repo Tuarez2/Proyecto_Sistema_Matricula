@@ -33,13 +33,179 @@ describe('EstudiantesService', () => {
     controladorHttp.verify();
   });
 
-  it('listarEstudiantes ejecuta GET contra la API real configurada', async () => {
+  it('listarEstudiantes ejecuta GET contra la URL centralizada sin parámetros inventados', async () => {
     const promesaRespuesta = firstValueFrom(servicio.listarEstudiantes());
 
     const solicitud = controladorHttp.expectOne(obtenerUrlApi('estudiantes'));
 
     expect(solicitud.request.method).toBe('GET');
     expect(solicitud.request.params.keys()).toEqual([]);
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía page y limit', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({ pagina: 2, limite: 25 }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('page')).toBe('2');
+    expect(solicitud.request.params.get('limit')).toBe('25');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía el filtro de número de matrícula', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({ numero_matricula: 'EST-2026' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('numero_matricula')).toBe('EST-2026');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía el filtro de identificación', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({ identificacion: '1002003004' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('identificacion')).toBe('1002003004');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía el filtro de nombres', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({ nombres: 'Ana' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('nombres')).toBe('Ana');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía el filtro de apellidos', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({ apellidos: 'Vera' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('apellidos')).toBe('Vera');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía el filtro de correo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({ correo: 'ana.vera' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('correo')).toBe('ana.vera');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía el filtro de carrera como carrera_id', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({ carrera_id: 2 }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('carrera_id')).toBe('2');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía el filtro de estado académico', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({
+        estado_academico: ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO,
+      }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('estado_academico')).toBe('activo');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes envía el filtro de nivel académico actual', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({ nivel_academico_actual: 3 }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('nivel_academico_actual')).toBe('3');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes omite filtros vacíos y undefined', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({
+        numero_matricula: '   ',
+        identificacion: undefined,
+        nombres: undefined,
+        apellidos: undefined,
+        correo: undefined,
+        carrera_id: undefined,
+        estado_academico: undefined,
+        nivel_academico_actual: undefined,
+        pagina: undefined,
+        limite: undefined,
+      }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('estudiantes'));
+
+    expect(solicitud.request.params.keys()).toEqual([]);
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarEstudiantes combina filtros y paginación en una sola solicitud', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarEstudiantes({
+        numero_matricula: 'EST',
+        identificacion: '100200',
+        nombres: 'Ana',
+        apellidos: 'Vera',
+        correo: 'ana',
+        carrera_id: 2,
+        estado_academico: ESTADOS_ACADEMICOS_ESTUDIANTE.SUSPENDIDO,
+        nivel_academico_actual: 3,
+        pagina: 2,
+        limite: 50,
+      }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('numero_matricula')).toBe('EST');
+    expect(solicitud.request.params.get('identificacion')).toBe('100200');
+    expect(solicitud.request.params.get('nombres')).toBe('Ana');
+    expect(solicitud.request.params.get('apellidos')).toBe('Vera');
+    expect(solicitud.request.params.get('correo')).toBe('ana');
+    expect(solicitud.request.params.get('carrera_id')).toBe('2');
+    expect(solicitud.request.params.get('estado_academico')).toBe('suspendido');
+    expect(solicitud.request.params.get('nivel_academico_actual')).toBe('3');
+    expect(solicitud.request.params.get('page')).toBe('2');
+    expect(solicitud.request.params.get('limit')).toBe('50');
     solicitud.flush(crearRespuestaListado());
     await promesaRespuesta;
   });
@@ -110,45 +276,11 @@ describe('EstudiantesService', () => {
 
     await expect(promesaRespuesta).rejects.toMatchObject({ status: 403 });
   });
-
-  it('getEstudiantes mantiene compatibilidad y filtra por estado legado', async () => {
-    const promesaRespuesta = firstValueFrom(
-      servicio.getEstudiantes({ estado: 'ACTIVO' }),
-    );
-    const solicitud = controladorHttp.expectOne(obtenerUrlApi('estudiantes'));
-
-    solicitud.flush(crearRespuestaListado([
-      crearEstudiante({ id: 1, estado_academico: ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO }),
-      crearEstudiante({ id: 2, estado_academico: ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO }),
-    ]));
-
-    await expect(promesaRespuesta).resolves.toEqual([
-      expect.objectContaining({ id: 1 }),
-    ]);
-  });
-
-  it('getEstudiantes filtra localmente por busqueda y carrera', async () => {
-    const promesaRespuesta = firstValueFrom(
-      servicio.getEstudiantes({ busqueda: 'ana', carreraId: 2 }),
-    );
-    const solicitud = controladorHttp.expectOne(obtenerUrlApi('estudiantes'));
-
-    solicitud.flush(crearRespuestaListado([
-      crearEstudiante({ id: 1, nombres: 'Ana', carrera_id: 2 }),
-      crearEstudiante({ id: 2, nombres: 'Ana', carrera_id: 3 }),
-      crearEstudiante({
-        id: 3,
-        nombres: 'Luis',
-        carrera_id: 2,
-        correo: 'luis.vera@universidad.edu',
-      }),
-    ]));
-
-    await expect(promesaRespuesta).resolves.toEqual([
-      expect.objectContaining({ id: 1 }),
-    ]);
-  });
 });
+
+function esperarSolicitudListado(peticion: { url: string }): boolean {
+  return peticion.url === obtenerUrlApi('estudiantes');
+}
 
 function crearSolicitudEstudiante(
   cambios: Partial<SolicitudCrearEstudiante> = {},
@@ -199,6 +331,10 @@ function crearRespuestaListado(
   return {
     success: true,
     data: estudiantes,
+    page: 1,
+    limit: 10,
+    total: estudiantes.length,
+    totalPages: Math.ceil(estudiantes.length / 10),
   };
 }
 

@@ -2,11 +2,15 @@ import * as estudianteService from '../services/estudiante.service.js';
 import manejadorAsync from '../utils/asyncHandler.js';
 
 export const obtenerEstudiantes = manejadorAsync(async (req, res) => {
-  const estudiantes = await estudianteService.listarEstudiantes();
+  const resultado = await estudianteService.listarEstudiantes(req.query);
 
   res.status(200).json({
     success: true,
-    data: estudiantes
+    data: resultado.data,
+    page: resultado.page,
+    limit: resultado.limit,
+    total: resultado.total,
+    totalPages: resultado.totalPages
   });
 });
 

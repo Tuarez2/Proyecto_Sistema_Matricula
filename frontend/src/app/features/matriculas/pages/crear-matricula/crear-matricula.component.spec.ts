@@ -12,6 +12,7 @@ import { CursosService } from '../../../cursos/services/cursos.service';
 import {
   ESTADOS_ACADEMICOS_ESTUDIANTE,
   type Estudiante,
+  type FiltrosEstudiantes,
   type RespuestaListadoEstudiantes,
 } from '../../../estudiantes/models/estudiante.model';
 import { EstudiantesService } from '../../../estudiantes/services/estudiantes.service';
@@ -33,7 +34,9 @@ interface MatriculasServiceMock {
 
 interface EstudiantesServiceMock {
   listarEstudiantes: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoEstudiantes>>
+    typeof vi.fn<
+      (filtros?: FiltrosEstudiantes) => Observable<RespuestaListadoEstudiantes>
+    >
   >;
 }
 
@@ -97,6 +100,10 @@ describe('CrearMatriculaComponent', () => {
 
   it('carga estudiantes activos y cursos abiertos al iniciar', () => {
     expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(1);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      estado_academico: ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO,
+      limite: 100,
+    });
     expect(cursosService.listar).toHaveBeenCalledWith({
       estado: ESTADOS_CURSO.ABIERTO,
       limite: 100,
@@ -322,13 +329,11 @@ function crearCurso(cambios: Partial<Curso> = {}): Curso {
 function crearRespuestaEstudiantes(): RespuestaListadoEstudiantes {
   return {
     success: true,
-    data: [
-      crearEstudiante(),
-      crearEstudiante({
-        id: 3,
-        estado_academico: ESTADOS_ACADEMICOS_ESTUDIANTE.SUSPENDIDO,
-      }),
-    ],
+    data: [crearEstudiante()],
+    page: 1,
+    limit: 100,
+    total: 1,
+    totalPages: 1,
   };
 }
 

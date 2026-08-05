@@ -66,20 +66,26 @@ export type SolicitudActualizarEstudiante =
   Partial<SolicitudCrearEstudiante>;
 
 export interface FiltrosEstudiantes {
-  busqueda?: string;
-  carreraId?: number;
-  estadoAcademico?: EstadoAcademicoEstudiante;
+  numero_matricula?: string;
+  identificacion?: string;
+  nombres?: string;
+  apellidos?: string;
+  correo?: string;
+  carrera_id?: number;
+  estado_academico?: EstadoAcademicoEstudiante;
+  nivel_academico_actual?: number;
   pagina?: number;
   limite?: number;
 }
 
 export interface PaginacionEstudiantes {
-  pagina: number;
-  limite: number;
+  page: number;
+  limit: number;
   total: number;
-  totalPaginas: number;
+  totalPages: number;
 }
 
-export type RespuestaListadoEstudiantes = RespuestaApi<Estudiante[]>;
+export type RespuestaListadoEstudiantes =
+  RespuestaApi<Estudiante[]> & PaginacionEstudiantes;
 
 export type RespuestaEstudiante = RespuestaApi<Estudiante>;

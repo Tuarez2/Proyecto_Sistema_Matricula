@@ -14,6 +14,7 @@ import validarSolicitud from '../middlewares/validateRequest.js';
 import {
   validarCreacionEstudiante,
   validarIdParam,
+  validarListadoEstudiantes,
   validarActualizacionEstudiante
 } from '../validators/estudiante.validator.js';
 
@@ -21,7 +22,7 @@ const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 
 router.use(authenticate);
-router.get('/', obtenerEstudiantes);
+router.get('/', validarListadoEstudiantes, validarSolicitud, obtenerEstudiantes);
 router.get('/:id', validarIdParam, validarSolicitud, obtenerEstudiantePorId);
 router.post('/', adminOnly, validarCreacionEstudiante, validarSolicitud, crearEstudiante);
 router.put('/:id', adminOnly, validarIdParam, validarActualizacionEstudiante, validarSolicitud, actualizarEstudiante);

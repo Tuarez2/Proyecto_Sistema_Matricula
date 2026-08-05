@@ -1,11 +1,9 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import {
-  ESTADOS_ACADEMICOS_ESTUDIANTE,
-  type EstadoAcademicoEstudiante,
   type Estudiante,
   type FiltrosEstudiantes,
   type RespuestaEstudiante,
@@ -14,20 +12,19 @@ import {
   type SolicitudCrearEstudiante,
 } from '../models/estudiante.model';
 
-interface FiltrosCompatibilidadEstudiantes extends FiltrosEstudiantes {
-  estado?: string;
-}
-
 @Injectable({
   providedIn: 'root',
 })
 export class EstudiantesService {
   private readonly http = inject(HttpClient);
+  private readonly urlEstudiantes = obtenerUrlApi('estudiantes');
 
-  listarEstudiantes(): Observable<RespuestaListadoEstudiantes> {
-    return this.http.get<RespuestaListadoEstudiantes>(
-      obtenerUrlApi('estudiantes'),
-    );
+  listarEstudiantes(
+    filtros: FiltrosEstudiantes = {},
+  ): Observable<RespuestaListadoEstudiantes> {
+    return this.http.get<RespuestaListadoEstudiantes>(this.urlEstudiantes, {
+      params: this.construirParametros(filtros),
+    });
   }
 
   obtenerEstudiante(idEstudiante: number): Observable<RespuestaEstudiante> {
@@ -40,7 +37,7 @@ export class EstudiantesService {
     solicitud: SolicitudCrearEstudiante,
   ): Observable<RespuestaEstudiante> {
     return this.http.post<RespuestaEstudiante>(
-      obtenerUrlApi('estudiantes'),
+      this.urlEstudiantes,
       solicitud,
     );
   }
@@ -63,93 +60,77 @@ export class EstudiantesService {
     );
   }
 
-  getEstudiantes(
-    filtros: FiltrosCompatibilidadEstudiantes = {},
-  ): Observable<Estudiante[]> {
-    return this.listarEstudiantes().pipe(
-      map((respuesta) =>
-        this.filtrarEstudiantes(respuesta.data ?? [], filtros),
-      ),
+  private construirParametros(filtros: FiltrosEstudiantes): HttpParams {
+    let parametros = new HttpParams();
+
+    parametros = this.agregarTexto(
+      parametros,
+      'numero_matricula',
+      filtros.numero_matricula,
     );
-  }
-
-  getEstudianteById(idEstudiante: number): Observable<Estudiante> {
-    return this.obtenerEstudiante(idEstudiante).pipe(
-      map((respuesta) => {
-        if (!respuesta.data) {
-          throw new Error('La respuesta no contiene estudiante.');
-        }
-
-        return respuesta.data;
-      }),
+    parametros = this.agregarTexto(
+      parametros,
+      'identificacion',
+      filtros.identificacion,
     );
-  }
-
-  eliminarEstudiante(idEstudiante: number): Observable<RespuestaEstudiante> {
-    return this.cambiarEstadoEstudiante(idEstudiante);
-  }
-
-  private filtrarEstudiantes(
-    estudiantes: Estudiante[],
-    filtros: FiltrosCompatibilidadEstudiantes,
-  ): Estudiante[] {
-    const busqueda = filtros.busqueda?.trim().toLowerCase();
-    const estadoAcademico = this.normalizarEstadoAcademico(
-      filtros.estadoAcademico ?? filtros.estado,
+    parametros = this.agregarTexto(parametros, 'nombres', filtros.nombres);
+    parametros = this.agregarTexto(parametros, 'apellidos', filtros.apellidos);
+    parametros = this.agregarTexto(parametros, 'correo', filtros.correo);
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'carrera_id',
+      filtros.carrera_id,
     );
-    let resultado = estudiantes;
 
-    if (busqueda) {
-      resultado = resultado.filter((estudiante) =>
-        [
-          estudiante.numero_matricula,
-          estudiante.identificacion,
-          estudiante.nombres,
-          estudiante.apellidos,
-          estudiante.correo,
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(busqueda),
+    if (filtros.estado_academico) {
+      parametros = parametros.set(
+        'estado_academico',
+        filtros.estado_academico,
       );
     }
 
-    if (filtros.carreraId) {
-      resultado = resultado.filter(
-        (estudiante) => estudiante.carrera_id === filtros.carreraId,
-      );
-    }
-
-    if (estadoAcademico) {
-      resultado = resultado.filter(
-        (estudiante) => estudiante.estado_academico === estadoAcademico,
-      );
-    }
-
-    return resultado;
-  }
-
-  private normalizarEstadoAcademico(
-    estado: string | undefined,
-  ): EstadoAcademicoEstudiante | null {
-    if (!estado) {
-      return null;
-    }
-
-    const estadoNormalizado = estado.toLowerCase();
-
-    if (this.esEstadoAcademico(estadoNormalizado)) {
-      return estadoNormalizado;
-    }
-
-    return null;
-  }
-
-  private esEstadoAcademico(
-    estado: string,
-  ): estado is EstadoAcademicoEstudiante {
-    return Object.values(ESTADOS_ACADEMICOS_ESTUDIANTE).some(
-      (estadoPermitido) => estadoPermitido === estado,
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'nivel_academico_actual',
+      filtros.nivel_academico_actual,
     );
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'page',
+      filtros.pagina,
+    );
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'limit',
+      filtros.limite,
+    );
+
+    return parametros;
+  }
+
+  private agregarTexto(
+    parametros: HttpParams,
+    nombre: string,
+    valor: string | undefined,
+  ): HttpParams {
+    const valorNormalizado = valor?.trim();
+
+    if (!valorNormalizado) {
+      return parametros;
+    }
+
+    return parametros.set(nombre, valorNormalizado);
+  }
+
+  private agregarEnteroPositivo(
+    parametros: HttpParams,
+    nombre: string,
+    valor: number | undefined,
+  ): HttpParams {
+    if (valor === undefined || !Number.isInteger(valor) || valor < 1) {
+      return parametros;
+    }
+
+    return parametros.set(nombre, String(valor));
   }
 }

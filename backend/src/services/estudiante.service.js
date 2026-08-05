@@ -1,6 +1,9 @@
+import { Op } from 'sequelize';
+
 import { ACADEMIC_STATUS } from '../constants/domain.constants.js';
 import { Carrera, Estudiante } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
+import { normalizarPaginacion } from '../utils/pagination.js';
 
 const camposPermitidos = [
   'carrera_id',
@@ -17,6 +20,8 @@ const camposPermitidos = [
 
 const inclusionesListado = [{ association: 'carrera' }];
 const inclusionesDetalle = [{ association: 'carrera' }, { association: 'cursosMatriculados' }];
+const atributosEstudiante = ['id', 'carrera_id', 'numero_matricula', 'identificacion', 'nombres', 'apellidos', 'correo', 'telefono', 'fecha_nacimiento', 'estado_academico', 'nivel_academico_actual', 'created_at', 'updated_at'];
+const atributosCarrera = ['id', 'codigo', 'nombre', 'duracion_semestres', 'facultad_id', 'activo'];
 
 const seleccionarDatosPermitidos = (cuerpoSolicitud) =>
   camposPermitidos.reduce((datosPermitidos, campo) => {
@@ -34,7 +39,99 @@ const asegurarCarreraExistente = async (carreraId) => {
   }
 };
 
-export const listarEstudiantes = async () => Estudiante.findAll({ include: inclusionesListado });
+const construirFiltrosEstudiante = (filtros = {}) => {
+  const condiciones = {};
+
+  if (filtros.numero_matricula) {
+    condiciones.numero_matricula = { [Op.like]: `%${filtros.numero_matricula.trim()}%` };
+  }
+
+  if (filtros.identificacion) {
+    condiciones.identificacion = { [Op.like]: `%${filtros.identificacion.trim()}%` };
+  }
+
+  if (filtros.nombres) {
+    condiciones.nombres = { [Op.like]: `%${filtros.nombres.trim()}%` };
+  }
+
+  if (filtros.apellidos) {
+    condiciones.apellidos = { [Op.like]: `%${filtros.apellidos.trim()}%` };
+  }
+
+  if (filtros.correo) {
+    condiciones.correo = { [Op.like]: `%${filtros.correo.trim()}%` };
+  }
+
+  if (filtros.carrera_id !== undefined) {
+    condiciones.carrera_id = filtros.carrera_id;
+  }
+
+  if (filtros.estado_academico !== undefined) {
+    condiciones.estado_academico = filtros.estado_academico;
+  }
+
+  if (filtros.nivel_academico_actual !== undefined) {
+    condiciones.nivel_academico_actual = filtros.nivel_academico_actual;
+  }
+
+  return condiciones;
+};
+
+const sanitizarEstudiante = (estudiante) => {
+  const estudiantePlano = typeof estudiante.get === 'function' ? estudiante.get({ plain: true }) : estudiante;
+
+  return {
+    id: estudiantePlano.id,
+    carrera_id: estudiantePlano.carrera_id,
+    numero_matricula: estudiantePlano.numero_matricula,
+    identificacion: estudiantePlano.identificacion,
+    nombres: estudiantePlano.nombres,
+    apellidos: estudiantePlano.apellidos,
+    correo: estudiantePlano.correo,
+    telefono: estudiantePlano.telefono,
+    fecha_nacimiento: estudiantePlano.fecha_nacimiento,
+    estado_academico: estudiantePlano.estado_academico,
+    nivel_academico_actual: estudiantePlano.nivel_academico_actual,
+    created_at: estudiantePlano.created_at,
+    updated_at: estudiantePlano.updated_at,
+    carrera: estudiantePlano.carrera
+      ? {
+          id: estudiantePlano.carrera.id,
+          codigo: estudiantePlano.carrera.codigo,
+          nombre: estudiantePlano.carrera.nombre,
+          duracion_semestres: estudiantePlano.carrera.duracion_semestres,
+          facultad_id: estudiantePlano.carrera.facultad_id,
+          activo: estudiantePlano.carrera.activo
+        }
+      : null
+  };
+};
+
+export const listarEstudiantes = async (filtros = {}) => {
+  const { page: pagina, limit: limite, offset: desplazamiento } = normalizarPaginacion(filtros.page, filtros.limit);
+
+  const { rows: registros, count: totalRegistros } = await Estudiante.findAndCountAll({
+    where: construirFiltrosEstudiante(filtros),
+    attributes: atributosEstudiante,
+    include: inclusionesListado,
+    distinct: true,
+    limit: limite,
+    offset: desplazamiento,
+    order: [
+      ['apellidos', 'ASC'],
+      ['nombres', 'ASC'],
+      ['id', 'ASC']
+    ]
+  });
+
+  return {
+    data: registros.map(sanitizarEstudiante),
+    page: pagina,
+    limit: limite,
+    total: totalRegistros,
+    totalPages: Math.ceil(totalRegistros / limite)
+  };
+};
 
 export const obtenerEstudiantePorId = async (id) => {
   const estudiante = await Estudiante.findByPk(id, { include: inclusionesDetalle });

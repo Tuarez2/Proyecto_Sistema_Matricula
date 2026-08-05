@@ -7,9 +7,16 @@ import { Observable, Subject } from 'rxjs';
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { UsuarioAutenticado } from '../../../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
+import type {
+  Carrera,
+  FiltrosCarreras,
+  RespuestaListadoCarreras,
+} from '../../../carreras/models/carrera.model';
+import { CarrerasService } from '../../../carreras/services/carreras.service';
 import {
   ESTADOS_ACADEMICOS_ESTUDIANTE,
   type Estudiante,
+  type FiltrosEstudiantes,
   type RespuestaEstudiante,
   type RespuestaListadoEstudiantes,
 } from '../../models/estudiante.model';
@@ -18,10 +25,20 @@ import { ListarEstudiantesComponent } from './listar-estudiantes.component';
 
 interface EstudiantesServiceMock {
   listarEstudiantes: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoEstudiantes>>
+    typeof vi.fn<
+      (filtros?: FiltrosEstudiantes) => Observable<RespuestaListadoEstudiantes>
+    >
   >;
   cambiarEstadoEstudiante: ReturnType<
     typeof vi.fn<(idEstudiante: number) => Observable<RespuestaEstudiante>>
+  >;
+}
+
+interface CarrerasServiceMock {
+  listarCarreras: ReturnType<
+    typeof vi.fn<
+      (filtros?: FiltrosCarreras) => Observable<RespuestaListadoCarreras>
+    >
   >;
 }
 
@@ -29,6 +46,7 @@ describe('ListarEstudiantesComponent', () => {
   let fixture: ComponentFixture<ListarEstudiantesComponent>;
   let componente: ListarEstudiantesComponent;
   let estudiantesService: EstudiantesServiceMock;
+  let carrerasService: CarrerasServiceMock;
   let usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
 
   beforeEach(async () => {
@@ -37,8 +55,8 @@ describe('ListarEstudiantesComponent', () => {
     );
     estudiantesService = {
       listarEstudiantes: vi.fn(() =>
-        respuestaObservable(crearRespuestaListado([
-          crearEstudiante({ id: 1, nombres: 'Ana' }),
+        respuestaObservable(crearRespuestaEstudiantes([
+          crearEstudiante({ id: 1, nombres: 'Ana', identificacion: '111' }),
           crearEstudiante({ id: 2, nombres: 'Luis', identificacion: '222' }),
         ])),
       ),
@@ -46,6 +64,11 @@ describe('ListarEstudiantesComponent', () => {
         respuestaObservable(crearRespuestaEstudiante({
           estado_academico: ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO,
         })),
+      ),
+    };
+    carrerasService = {
+      listarCarreras: vi.fn(() =>
+        respuestaObservable(crearRespuestaCarreras([crearCarrera()])),
       ),
     };
 
@@ -58,6 +81,10 @@ describe('ListarEstudiantesComponent', () => {
           useValue: estudiantesService,
         },
         {
+          provide: CarrerasService,
+          useValue: carrerasService,
+        },
+        {
           provide: AutenticacionService,
           useValue: {
             usuarioActual: usuarioActual.asReadonly(),
@@ -67,17 +94,196 @@ describe('ListarEstudiantesComponent', () => {
     }).compileComponents();
   });
 
-  it('carga estudiantes al iniciar', () => {
+  it('solicita la primera página con límite explícito al iniciar', () => {
     crearComponente();
 
     expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(1);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
+    expect(carrerasService.listarCarreras).toHaveBeenCalledWith({
+      limite: 100,
+    });
     expect(obtenerTexto()).toContain('Ana Vera');
     expect(obtenerTexto()).toContain('Luis Vera');
   });
 
-  it('muestra estado vacio', () => {
+  it('usa total y totalPages de la respuesta del backend', () => {
     estudiantesService.listarEstudiantes.mockReturnValueOnce(
-      respuestaObservable(crearRespuestaListado([])),
+      respuestaObservable(
+        crearRespuestaEstudiantes([crearEstudiante()], {
+          total: 25,
+          totalPages: 3,
+        }),
+      ),
+    );
+
+    crearComponente();
+
+    expect(componente.totalEstudiantes()).toBe(25);
+    expect(componente.totalPaginas()).toBe(3);
+  });
+
+  it('cambia de página solicitando los datos al backend sin paginar en memoria', () => {
+    const paginaUno = crearRespuestaEstudiantes(
+      Array.from({ length: 10 }, (_, indice) =>
+        crearEstudiante({
+          id: indice + 1,
+          nombres: `Persona ${indice + 1}`,
+          identificacion: String(indice + 1),
+        })),
+      { page: 1, limit: 10, total: 11, totalPages: 2 },
+    );
+    const paginaDos = crearRespuestaEstudiantes(
+      [crearEstudiante({ id: 11, nombres: 'Persona 11' })],
+      { page: 2, limit: 10, total: 11, totalPages: 2 },
+    );
+
+    estudiantesService.listarEstudiantes
+      .mockReturnValueOnce(respuestaObservable(paginaUno))
+      .mockReturnValueOnce(respuestaObservable(paginaDos));
+
+    crearComponente();
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(2);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenLastCalledWith({
+      pagina: 2,
+      limite: 10,
+    });
+    expect(componente.paginaActual()).toBe(2);
+    expect(componente.estudiantes()).toHaveLength(1);
+    expect(obtenerTexto()).toContain('Persona 11 Vera');
+  });
+
+  it('aplica filtros al backend y restablece a la página 1', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.filtros.controls.identificacion.setValue('1002');
+    componente.filtros.controls.numero_matricula.setValue('EST');
+    componente.filtros.controls.nombres.setValue('Ana');
+    componente.filtros.controls.apellidos.setValue('Vera');
+    componente.buscarEstudiantes();
+    fixture.detectChanges();
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(1);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      identificacion: '1002',
+      numero_matricula: 'EST',
+      nombres: 'Ana',
+      apellidos: 'Vera',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de carrera como carrera_id', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.filtros.controls.carrera_id.setValue('2');
+    componente.buscarEstudiantes();
+    fixture.detectChanges();
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      carrera_id: 2,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de estado académico en minúsculas', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.filtros.controls.estado_academico.setValue(
+      ESTADOS_ACADEMICOS_ESTUDIANTE.SUSPENDIDO,
+    );
+    componente.buscarEstudiantes();
+    fixture.detectChanges();
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      estado_academico: 'suspendido',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de nivel académico actual', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.filtros.controls.nivel_academico_actual.setValue('3');
+    componente.buscarEstudiantes();
+    fixture.detectChanges();
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      nivel_academico_actual: 3,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('rechaza filtros inválidos sin volver a consultar la API', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.filtros.controls.nombres.setValue('x'.repeat(101));
+    componente.buscarEstudiantes();
+    fixture.detectChanges();
+
+    expect(estudiantesService.listarEstudiantes).not.toHaveBeenCalled();
+    expect(obtenerTexto()).toContain('Revise los filtros ingresados.');
+  });
+
+  it('limpia filtros y vuelve a consultar desde la página 1 sin filtros', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.filtros.controls.identificacion.setValue('222');
+    componente.buscarEstudiantes();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.limpiarFiltros();
+    fixture.detectChanges();
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(1);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
+    expect(obtenerTexto()).toContain('Ana Vera');
+    expect(obtenerTexto()).toContain('Luis Vera');
+  });
+
+  it('no filtra ni pagina localmente los registros devueltos por el backend', () => {
+    estudiantesService.listarEstudiantes.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaEstudiantes(
+          Array.from({ length: 11 }, (_, indice) =>
+            crearEstudiante({
+              id: indice + 1,
+              nombres: `Persona ${indice + 1}`,
+              identificacion: String(indice + 1),
+            })),
+          { page: 1, limit: 10, total: 11, totalPages: 2 },
+        ),
+      ),
+    );
+
+    crearComponente();
+
+    expect(componente.estudiantes()).toHaveLength(11);
+    expect(componente.totalEstudiantes()).toBe(11);
+    expect(componente.totalPaginas()).toBe(2);
+  });
+
+  it('muestra estado vacío cuando no hay resultados', () => {
+    estudiantesService.listarEstudiantes.mockReturnValueOnce(
+      respuestaObservable(crearRespuestaEstudiantes([])),
     );
 
     crearComponente();
@@ -85,58 +291,35 @@ describe('ListarEstudiantesComponent', () => {
     expect(obtenerTexto()).toContain('No se encontraron estudiantes.');
   });
 
-  it('muestra error de API', () => {
+  it('muestra error de API al cargar estudiantes', () => {
     estudiantesService.listarEstudiantes.mockReturnValueOnce(
       errorObservable(new HttpErrorResponse({ status: 0 })),
     );
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No fue posible conectar con el servidor.');
-  });
-
-  it('filtra por busqueda', () => {
-    crearComponente();
-
-    componente.formularioFiltros.controls.busqueda.setValue('222');
-    componente.buscarEstudiantes();
-    fixture.detectChanges();
-
-    expect(obtenerTexto()).not.toContain('Ana Vera');
-    expect(obtenerTexto()).toContain('Luis Vera');
-  });
-
-  it('restablece filtros', () => {
-    crearComponente();
-
-    componente.formularioFiltros.controls.busqueda.setValue('222');
-    componente.buscarEstudiantes();
-    componente.limpiarFiltros();
-    fixture.detectChanges();
-
-    expect(obtenerTexto()).toContain('Ana Vera');
-    expect(obtenerTexto()).toContain('Luis Vera');
-  });
-
-  it('cambia de pagina con el componente compartido', () => {
-    estudiantesService.listarEstudiantes.mockReturnValueOnce(
-      respuestaObservable(crearRespuestaListado(
-        Array.from({ length: 11 }, (_valor, indice) =>
-          crearEstudiante({
-            id: indice + 1,
-            nombres: `Persona ${indice + 1}`,
-            identificacion: String(indice + 1),
-          }),
-        ),
-      )),
+    expect(obtenerTexto()).toContain(
+      'No fue posible conectar con el servidor.',
     );
+  });
+
+  it('limpia los resultados anteriores si falla una carga posterior', () => {
     crearComponente();
 
+    estudiantesService.listarEstudiantes.mockReturnValueOnce(
+      errorObservable(new HttpErrorResponse({ status: 0 })),
+    );
     componente.cambiarPagina(2);
     fixture.detectChanges();
 
-    expect(obtenerTexto()).toContain('Persona 11 Vera');
-    expect(obtenerTexto()).not.toContain('Persona 1 Vera');
+    expect(componente.estudiantes()).toEqual([]);
+    expect(obtenerTexto()).not.toContain('Ana Vera');
+  });
+
+  it('muestra las carreras del catálogo en el filtro', () => {
+    crearComponente();
+
+    expect(obtenerTexto()).toContain('Ingeniería de Software');
   });
 
   it('ADMIN ve acciones administrativas', () => {
@@ -157,7 +340,7 @@ describe('ListarEstudiantesComponent', () => {
     expect(obtenerBoton('Inactivar')).toBeNull();
   });
 
-  it('confirma antes de inactivar y actualiza la fila despues de respuesta', () => {
+  it('confirma antes de inactivar y recarga la página actual', () => {
     const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
@@ -167,9 +350,11 @@ describe('ListarEstudiantesComponent', () => {
     expect(confirmar).toHaveBeenCalled();
     expect(estudiantesService.cambiarEstadoEstudiante).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Estudiante inactivado correctamente.');
-    expect(componente.estudiantes()[0].estado_academico).toBe(
-      ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO,
-    );
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(2);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenLastCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
   });
 
   it('no inactiva si el usuario cancela la confirmacion', () => {
@@ -277,12 +462,43 @@ function crearEstudiante(cambios: Partial<Estudiante> = {}): Estudiante {
   };
 }
 
-function crearRespuestaListado(
+function crearCarrera(cambios: Partial<Carrera> = {}): Carrera {
+  return {
+    id: 2,
+    codigo: 'SIS',
+    nombre: 'Ingeniería de Software',
+    duracion_semestres: 8,
+    facultad_id: 1,
+    activo: true,
+    ...cambios,
+  };
+}
+
+function crearRespuestaEstudiantes(
   estudiantes: Estudiante[],
+  paginacion: Partial<RespuestaListadoEstudiantes> = {},
 ): RespuestaListadoEstudiantes {
   return {
     success: true,
     data: estudiantes,
+    page: 1,
+    limit: 10,
+    total: estudiantes.length,
+    totalPages: Math.ceil(estudiantes.length / 10),
+    ...paginacion,
+  };
+}
+
+function crearRespuestaCarreras(
+  carreras: Carrera[],
+): RespuestaListadoCarreras {
+  return {
+    success: true,
+    data: carreras,
+    page: 1,
+    limit: 100,
+    total: carreras.length,
+    totalPages: 1,
   };
 }
 
