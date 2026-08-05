@@ -9,6 +9,7 @@ import type { UsuarioAutenticado } from '../../../core/models/autenticacion.mode
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import type {
   Asignatura,
+  FiltrosAsignaturas,
   RespuestaListadoAsignaturas,
 } from '../../asignaturas/models/asignatura.model';
 import { AsignaturasService } from '../../asignaturas/services/asignaturas.service';
@@ -55,7 +56,9 @@ interface PeriodosServiceMock {
 
 interface AsignaturasServiceMock {
   listarAsignaturas: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoAsignaturas>>
+    typeof vi.fn<
+      (filtros?: FiltrosAsignaturas) => Observable<RespuestaListadoAsignaturas>
+    >
   >;
 }
 
@@ -152,6 +155,9 @@ describe('ListadoCursosComponent', () => {
     expect(cursosService.listar).toHaveBeenCalledWith(
       expect.objectContaining({ pagina: 1, limite: 10 }),
     );
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      limite: 100,
+    });
     expect(obtenerTexto()).toContain('PRG1 - Programación I');
     expect(obtenerTexto()).toContain('Ana Gómez');
     expect(obtenerTexto()).toContain('Primer Semestre 2026');
@@ -576,6 +582,10 @@ function crearRespuestaAsignaturas(
   return {
     success: true,
     data: asignaturas,
+    page: 1,
+    limit: 100,
+    total: asignaturas.length,
+    totalPages: 1,
   };
 }
 

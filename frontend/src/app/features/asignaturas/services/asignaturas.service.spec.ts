@@ -32,13 +32,132 @@ describe('AsignaturasService', () => {
     controladorHttp.verify();
   });
 
-  it('listarAsignaturas ejecuta GET contra la API real sin parámetros inventados', async () => {
+  it('listarAsignaturas ejecuta GET contra la URL centralizada sin parámetros inventados', async () => {
     const promesaRespuesta = firstValueFrom(servicio.listarAsignaturas());
 
     const solicitud = controladorHttp.expectOne(obtenerUrlApi('asignaturas'));
 
     expect(solicitud.request.method).toBe('GET');
     expect(solicitud.request.params.keys()).toEqual([]);
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarAsignaturas envía page y limit', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarAsignaturas({ pagina: 2, limite: 25 }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('page')).toBe('2');
+    expect(solicitud.request.params.get('limit')).toBe('25');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarAsignaturas envía el filtro de código', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarAsignaturas({ codigo: 'PRG1' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('codigo')).toBe('PRG1');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarAsignaturas envía el filtro de nombre', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarAsignaturas({ nombre: 'Programación' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('nombre')).toBe('Programación');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarAsignaturas envía el filtro de créditos', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarAsignaturas({ creditos: 4 }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('creditos')).toBe('4');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarAsignaturas envía el filtro de nivel académico', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarAsignaturas({ nivel_academico: 2 }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('nivel_academico')).toBe('2');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarAsignaturas envía el filtro de activo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarAsignaturas({ activo: false }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('activo')).toBe('false');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarAsignaturas omite filtros vacíos y undefined', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarAsignaturas({
+        codigo: '   ',
+        nombre: undefined,
+        creditos: undefined,
+        nivel_academico: undefined,
+        activo: undefined,
+        pagina: undefined,
+        limite: undefined,
+      }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('asignaturas'));
+
+    expect(solicitud.request.params.keys()).toEqual([]);
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarAsignaturas combina filtros y paginación en una sola solicitud', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarAsignaturas({
+        codigo: 'PRG',
+        nombre: 'Programación',
+        creditos: 4,
+        nivel_academico: 1,
+        activo: true,
+        pagina: 3,
+        limite: 50,
+      }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('codigo')).toBe('PRG');
+    expect(solicitud.request.params.get('nombre')).toBe('Programación');
+    expect(solicitud.request.params.get('creditos')).toBe('4');
+    expect(solicitud.request.params.get('nivel_academico')).toBe('1');
+    expect(solicitud.request.params.get('activo')).toBe('true');
+    expect(solicitud.request.params.get('page')).toBe('3');
+    expect(solicitud.request.params.get('limit')).toBe('50');
     solicitud.flush(crearRespuestaListado());
     await promesaRespuesta;
   });
@@ -123,6 +242,10 @@ describe('AsignaturasService', () => {
   });
 });
 
+function esperarSolicitudListado(peticion: { url: string }): boolean {
+  return peticion.url === obtenerUrlApi('asignaturas');
+}
+
 function crearAsignatura(cambios: Partial<Asignatura> = {}): Asignatura {
   return {
     id: 7,
@@ -161,6 +284,10 @@ function crearRespuestaListado(
   return {
     success: true,
     data: asignaturas,
+    page: 1,
+    limit: 10,
+    total: asignaturas.length,
+    totalPages: Math.ceil(asignaturas.length / 10),
   };
 }
 

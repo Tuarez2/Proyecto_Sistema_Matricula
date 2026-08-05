@@ -1,21 +1,9 @@
 import { body, query } from 'express-validator';
 
-import ApiError from '../utils/ApiError.js';
-import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
+import { validarCamposPermitidos, validarFiltrosPermitidos, validarIdParam } from './common.validator.js';
 
 const camposPermitidos = ['codigo', 'nombre', 'duracion_semestres', 'facultad_id', 'activo'];
 const camposListado = ['codigo', 'nombre', 'facultad_id', 'activo', 'page', 'limit'];
-
-const validarFiltrosPermitidos = (camposPermitidosListado) => (req, res, next) => {
-  const campos = Object.keys(req.query ?? {});
-  const camposDesconocidos = campos.filter((campo) => !camposPermitidosListado.includes(campo));
-
-  if (camposDesconocidos.length > 0) {
-    return next(new ApiError(400, 'Existen filtros no permitidos en la solicitud.', 'UNKNOWN_QUERY_FIELDS', camposDesconocidos));
-  }
-
-  return next();
-};
 
 const reglas = [
   body('codigo').optional().isLength({ min: 1, max: 20 }).withMessage('El codigo es invalido.'),

@@ -2,11 +2,15 @@ import * as asignaturaService from '../services/asignatura.service.js';
 import manejadorAsync from '../utils/asyncHandler.js';
 
 export const obtenerAsignaturas = manejadorAsync(async (req, res) => {
-  const asignaturas = await asignaturaService.listarAsignaturas();
+  const resultado = await asignaturaService.listarAsignaturas(req.query);
 
   res.status(200).json({
     success: true,
-    data: asignaturas
+    data: resultado.data,
+    page: resultado.page,
+    limit: resultado.limit,
+    total: resultado.total,
+    totalPages: resultado.totalPages
   });
 });
 

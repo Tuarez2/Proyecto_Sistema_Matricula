@@ -169,7 +169,7 @@ export class GestionMallaComponent implements OnInit {
     }
 
     this.estadoCargandoCatalogo.set(true);
-    this.asignaturasServicio.listarAsignaturas()
+    this.asignaturasServicio.listarAsignaturas({ activo: true, limite: 100 })
       .pipe(
         takeUntilDestroyed(this.destruccion),
         finalize(() => this.estadoCargandoCatalogo.set(false)),

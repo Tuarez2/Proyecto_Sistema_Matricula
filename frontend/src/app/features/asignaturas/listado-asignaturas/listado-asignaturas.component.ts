@@ -32,6 +32,8 @@ import { AsignaturasService } from '../services/asignaturas.service';
 interface ControlesFiltrosAsignaturas {
   codigo: FormControl<string>;
   nombre: FormControl<string>;
+  creditos: FormControl<string>;
+  nivel_academico: FormControl<string>;
   activo: FormControl<string>;
 }
 
@@ -54,6 +56,8 @@ export class ListadoAsignaturasComponent implements OnInit {
   private readonly autenticacionService = inject(AutenticacionService);
   private readonly destruccion = inject(DestroyRef);
   private readonly estadoAsignaturas = signal<Asignatura[]>([]);
+  private readonly estadoTotalAsignaturas = signal(0);
+  private readonly estadoTotalPaginas = signal(1);
   private readonly estadoFiltrosAplicados = signal<FiltrosAsignaturas>({});
   private readonly estadoCargando = signal(false);
   private readonly estadoMensajeError = signal<string | null>(null);
@@ -62,6 +66,8 @@ export class ListadoAsignaturasComponent implements OnInit {
   private readonly estadoAsignaturaProcesando = signal<number | null>(null);
 
   readonly asignaturas = this.estadoAsignaturas.asReadonly();
+  readonly totalAsignaturas = this.estadoTotalAsignaturas.asReadonly();
+  readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly cargando = this.estadoCargando.asReadonly();
   readonly mensajeError = this.estadoMensajeError.asReadonly();
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
@@ -72,23 +78,6 @@ export class ListadoAsignaturasComponent implements OnInit {
       this.autenticacionService.usuarioActual()?.rol?.codigo ===
       CODIGOS_ROL.ADMIN,
   );
-  readonly asignaturasFiltradas = computed(() =>
-    this.aplicarFiltros(this.asignaturas(), this.estadoFiltrosAplicados()),
-  );
-  readonly totalAsignaturas = computed(
-    () => this.asignaturasFiltradas().length,
-  );
-  readonly totalPaginas = computed(() =>
-    Math.max(Math.ceil(this.totalAsignaturas() / LIMITE_POR_PAGINA), 1),
-  );
-  readonly asignaturasPagina = computed(() => {
-    const inicio = (this.paginaActual() - 1) * LIMITE_POR_PAGINA;
-
-    return this.asignaturasFiltradas().slice(
-      inicio,
-      inicio + LIMITE_POR_PAGINA,
-    );
-  });
 
   readonly filtros = new FormGroup<ControlesFiltrosAsignaturas>({
     codigo: new FormControl('', {
@@ -99,36 +88,19 @@ export class ListadoAsignaturasComponent implements OnInit {
       nonNullable: true,
       validators: [Validators.maxLength(150)],
     }),
+    creditos: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.min(1), Validators.max(100)],
+    }),
+    nivel_academico: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.min(1), Validators.max(100)],
+    }),
     activo: new FormControl('', { nonNullable: true }),
   });
 
   ngOnInit(): void {
     this.cargarAsignaturas();
-  }
-
-  cargarAsignaturas(): void {
-    if (this.cargando()) {
-      return;
-    }
-
-    this.estadoCargando.set(true);
-    this.estadoMensajeError.set(null);
-    this.servicio
-      .listarAsignaturas()
-      .pipe(
-        takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoCargando.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoAsignaturas.set(respuesta.data ?? []);
-          this.ajustarPaginaActual();
-        },
-        error: (error: unknown) => {
-          this.estadoAsignaturas.set([]);
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
   }
 
   buscarAsignaturas(): void {
@@ -141,13 +113,21 @@ export class ListadoAsignaturasComponent implements OnInit {
     this.estadoMensajeError.set(null);
     this.estadoPaginaActual.set(1);
     this.estadoFiltrosAplicados.set(this.obtenerFiltrosActuales());
+    this.cargarAsignaturas();
   }
 
   limpiarFiltros(): void {
-    this.filtros.reset({ codigo: '', nombre: '', activo: '' });
+    this.filtros.reset({
+      codigo: '',
+      nombre: '',
+      creditos: '',
+      nivel_academico: '',
+      activo: '',
+    });
     this.estadoMensajeError.set(null);
     this.estadoPaginaActual.set(1);
     this.estadoFiltrosAplicados.set({});
+    this.cargarAsignaturas();
   }
 
   cambiarPagina(pagina: number): void {
@@ -156,6 +136,8 @@ export class ListadoAsignaturasComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
+    this.estadoMensajeError.set(null);
+    this.cargarAsignaturas();
   }
 
   inactivarAsignatura(asignatura: Asignatura): void {
@@ -201,14 +183,59 @@ export class ListadoAsignaturasComponent implements OnInit {
     return asignatura.activo ? 'Activa' : 'Inactiva';
   }
 
+  private cargarAsignaturas(): void {
+    if (this.cargando()) {
+      return;
+    }
+
+    this.estadoCargando.set(true);
+    this.estadoMensajeError.set(null);
+    this.servicio
+      .listarAsignaturas({
+        ...this.estadoFiltrosAplicados(),
+        pagina: this.estadoPaginaActual(),
+        limite: LIMITE_POR_PAGINA,
+      })
+      .pipe(
+        takeUntilDestroyed(this.destruccion),
+        finalize(() => this.estadoCargando.set(false)),
+      )
+      .subscribe({
+        next: (respuesta) => {
+          this.estadoAsignaturas.set(respuesta.data ?? []);
+          this.estadoTotalAsignaturas.set(respuesta.total);
+          this.estadoTotalPaginas.set(respuesta.totalPages);
+          this.estadoPaginaActual.set(respuesta.page);
+        },
+        error: (error: unknown) => {
+          this.estadoAsignaturas.set([]);
+          this.estadoTotalAsignaturas.set(0);
+          this.estadoTotalPaginas.set(1);
+          this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        },
+      });
+  }
+
   private obtenerFiltrosActuales(): FiltrosAsignaturas {
     const valores = this.filtros.getRawValue();
 
     return {
       codigo: valores.codigo.trim() || undefined,
       nombre: valores.nombre.trim() || undefined,
+      creditos: this.obtenerEnteroPositivo(valores.creditos),
+      nivel_academico: this.obtenerEnteroPositivo(valores.nivel_academico),
       activo: this.obtenerActivoFiltro(valores.activo),
     };
+  }
+
+  private obtenerEnteroPositivo(valor: string): number | undefined {
+    const numero = Number(valor);
+
+    if (!Number.isInteger(numero) || numero < 1) {
+      return undefined;
+    }
+
+    return numero;
   }
 
   private obtenerActivoFiltro(valor: string): boolean | undefined {
@@ -221,28 +248,6 @@ export class ListadoAsignaturasComponent implements OnInit {
     }
 
     return undefined;
-  }
-
-  private aplicarFiltros(
-    asignaturas: Asignatura[],
-    filtros: FiltrosAsignaturas,
-  ): Asignatura[] {
-    return asignaturas.filter((asignatura) => {
-      const coincideCodigo = !filtros.codigo ||
-        asignatura.codigo.toLowerCase().includes(filtros.codigo.toLowerCase());
-      const coincideNombre = !filtros.nombre ||
-        asignatura.nombre.toLowerCase().includes(filtros.nombre.toLowerCase());
-      const coincideEstado = filtros.activo === undefined ||
-        asignatura.activo === filtros.activo;
-
-      return coincideCodigo && coincideNombre && coincideEstado;
-    });
-  }
-
-  private ajustarPaginaActual(): void {
-    if (this.paginaActual() > this.totalPaginas()) {
-      this.estadoPaginaActual.set(this.totalPaginas());
-    }
   }
 
   private obtenerMensajeError(error: unknown): string {

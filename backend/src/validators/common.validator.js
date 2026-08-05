@@ -24,3 +24,14 @@ export const validarCamposPermitidos = (camposPermitidos, opciones = {}) => (req
 
   return next();
 };
+
+export const validarFiltrosPermitidos = (camposPermitidosListado) => (req, res, next) => {
+  const campos = Object.keys(req.query ?? {});
+  const camposDesconocidos = campos.filter((campo) => !camposPermitidosListado.includes(campo));
+
+  if (camposDesconocidos.length > 0) {
+    return next(new ApiError(400, 'Existen filtros no permitidos en la solicitud.', 'UNKNOWN_QUERY_FIELDS', camposDesconocidos));
+  }
+
+  return next();
+};

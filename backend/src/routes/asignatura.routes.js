@@ -14,6 +14,7 @@ import validarSolicitud from '../middlewares/validateRequest.js';
 import {
   validarCreacionAsignatura,
   validarIdParam,
+  validarListadoAsignaturas,
   validarActualizacionAsignatura
 } from '../validators/asignatura.validator.js';
 
@@ -21,7 +22,7 @@ const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 
 router.use(authenticate);
-router.get('/', obtenerAsignaturas);
+router.get('/', validarListadoAsignaturas, validarSolicitud, obtenerAsignaturas);
 router.get('/:id', validarIdParam, validarSolicitud, obtenerAsignaturaPorId);
 router.post('/', adminOnly, validarCreacionAsignatura, validarSolicitud, crearAsignatura);
 router.put('/:id', adminOnly, validarIdParam, validarActualizacionAsignatura, validarSolicitud, actualizarAsignatura);

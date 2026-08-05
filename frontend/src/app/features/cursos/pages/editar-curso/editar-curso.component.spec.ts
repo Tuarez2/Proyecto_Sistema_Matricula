@@ -10,6 +10,7 @@ import { Observable, Subject } from 'rxjs';
 
 import type {
   Asignatura,
+  FiltrosAsignaturas,
   RespuestaListadoAsignaturas,
 } from '../../../asignaturas/models/asignatura.model';
 import { AsignaturasService } from '../../../asignaturas/services/asignaturas.service';
@@ -58,7 +59,9 @@ interface PeriodosServiceMock {
 
 interface AsignaturasServiceMock {
   listarAsignaturas: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoAsignaturas>>
+    typeof vi.fn<
+      (filtros?: FiltrosAsignaturas) => Observable<RespuestaListadoAsignaturas>
+    >
   >;
 }
 
@@ -140,6 +143,10 @@ describe('EditarCursoComponent', () => {
     crearComponente();
 
     expect(cursosService.obtenerCurso).toHaveBeenCalledWith(7);
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      activo: true,
+      limite: 100,
+    });
   });
 
   it('puebla el formulario con el curso consultado', () => {
@@ -445,6 +452,10 @@ function crearRespuestaAsignaturas(
   return {
     success: true,
     data: asignaturas,
+    page: 1,
+    limit: 100,
+    total: asignaturas.length,
+    totalPages: 1,
   };
 }
 

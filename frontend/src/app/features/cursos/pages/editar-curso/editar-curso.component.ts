@@ -237,7 +237,7 @@ export class EditarCursoComponent implements OnInit {
       });
 
     this.asignaturasServicio
-      .listarAsignaturas()
+      .listarAsignaturas({ activo: true, limite: 100 })
       .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: (respuesta) => this.estadoAsignaturas.set(respuesta.data ?? []),

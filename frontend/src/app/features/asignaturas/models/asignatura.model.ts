@@ -48,9 +48,21 @@ export interface SolicitudActualizarAsignatura {
 export interface FiltrosAsignaturas {
   codigo?: string;
   nombre?: string;
+  creditos?: number;
+  nivel_academico?: number;
   activo?: boolean;
+  pagina?: number;
+  limite?: number;
 }
 
-export type RespuestaListadoAsignaturas = RespuestaApi<Asignatura[]>;
+export interface PaginacionAsignaturas {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export type RespuestaListadoAsignaturas =
+  RespuestaApi<Asignatura[]> & PaginacionAsignaturas;
 export type RespuestaAsignatura = RespuestaApi<Asignatura>;
 export type RespuestaCambioEstadoAsignatura = RespuestaAsignatura;

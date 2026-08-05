@@ -5,6 +5,7 @@ import { Observable, Subject } from 'rxjs';
 
 import type {
   Asignatura,
+  FiltrosAsignaturas,
   RespuestaListadoAsignaturas,
 } from '../../../asignaturas/models/asignatura.model';
 import { AsignaturasService } from '../../../asignaturas/services/asignaturas.service';
@@ -45,7 +46,9 @@ interface PeriodosServiceMock {
 
 interface AsignaturasServiceMock {
   listarAsignaturas: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoAsignaturas>>
+    typeof vi.fn<
+      (filtros?: FiltrosAsignaturas) => Observable<RespuestaListadoAsignaturas>
+    >
   >;
 }
 
@@ -126,9 +129,13 @@ describe('CrearCursoComponent', () => {
     ]);
   });
 
-  it('carga solo asignaturas activas', () => {
+  it('carga solo asignaturas activas con límite explícito', () => {
     crearComponente();
 
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      activo: true,
+      limite: 100,
+    });
     expect(componente.asignaturas().map((asignatura) => asignatura.id)).toEqual(
       [100],
     );
@@ -380,6 +387,10 @@ function crearRespuestaAsignaturas(
   return {
     success: true,
     data: asignaturas,
+    page: 1,
+    limit: 100,
+    total: asignaturas.length,
+    totalPages: 1,
   };
 }
 

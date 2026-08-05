@@ -183,7 +183,7 @@ export class CrearCursoComponent implements OnInit {
 
   private cargarAsignaturas(): void {
     this.asignaturasServicio
-      .listarAsignaturas()
+      .listarAsignaturas({ activo: true, limite: 100 })
       .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: (respuesta) => {

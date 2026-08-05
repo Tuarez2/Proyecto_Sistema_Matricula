@@ -9,6 +9,7 @@ import type { UsuarioAutenticado } from '../../../core/models/autenticacion.mode
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import type {
   Asignatura,
+  FiltrosAsignaturas,
   RespuestaCambioEstadoAsignatura,
   RespuestaListadoAsignaturas,
 } from '../models/asignatura.model';
@@ -17,7 +18,9 @@ import { ListadoAsignaturasComponent } from './listado-asignaturas.component';
 
 interface AsignaturasServiceMock {
   listarAsignaturas: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoAsignaturas>>
+    typeof vi.fn<
+      (filtros?: FiltrosAsignaturas) => Observable<RespuestaListadoAsignaturas>
+    >
   >;
   inactivarAsignatura: ReturnType<
     typeof vi.fn<
@@ -45,6 +48,7 @@ describe('ListadoAsignaturasComponent', () => {
               id: 2,
               codigo: 'MATE1',
               nombre: 'Matemática I',
+              creditos: 3,
               nivel_academico: 1,
             }),
           ]),
@@ -73,12 +77,182 @@ describe('ListadoAsignaturasComponent', () => {
     }).compileComponents();
   });
 
-  it('carga asignaturas al iniciar', () => {
+  it('solicita la primera página con límite explícito al iniciar', () => {
     crearComponente();
 
     expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(1);
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
     expect(obtenerTexto()).toContain('Programación I');
     expect(obtenerTexto()).toContain('Matemática I');
+  });
+
+  it('usa total y totalPages de la respuesta del backend', () => {
+    asignaturasService.listarAsignaturas.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaAsignaturas([crearAsignatura()], {
+          total: 25,
+          totalPages: 3,
+        }),
+      ),
+    );
+
+    crearComponente();
+
+    expect(componente.totalAsignaturas()).toBe(25);
+    expect(componente.totalPaginas()).toBe(3);
+  });
+
+  it('cambia de página solicitando los datos al backend sin paginar en memoria', () => {
+    const paginaUno = crearRespuestaAsignaturas(
+      Array.from({ length: 10 }, (_, indice) =>
+        crearAsignatura({
+          id: indice + 1,
+          codigo: `ASG${indice + 1}`,
+          nombre: `Asignatura ${indice + 1}`,
+        })),
+      { page: 1, limit: 10, total: 11, totalPages: 2 },
+    );
+    const paginaDos = crearRespuestaAsignaturas(
+      [crearAsignatura({ id: 11, codigo: 'ASG11', nombre: 'Asignatura 11' })],
+      { page: 2, limit: 10, total: 11, totalPages: 2 },
+    );
+
+    asignaturasService.listarAsignaturas
+      .mockReturnValueOnce(respuestaObservable(paginaUno))
+      .mockReturnValueOnce(respuestaObservable(paginaDos));
+
+    crearComponente();
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(2);
+    expect(asignaturasService.listarAsignaturas).toHaveBeenLastCalledWith({
+      pagina: 2,
+      limite: 10,
+    });
+    expect(componente.paginaActual()).toBe(2);
+    expect(componente.asignaturas()).toHaveLength(1);
+    expect(obtenerTexto()).toContain('Asignatura 11');
+  });
+
+  it('aplica filtros al backend y restablece a la página 1', () => {
+    crearComponente();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.filtros.controls.codigo.setValue('PRG');
+    componente.filtros.controls.nombre.setValue('Programación');
+    componente.buscarAsignaturas();
+    fixture.detectChanges();
+
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(1);
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      codigo: 'PRG',
+      nombre: 'Programación',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de créditos', () => {
+    crearComponente();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.filtros.controls.creditos.setValue('4');
+    componente.buscarAsignaturas();
+    fixture.detectChanges();
+
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      creditos: 4,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de nivel académico', () => {
+    crearComponente();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.filtros.controls.nivel_academico.setValue('2');
+    componente.buscarAsignaturas();
+    fixture.detectChanges();
+
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      nivel_academico: 2,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de estado activo', () => {
+    crearComponente();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.filtros.controls.activo.setValue('false');
+    componente.buscarAsignaturas();
+    fixture.detectChanges();
+
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      activo: false,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('rechaza filtros inválidos sin volver a consultar la API', () => {
+    crearComponente();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.filtros.controls.nombre.setValue('x'.repeat(151));
+    componente.buscarAsignaturas();
+    fixture.detectChanges();
+
+    expect(asignaturasService.listarAsignaturas).not.toHaveBeenCalled();
+    expect(obtenerTexto()).toContain('Revise los filtros ingresados.');
+  });
+
+  it('limpia filtros y vuelve a consultar desde la página 1 sin filtros', () => {
+    crearComponente();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.filtros.controls.nombre.setValue('Programación I');
+    componente.buscarAsignaturas();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.limpiarFiltros();
+    fixture.detectChanges();
+
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(1);
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
+    expect(obtenerTexto()).toContain('Programación I');
+    expect(obtenerTexto()).toContain('Matemática I');
+  });
+
+  it('no filtra ni pagina localmente los registros devueltos por el backend', () => {
+    asignaturasService.listarAsignaturas.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaAsignaturas(
+          Array.from({ length: 11 }, (_, indice) =>
+            crearAsignatura({
+              id: indice + 1,
+              codigo: `ASG${indice + 1}`,
+              nombre: `Asignatura ${indice + 1}`,
+            })),
+          { page: 1, limit: 10, total: 11, totalPages: 2 },
+        ),
+      ),
+    );
+
+    crearComponente();
+
+    expect(componente.asignaturas()).toHaveLength(11);
+    expect(componente.totalAsignaturas()).toBe(11);
+    expect(componente.totalPaginas()).toBe(2);
   });
 
   it('muestra estado vacío cuando no hay resultados', () => {
@@ -103,67 +277,17 @@ describe('ListadoAsignaturasComponent', () => {
     );
   });
 
-  it('filtra localmente por código, nombre y estado', () => {
+  it('limpia los resultados anteriores si falla una carga posterior', () => {
     crearComponente();
 
-    componente.filtros.controls.codigo.setValue('prg');
-    componente.filtros.controls.nombre.setValue('programación');
-    componente.filtros.controls.activo.setValue('true');
-    componente.buscarAsignaturas();
-    fixture.detectChanges();
-
-    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(1);
-    expect(obtenerTexto()).toContain('Programación I');
-    expect(componente.asignaturasPagina()).toEqual([
-      expect.objectContaining({ nombre: 'Programación I' }),
-    ]);
-  });
-
-  it('rechaza filtros inválidos sin volver a consultar la API', () => {
-    crearComponente();
-    asignaturasService.listarAsignaturas.mockClear();
-
-    componente.filtros.controls.nombre.setValue('x'.repeat(151));
-    componente.buscarAsignaturas();
-    fixture.detectChanges();
-
-    expect(asignaturasService.listarAsignaturas).not.toHaveBeenCalled();
-    expect(obtenerTexto()).toContain('Revise los filtros ingresados.');
-  });
-
-  it('limpia filtros y vuelve a mostrar todos los registros', () => {
-    crearComponente();
-
-    componente.filtros.controls.nombre.setValue('Programación I');
-    componente.buscarAsignaturas();
-    componente.limpiarFiltros();
-    fixture.detectChanges();
-
-    expect(obtenerTexto()).toContain('Programación I');
-    expect(obtenerTexto()).toContain('Matemática I');
-  });
-
-  it('pagina localmente cuando el backend devuelve todos los registros', () => {
     asignaturasService.listarAsignaturas.mockReturnValueOnce(
-      respuestaObservable(
-        crearRespuestaAsignaturas(
-          Array.from({ length: 11 }, (_, indice) =>
-            crearAsignatura({
-              id: indice + 1,
-              codigo: `ASG${indice + 1}`,
-              nombre: `Asignatura ${indice + 1}`,
-            }),
-          ),
-        ),
-      ),
+      errorObservable(new HttpErrorResponse({ status: 0 })),
     );
-
-    crearComponente();
     componente.cambiarPagina(2);
     fixture.detectChanges();
 
-    expect(componente.asignaturasPagina().length).toBe(1);
-    expect(obtenerTexto()).toContain('Asignatura 11');
+    expect(componente.asignaturas()).toEqual([]);
+    expect(obtenerTexto()).not.toContain('Programación I');
   });
 
   it('ADMIN ve acciones administrativas', () => {
@@ -193,7 +317,7 @@ describe('ListadoAsignaturasComponent', () => {
     );
   });
 
-  it('confirma antes de inactivar una asignatura', () => {
+  it('confirma antes de inactivar una asignatura y recarga la página actual', () => {
     const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
@@ -204,6 +328,10 @@ describe('ListadoAsignaturasComponent', () => {
     expect(asignaturasService.inactivarAsignatura).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Asignatura inactivada correctamente.');
     expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(2);
+    expect(asignaturasService.listarAsignaturas).toHaveBeenLastCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
   });
 
   it('no inactiva si se cancela la confirmación', () => {
@@ -326,10 +454,16 @@ function crearAsignatura(cambios: Partial<Asignatura> = {}): Asignatura {
 
 function crearRespuestaAsignaturas(
   asignaturas: Asignatura[],
+  paginacion: Partial<RespuestaListadoAsignaturas> = {},
 ): RespuestaListadoAsignaturas {
   return {
     success: true,
     data: asignaturas,
+    page: 1,
+    limit: 10,
+    total: asignaturas.length,
+    totalPages: Math.ceil(asignaturas.length / 10),
+    ...paginacion,
   };
 }
 

@@ -249,7 +249,7 @@ export class ListadoCursosComponent implements OnInit {
       });
 
     this.asignaturasServicio
-      .listarAsignaturas()
+      .listarAsignaturas({ limite: 100 })
       .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: (respuesta) =>

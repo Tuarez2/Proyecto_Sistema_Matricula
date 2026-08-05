@@ -9,6 +9,7 @@ import type { UsuarioAutenticado } from '../../../core/models/autenticacion.mode
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import type {
   Asignatura,
+  FiltrosAsignaturas,
   RespuestaListadoAsignaturas,
 } from '../../asignaturas/models/asignatura.model';
 import { AsignaturasService } from '../../asignaturas/services/asignaturas.service';
@@ -70,7 +71,9 @@ interface CarrerasServiceMock {
 
 interface AsignaturasServiceMock {
   listarAsignaturas: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoAsignaturas>>
+    typeof vi.fn<
+      (filtros?: FiltrosAsignaturas) => Observable<RespuestaListadoAsignaturas>
+    >
   >;
 }
 
@@ -177,6 +180,10 @@ describe('GestionMallaComponent', () => {
       limite: 100,
     });
     expect(asignaturasServicio.listarAsignaturas).toHaveBeenCalledTimes(1);
+    expect(asignaturasServicio.listarAsignaturas).toHaveBeenCalledWith({
+      activo: true,
+      limite: 100,
+    });
     expect(componente.carreras()).toHaveLength(1);
     expect(componente.carreras()[0]?.nombre).toBe('Software');
     expect(componente.catalogos()).toHaveLength(2);
@@ -714,7 +721,14 @@ function crearRespuestaCarreras(carreras: Carrera[]): RespuestaListadoCarreras {
 function crearRespuestaAsignaturas(
   asignaturas: Asignatura[],
 ): RespuestaListadoAsignaturas {
-  return { success: true, data: asignaturas };
+  return {
+    success: true,
+    data: asignaturas,
+    page: 1,
+    limit: 100,
+    total: asignaturas.length,
+    totalPages: 1,
+  };
 }
 
 function crearRespuestaAsignaturasCarrera(
