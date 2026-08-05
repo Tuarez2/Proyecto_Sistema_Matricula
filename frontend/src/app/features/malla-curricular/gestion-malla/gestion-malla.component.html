@@ -1,1 +1,172 @@
-<section aria-labelledby="titulo-malla"><h1 id="titulo-malla">Malla curricular</h1>@if(mensajeError()){<p role="alert">{{mensajeError()}}</p>}<form [formGroup]="formulario"><label>Carrera <select formControlName="carreraId" (change)="consultar()"><option value="">Seleccione</option>@for(c of carreras();track c.id){<option [value]="c.id">{{c.nombre}}</option>}</select></label><label>Asignatura <select formControlName="asignaturaId"><option value="">Seleccione</option>@for(a of asignaturas();track a.id){<option [value]="a.id">{{a.nombre}}</option>}</select></label><button type="button" (click)="asignar()" [disabled]="cargando()">Asociar asignatura</button></form><h2>Asignaturas de la carrera</h2><ul>@for(a of asignaciones();track a.carrera_id+'-'+a.asignatura_id){<li>{{nombreAsignatura(a)}} <button type="button" (click)="eliminar(a)">Quitar</button></li>}</ul></section>
+<section aria-labelledby="titulo-malla">
+  <h1 id="titulo-malla">Malla curricular</h1>
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  <form [formGroup]="formularioAsignar" novalidate>
+    <div>
+      <label for="carrera">Carrera</label>
+      <select
+        id="carrera"
+        formControlName="carreraId"
+        (change)="consultarMalla()"
+        [attr.disabled]="cargandoCarreras() ? '' : null"
+      >
+        <option value="">Seleccione una carrera</option>
+        @for (carrera of carreras(); track carrera.id) {
+          <option [value]="carrera.id">
+            {{ carrera.codigo }} - {{ carrera.nombre }}
+          </option>
+        }
+      </select>
+      @if (cargandoCarreras()) {
+        <p role="status">Consultando carreras...</p>
+      }
+    </div>
+
+    @if (carreraMalla() && esAdministrador()) {
+      <div>
+        <label for="asignatura">Asignatura</label>
+        <select id="asignatura" formControlName="asignaturaId">
+          <option value="">Seleccione una asignatura</option>
+          @for (asignatura of asignaturasDisponibles(); track asignatura.id) {
+            <option [value]="asignatura.id">
+              {{ asignatura.codigo }} - {{ asignatura.nombre }}
+            </option>
+          }
+        </select>
+        @if (asignaturasDisponibles().length === 0) {
+          <p>
+            Todas las asignaturas activas del catálogo ya están asociadas a la
+            carrera.
+          </p>
+        }
+        <button
+          type="button"
+          (click)="asignar()"
+          [disabled]="
+            procesando() !== null ||
+            formularioAsignar.controls.asignaturaId.invalid ||
+            asignaturasDisponibles().length === 0
+          "
+        >
+          Agregar asignatura
+        </button>
+      </div>
+    }
+  </form>
+
+  @if (carreraMalla()) {
+    <h2>Asignaturas de {{ carreraMalla()?.nombre }}</h2>
+  }
+
+  @if (cargandoMalla()) {
+    <p role="status" aria-live="polite">Consultando malla curricular...</p>
+  }
+
+  @if (
+    !cargandoMalla() &&
+    carreraMalla() &&
+    !mensajeError() &&
+    asignaturasCarrera().length === 0
+  ) {
+    <p>La carrera no tiene asignaturas asignadas.</p>
+  }
+
+  @if (asignaturasCarrera().length > 0) {
+    <table>
+      <caption>Asignaturas de la malla curricular</caption>
+      <thead>
+        <tr>
+          <th scope="col">Código</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Créditos</th>
+          <th scope="col">Nivel académico</th>
+          @if (esAdministrador()) {
+            <th scope="col">Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (asignatura of asignaturasCarrera(); track asignatura.id) {
+          @if (estaEditando(asignatura)) {
+            <tr>
+              <td [attr.colspan]="columnasTabla()">
+                <form [formGroup]="formularioEditar" novalidate>
+                  <div>
+                    <label for="asignatura-editar">Asignatura</label>
+                    <select
+                      id="asignatura-editar"
+                      formControlName="asignaturaId"
+                    >
+                      @for (opcion of asignaturasParaEdicion(); track opcion.id) {
+                        <option [value]="opcion.id">
+                          {{ opcion.codigo }} - {{ opcion.nombre }}
+                        </option>
+                      }
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="guardarEdicion()"
+                    [disabled]="
+                      procesando() !== null || formularioEditar.invalid
+                    "
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    type="button"
+                    (click)="cancelarEdicion()"
+                    [disabled]="procesando() !== null"
+                  >
+                    Cancelar
+                  </button>
+                </form>
+              </td>
+            </tr>
+          } @else {
+            <tr>
+              <td>{{ asignatura.codigo }}</td>
+              <td>{{ asignatura.nombre }}</td>
+              <td>{{ asignatura.creditos }}</td>
+              <td>{{ asignatura.nivel_academico }}</td>
+              @if (esAdministrador()) {
+                <td>
+                  <button
+                    type="button"
+                    (click)="iniciarEdicion(asignatura)"
+                    [disabled]="procesando() !== null"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    (click)="quitarAsignatura(asignatura)"
+                    [disabled]="procesando() !== null"
+                  >
+                    Quitar
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+
+    <app-pagination
+      [currentPage]="paginaMalla()"
+      [totalPages]="totalPaginasMalla()"
+      [totalRegistros]="totalMalla()"
+      [deshabilitado]="cargandoMalla()"
+      (pageChange)="cambiarPagina($event)"
+    />
+  }
+</section>
