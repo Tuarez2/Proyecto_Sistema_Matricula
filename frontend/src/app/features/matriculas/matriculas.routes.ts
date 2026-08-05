@@ -33,6 +33,14 @@ export const MATRICULAS_ROUTES: Routes = [
     loadComponent: () =>
       import('./pages/ver-matricula/ver-matricula.component')
         .then((modulo) => modulo.VerMatriculaComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [
+        CODIGOS_ROL.ADMIN,
+        CODIGOS_ROL.GESTOR_MATRICULA,
+        CODIGOS_ROL.ESTUDIANTE,
+      ],
+    },
     title: 'Detalle de matrícula',
   },
 ];

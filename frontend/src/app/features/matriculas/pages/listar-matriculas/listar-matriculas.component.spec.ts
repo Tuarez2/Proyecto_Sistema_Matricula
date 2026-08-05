@@ -205,6 +205,28 @@ describe('ListarMatriculasComponent', () => {
     expect(obtenerBoton('Anular')).toBeNull();
   });
 
+  it('oculta la columna de identificación para roles sin gestión', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
+
+    crearComponente();
+
+    const encabezados = Array.from(
+      fixture.nativeElement.querySelectorAll('th') as NodeListOf<HTMLTableCellElement>,
+    ).map((encabezado) => encabezado.textContent?.trim());
+
+    expect(encabezados).not.toContain('Identificación');
+  });
+
+  it('muestra la columna de identificación para roles de gestión', () => {
+    crearComponente();
+
+    const encabezados = Array.from(
+      fixture.nativeElement.querySelectorAll('th') as NodeListOf<HTMLTableCellElement>,
+    ).map((encabezado) => encabezado.textContent?.trim());
+
+    expect(encabezados).toContain('Identificación');
+  });
+
   it('enlaza cada matrícula con su ruta de detalle', () => {
     crearComponente();
 

@@ -19,11 +19,12 @@ import {
 
 const router = Router();
 const rolesGestionMatricula = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER);
+const rolesConsultaMatriculas = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER, ROLE_CODES.STUDENT);
 
 router.use(authenticate);
 
-router.get('/', validarListadoMatriculas, validarSolicitud, obtenerMatriculas);
-router.get('/:id', validarIdMatricula, validarSolicitud, obtenerMatriculaPorId);
+router.get('/', rolesConsultaMatriculas, validarListadoMatriculas, validarSolicitud, obtenerMatriculas);
+router.get('/:id', rolesConsultaMatriculas, validarIdMatricula, validarSolicitud, obtenerMatriculaPorId);
 router.post('/', rolesGestionMatricula, validarCreacionMatricula, validarSolicitud, crearMatricula);
 router.patch('/:id/estado', rolesGestionMatricula, validarIdMatricula, validarEstadoMatricula, validarSolicitud, cambiarEstadoMatricula);
 

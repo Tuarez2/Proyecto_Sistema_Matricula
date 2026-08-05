@@ -16,7 +16,13 @@ export const obtenerTokenAdministrador = async () => {
   return respuesta.body.data.tokens.accessToken;
 };
 
-export const crearUsuarioPrueba = async ({ sufijo, codigoRol = ROLE_CODES.STUDENT, estado = USER_STATUS.ACTIVE } = {}) => {
+export const crearUsuarioPrueba = async ({
+  sufijo,
+  codigoRol = ROLE_CODES.STUDENT,
+  estado = USER_STATUS.ACTIVE,
+  estudiante_id = null,
+  docente_id = null
+} = {}) => {
   const rol = await Rol.findOne({ where: { codigo: codigoRol } });
   const password = `Password-${sufijo}-123!`;
   const usuario = await Usuario.create({
@@ -26,10 +32,27 @@ export const crearUsuarioPrueba = async ({ sufijo, codigoRol = ROLE_CODES.STUDEN
     password_hash: await generarHashPassword(password),
     estado,
     rol_id: rol.id,
-    debe_cambiar_password: false
+    debe_cambiar_password: false,
+    estudiante_id,
+    docente_id
   });
 
   return { usuario, password };
+};
+
+export const obtenerTokenUsuarioPrueba = async ({
+  sufijo,
+  codigoRol = ROLE_CODES.STUDENT,
+  estudiante_id = null,
+  docente_id = null
+} = {}) => {
+  const { usuario, password } = await crearUsuarioPrueba({ sufijo, codigoRol, estudiante_id, docente_id });
+  const respuesta = await request(app).post('/api/v1/auth/login').send({
+    correo: usuario.correo,
+    password
+  });
+
+  return { token: respuesta.body.data.tokens.accessToken, usuario, password };
 };
 
 export const obtenerTokenUsuarioComun = async (sufijo) => {

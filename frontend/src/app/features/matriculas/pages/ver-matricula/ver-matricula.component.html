@@ -16,11 +16,13 @@
       <dt>Estudiante</dt>
       <dd>{{ obtenerNombreEstudiante(matricula()!) }}</dd>
 
-      <dt>Identificación</dt>
-      <dd>{{ matricula()!.estudiante?.identificacion ?? 'Sin identificación' }}</dd>
+      @if (puedeVerDatosPersonales()) {
+        <dt>Identificación</dt>
+        <dd>{{ matricula()!.estudiante?.identificacion ?? 'Sin identificación' }}</dd>
 
-      <dt>Correo</dt>
-      <dd>{{ matricula()!.estudiante?.correo ?? 'Sin correo' }}</dd>
+        <dt>Correo</dt>
+        <dd>{{ matricula()!.estudiante?.correo ?? 'Sin correo' }}</dd>
+      }
 
       <dt>Curso</dt>
       <dd>{{ obtenerDescripcionCurso(matricula()!) }}</dd>

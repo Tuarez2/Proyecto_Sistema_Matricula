@@ -115,7 +115,9 @@
         <tr>
           <th scope="col">Matrícula</th>
           <th scope="col">Estudiante</th>
-          <th scope="col">Identificación</th>
+          @if (puedeGestionarMatriculas()) {
+            <th scope="col">Identificación</th>
+          }
           <th scope="col">Curso</th>
           <th scope="col">Periodo</th>
           <th scope="col">Docente</th>
@@ -135,7 +137,9 @@
               </a>
             </td>
             <td>{{ obtenerNombreEstudiante(matricula) }}</td>
-            <td>{{ matricula.estudiante?.identificacion ?? 'Sin identificación' }}</td>
+            @if (puedeGestionarMatriculas()) {
+              <td>{{ matricula.estudiante?.identificacion ?? 'Sin identificación' }}</td>
+            }
             <td>{{ obtenerDescripcionCurso(matricula) }}</td>
             <td>{{ obtenerPeriodo(matricula) }}</td>
             <td>{{ obtenerDocente(matricula) }}</td>

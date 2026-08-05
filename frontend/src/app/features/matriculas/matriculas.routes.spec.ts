@@ -21,11 +21,16 @@ describe('MATRICULAS_ROUTES', () => {
     ]);
   });
 
-  it('define ruta de consulta individual por identificador', () => {
+  it('protege la consulta individual para ADMIN, GESTOR_MATRICULA y ESTUDIANTE', () => {
     const rutaDetalle = MATRICULAS_ROUTES.find((ruta) => ruta.path === ':id');
 
     expect(rutaDetalle).toBeTruthy();
-    expect(rutaDetalle?.canActivate).toBeUndefined();
+    expect(rutaDetalle?.canActivate).toEqual([guardRoles]);
+    expect(rutaDetalle?.data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+      CODIGOS_ROL.GESTOR_MATRICULA,
+      CODIGOS_ROL.ESTUDIANTE,
+    ]);
     expect(rutaDetalle?.title).toBe('Detalle de matrícula');
   });
 

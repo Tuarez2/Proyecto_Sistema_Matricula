@@ -5,6 +5,7 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -12,7 +13,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
+import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import {
   ESTADOS_MATRICULA,
   type EstadoMatricula,
@@ -30,6 +33,7 @@ import { MatriculasService } from '../../services/matriculas.service';
 export class VerMatriculaComponent implements OnInit {
   private readonly rutaActiva = inject(ActivatedRoute);
   private readonly matriculasService = inject(MatriculasService);
+  private readonly autenticacionService = inject(AutenticacionService);
   private readonly referenciaDestruccion = inject(DestroyRef);
   private readonly estadoMatricula = signal<Matricula | null>(null);
   private readonly estadoCargando = signal(false);
@@ -38,6 +42,14 @@ export class VerMatriculaComponent implements OnInit {
   readonly matricula = this.estadoMatricula.asReadonly();
   readonly cargando = this.estadoCargando.asReadonly();
   readonly mensajeError = this.estadoMensajeError.asReadonly();
+  readonly puedeVerDatosPersonales = computed(() => {
+    const codigoRol = this.autenticacionService.usuarioActual()?.rol?.codigo;
+
+    return (
+      codigoRol === CODIGOS_ROL.ADMIN ||
+      codigoRol === CODIGOS_ROL.GESTOR_MATRICULA
+    );
+  });
 
   ngOnInit(): void {
     const idMatricula = Number(this.rutaActiva.snapshot.paramMap.get('id'));
