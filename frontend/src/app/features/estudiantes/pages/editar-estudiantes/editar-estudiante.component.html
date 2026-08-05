@@ -1,10 +1,31 @@
-<div class="container py-4">
-  <h3 class="mb-4">Editar Estudiante</h3>
-  <app-estudiante-form 
-    *ngIf="estudiante" 
-    [initialData]="estudiante" 
-    [isEditMode]="true" 
-    (onSubmitForm)="actualizarEstudiante($event)" 
-    (onCancel)="cancelar()">
-  </app-estudiante-form>
-</div>
+<section aria-labelledby="titulo-editar-estudiante">
+  <h1 id="titulo-editar-estudiante">Editar estudiante</h1>
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (cargandoEstudiante()) {
+    <p role="status" aria-live="polite">Consultando estudiante...</p>
+  }
+
+  @if (cargandoCarreras()) {
+    <p role="status" aria-live="polite">Consultando carreras...</p>
+  }
+
+  @if (estudiante()) {
+    <app-estudiante-form
+      [estudianteInicial]="estudiante()"
+      [carreras]="carreras()"
+      [modoEdicion]="true"
+      [cargandoCarreras]="cargandoCarreras()"
+      [enviando]="enviando()"
+      (guardarEstudiante)="guardarEstudiante($event)"
+      (cancelarFormulario)="cancelar()"
+    />
+  }
+</section>

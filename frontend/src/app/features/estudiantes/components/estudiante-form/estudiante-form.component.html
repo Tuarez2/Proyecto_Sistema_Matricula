@@ -1,1 +1,185 @@
-<p>estudiante-form works!</p>
+<form
+  [formGroup]="formularioEstudiante"
+  (ngSubmit)="enviarFormulario()"
+  novalidate
+>
+  <div>
+    <label for="numeroMatricula">Número de matrícula</label>
+    <input
+      id="numeroMatricula"
+      type="text"
+      formControlName="numeroMatricula"
+      maxlength="30"
+      [attr.aria-invalid]="formularioEstudiante.controls.numeroMatricula.invalid"
+    />
+    @if (
+      formularioEstudiante.controls.numeroMatricula.touched &&
+      formularioEstudiante.controls.numeroMatricula.invalid
+    ) {
+      <p role="alert">El número de matrícula es obligatorio y no puede superar 30 caracteres.</p>
+    }
+  </div>
+
+  <div>
+    <label for="identificacion">Identificación</label>
+    <input
+      id="identificacion"
+      type="text"
+      formControlName="identificacion"
+      maxlength="20"
+      [attr.aria-invalid]="formularioEstudiante.controls.identificacion.invalid"
+    />
+    @if (
+      formularioEstudiante.controls.identificacion.touched &&
+      formularioEstudiante.controls.identificacion.invalid
+    ) {
+      <p role="alert">La identificación es obligatoria y no puede superar 20 caracteres.</p>
+    }
+  </div>
+
+  <div>
+    <label for="nombres">Nombres</label>
+    <input
+      id="nombres"
+      type="text"
+      formControlName="nombres"
+      maxlength="100"
+      [attr.aria-invalid]="formularioEstudiante.controls.nombres.invalid"
+    />
+    @if (
+      formularioEstudiante.controls.nombres.touched &&
+      formularioEstudiante.controls.nombres.invalid
+    ) {
+      <p role="alert">Los nombres son obligatorios y no pueden superar 100 caracteres.</p>
+    }
+  </div>
+
+  <div>
+    <label for="apellidos">Apellidos</label>
+    <input
+      id="apellidos"
+      type="text"
+      formControlName="apellidos"
+      maxlength="100"
+      [attr.aria-invalid]="formularioEstudiante.controls.apellidos.invalid"
+    />
+    @if (
+      formularioEstudiante.controls.apellidos.touched &&
+      formularioEstudiante.controls.apellidos.invalid
+    ) {
+      <p role="alert">Los apellidos son obligatorios y no pueden superar 100 caracteres.</p>
+    }
+  </div>
+
+  <div>
+    <label for="correo">Correo</label>
+    <input
+      id="correo"
+      type="email"
+      formControlName="correo"
+      maxlength="150"
+      [attr.aria-invalid]="formularioEstudiante.controls.correo.invalid"
+    />
+    @if (
+      formularioEstudiante.controls.correo.touched &&
+      formularioEstudiante.controls.correo.invalid
+    ) {
+      <p role="alert">Ingrese un correo válido de máximo 150 caracteres.</p>
+    }
+  </div>
+
+  <div>
+    <label for="telefono">Teléfono</label>
+    <input
+      id="telefono"
+      type="text"
+      formControlName="telefono"
+      maxlength="20"
+      [attr.aria-invalid]="formularioEstudiante.controls.telefono.invalid"
+    />
+    @if (
+      formularioEstudiante.controls.telefono.touched &&
+      formularioEstudiante.controls.telefono.invalid
+    ) {
+      <p role="alert">El teléfono no puede superar 20 caracteres.</p>
+    }
+  </div>
+
+  <div>
+    <label for="fechaNacimiento">Fecha de nacimiento</label>
+    <input
+      id="fechaNacimiento"
+      type="date"
+      formControlName="fechaNacimiento"
+      [attr.aria-invalid]="formularioEstudiante.controls.fechaNacimiento.invalid"
+    />
+    @if (
+      formularioEstudiante.controls.fechaNacimiento.touched &&
+      formularioEstudiante.controls.fechaNacimiento.invalid
+    ) {
+      <p role="alert">La fecha de nacimiento es obligatoria.</p>
+    }
+  </div>
+
+  <div>
+    <label for="carreraId">Carrera</label>
+    <select
+      id="carreraId"
+      formControlName="carreraId"
+      [attr.disabled]="cargandoCarreras ? '' : null"
+      [attr.aria-invalid]="formularioEstudiante.controls.carreraId.invalid"
+    >
+      <option value="">Seleccione una carrera</option>
+      @for (carrera of carreras; track carrera.id) {
+        <option [value]="carrera.id">{{ carrera.nombre }}</option>
+      }
+    </select>
+    @if (
+      formularioEstudiante.controls.carreraId.touched &&
+      formularioEstudiante.controls.carreraId.invalid
+    ) {
+      <p role="alert">La carrera es obligatoria.</p>
+    }
+  </div>
+
+  <div>
+    <label for="nivelAcademicoActual">Nivel académico actual</label>
+    <input
+      id="nivelAcademicoActual"
+      type="number"
+      min="1"
+      step="1"
+      formControlName="nivelAcademicoActual"
+      [attr.aria-invalid]="formularioEstudiante.controls.nivelAcademicoActual.invalid"
+    />
+    @if (
+      formularioEstudiante.controls.nivelAcademicoActual.touched &&
+      formularioEstudiante.controls.nivelAcademicoActual.invalid
+    ) {
+      <p role="alert">El nivel académico actual debe ser un entero positivo.</p>
+    }
+  </div>
+
+  <div>
+    <label for="estadoAcademico">Estado académico</label>
+    <select id="estadoAcademico" formControlName="estadoAcademico">
+      <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO">Activo</option>
+      <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO">Inactivo</option>
+      <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.SUSPENDIDO">Suspendido</option>
+      <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.EGRESADO">Egresado</option>
+    </select>
+  </div>
+
+  <button type="submit" [disabled]="formularioEstudiante.invalid || enviando">
+    @if (enviando) {
+      Guardando...
+    } @else if (modoEdicion) {
+      Actualizar
+    } @else {
+      Guardar
+    }
+  </button>
+  <button type="button" [disabled]="enviando" (click)="cancelar()">
+    Cancelar
+  </button>
+</form>

@@ -1,8 +1,23 @@
-<div class="container py-4">
-  <h3 class="mb-4">Registrar Nuevo Estudiante</h3>
+<section aria-labelledby="titulo-crear-estudiante">
+  <h1 id="titulo-crear-estudiante">Registrar estudiante</h1>
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (cargandoCarreras()) {
+    <p role="status" aria-live="polite">Consultando carreras...</p>
+  }
+
   <app-estudiante-form
-    [isEditMode]="false"
-    (onSubmitForm)="guardarEstudiante($event)"
-    (onCancel)="cancelar()">
-  </app-estudiante-form>
-</div>
+    [carreras]="carreras()"
+    [cargandoCarreras]="cargandoCarreras()"
+    [enviando]="enviando()"
+    (guardarEstudiante)="guardarEstudiante($event)"
+    (cancelarFormulario)="cancelar()"
+  />
+</section>

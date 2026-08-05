@@ -1,55 +1,155 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Estudiante, FiltrosEstudiante } from '../models/estudiante.model';
+import { Observable, map } from 'rxjs';
+
+import { obtenerUrlApi } from '../../../core/config/configuracion-api';
+import {
+  ESTADOS_ACADEMICOS_ESTUDIANTE,
+  type EstadoAcademicoEstudiante,
+  type Estudiante,
+  type FiltrosEstudiantes,
+  type RespuestaEstudiante,
+  type RespuestaListadoEstudiantes,
+  type SolicitudActualizarEstudiante,
+  type SolicitudCrearEstudiante,
+} from '../models/estudiante.model';
+
+interface FiltrosCompatibilidadEstudiantes extends FiltrosEstudiantes {
+  estado?: string;
+}
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class EstudiantesService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8000/api/estudiantes'; // Ajusta el puerto de tu API si es necesario
 
-  /**
-   * Obtiene la lista completa de estudiantes con opción de filtrado
-   */
-  getEstudiantes(filtros?: FiltrosEstudiante): Observable<Estudiante[]> {
-    let params = new HttpParams();
+  listarEstudiantes(): Observable<RespuestaListadoEstudiantes> {
+    return this.http.get<RespuestaListadoEstudiantes>(
+      obtenerUrlApi('estudiantes'),
+    );
+  }
 
-    if (filtros) {
-      if (filtros.busqueda) params = params.set('busqueda', filtros.busqueda);
-      if (filtros.carrera) params = params.set('carrera', filtros.carrera);
-      if (filtros.estado) params = params.set('estado', filtros.estado);
+  obtenerEstudiante(idEstudiante: number): Observable<RespuestaEstudiante> {
+    return this.http.get<RespuestaEstudiante>(
+      obtenerUrlApi(`estudiantes/${idEstudiante}`),
+    );
+  }
+
+  crearEstudiante(
+    solicitud: SolicitudCrearEstudiante,
+  ): Observable<RespuestaEstudiante> {
+    return this.http.post<RespuestaEstudiante>(
+      obtenerUrlApi('estudiantes'),
+      solicitud,
+    );
+  }
+
+  actualizarEstudiante(
+    idEstudiante: number,
+    solicitud: SolicitudActualizarEstudiante,
+  ): Observable<RespuestaEstudiante> {
+    return this.http.put<RespuestaEstudiante>(
+      obtenerUrlApi(`estudiantes/${idEstudiante}`),
+      solicitud,
+    );
+  }
+
+  cambiarEstadoEstudiante(
+    idEstudiante: number,
+  ): Observable<RespuestaEstudiante> {
+    return this.http.delete<RespuestaEstudiante>(
+      obtenerUrlApi(`estudiantes/${idEstudiante}`),
+    );
+  }
+
+  getEstudiantes(
+    filtros: FiltrosCompatibilidadEstudiantes = {},
+  ): Observable<Estudiante[]> {
+    return this.listarEstudiantes().pipe(
+      map((respuesta) =>
+        this.filtrarEstudiantes(respuesta.data ?? [], filtros),
+      ),
+    );
+  }
+
+  getEstudianteById(idEstudiante: number): Observable<Estudiante> {
+    return this.obtenerEstudiante(idEstudiante).pipe(
+      map((respuesta) => {
+        if (!respuesta.data) {
+          throw new Error('La respuesta no contiene estudiante.');
+        }
+
+        return respuesta.data;
+      }),
+    );
+  }
+
+  eliminarEstudiante(idEstudiante: number): Observable<RespuestaEstudiante> {
+    return this.cambiarEstadoEstudiante(idEstudiante);
+  }
+
+  private filtrarEstudiantes(
+    estudiantes: Estudiante[],
+    filtros: FiltrosCompatibilidadEstudiantes,
+  ): Estudiante[] {
+    const busqueda = filtros.busqueda?.trim().toLowerCase();
+    const estadoAcademico = this.normalizarEstadoAcademico(
+      filtros.estadoAcademico ?? filtros.estado,
+    );
+    let resultado = estudiantes;
+
+    if (busqueda) {
+      resultado = resultado.filter((estudiante) =>
+        [
+          estudiante.numero_matricula,
+          estudiante.identificacion,
+          estudiante.nombres,
+          estudiante.apellidos,
+          estudiante.correo,
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(busqueda),
+      );
     }
 
-    return this.http.get<Estudiante[]>(this.apiUrl, { params });
+    if (filtros.carreraId) {
+      resultado = resultado.filter(
+        (estudiante) => estudiante.carrera_id === filtros.carreraId,
+      );
+    }
+
+    if (estadoAcademico) {
+      resultado = resultado.filter(
+        (estudiante) => estudiante.estado_academico === estadoAcademico,
+      );
+    }
+
+    return resultado;
   }
 
-  /**
-   * Obtiene un estudiante específico por su ID
-   */
-  getEstudianteById(id: number): Observable<Estudiante> {
-    return this.http.get<Estudiante>(`${this.apiUrl}/${id}`);
+  private normalizarEstadoAcademico(
+    estado: string | undefined,
+  ): EstadoAcademicoEstudiante | null {
+    if (!estado) {
+      return null;
+    }
+
+    const estadoNormalizado = estado.toLowerCase();
+
+    if (this.esEstadoAcademico(estadoNormalizado)) {
+      return estadoNormalizado;
+    }
+
+    return null;
   }
 
-  /**
-   * Registra un nuevo estudiante
-   */
-  crearEstudiante(estudiante: Estudiante): Observable<Estudiante> {
-    return this.http.post<Estudiante>(this.apiUrl, estudiante);
-  }
-
-  /**
-   * Actualiza la información de un estudiante existente
-   */
-  actualizarEstudiante(id: number, estudiante: Estudiante): Observable<Estudiante> {
-    return this.http.put<Estudiante>(`${this.apiUrl}/${id}`, estudiante);
-  }
-
-  /**
-   * Elimina o inhabilita un estudiante por su ID
-   */
-  eliminarEstudiante(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  private esEstadoAcademico(
+    estado: string,
+  ): estado is EstadoAcademicoEstudiante {
+    return Object.values(ESTADOS_ACADEMICOS_ESTUDIANTE).some(
+      (estadoPermitido) => estadoPermitido === estado,
+    );
   }
 }

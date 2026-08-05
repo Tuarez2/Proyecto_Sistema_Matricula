@@ -1,17 +1,132 @@
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Gestión de Estudiantes</h2>
-    <button class="btn btn-primary" (click)="navegarACrear()">+ Nuevo Estudiante</button>
-  </div>
+<section aria-labelledby="titulo-estudiantes">
+  <h1 id="titulo-estudiantes">Estudiantes</h1>
 
-  <!-- Componente Filtros -->
-  <app-estudiante-filter (onFilter)="cargarEstudiantes($event)"></app-estudiante-filter>
+  @if (esAdministrador()) {
+    <a routerLink="/estudiantes/crear">Crear estudiante</a>
+  }
 
-  <!-- Componente Tabla -->
-  <app-estudiante-table
-    [estudiantes]="estudiantes"
-    (onEdit)="navegarAEditar($event)"
-    (onDelete)="eliminarEstudiante($event)">
-  </app-estudiante-table>
-</div>
+  <form
+    [formGroup]="formularioFiltros"
+    (ngSubmit)="buscarEstudiantes()"
+    novalidate
+  >
+    <div>
+      <label for="busqueda">Búsqueda</label>
+      <input
+        id="busqueda"
+        type="search"
+        formControlName="busqueda"
+        maxlength="150"
+      />
+      @if (
+        formularioFiltros.controls.busqueda.touched &&
+        formularioFiltros.controls.busqueda.hasError('maxlength')
+      ) {
+        <p role="alert">La búsqueda no puede superar 150 caracteres.</p>
+      }
+    </div>
 
+    <div>
+      <label for="carreraId">Carrera</label>
+      <select id="carreraId" formControlName="carreraId">
+        <option value="">Todas las carreras</option>
+        @for (carrera of carrerasDisponibles(); track carrera.id) {
+          <option [value]="carrera.id">{{ carrera.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label for="estadoAcademico">Estado académico</label>
+      <select id="estadoAcademico" formControlName="estadoAcademico">
+        <option value="">Todos los estados</option>
+        <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO">Activo</option>
+        <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO">Inactivo</option>
+        <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.SUSPENDIDO">Suspendido</option>
+        <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.EGRESADO">Egresado</option>
+      </select>
+    </div>
+
+    <button type="submit" [disabled]="cargandoEstudiantes()">Buscar</button>
+    <button
+      type="button"
+      [disabled]="cargandoEstudiantes()"
+      (click)="limpiarFiltros()"
+    >
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (cargandoEstudiantes()) {
+    <p role="status" aria-live="polite">Consultando estudiantes...</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargandoEstudiantes() && !mensajeError() && estudiantesFiltrados().length === 0) {
+    <p>No se encontraron estudiantes.</p>
+  }
+
+  @if (estudiantesFiltrados().length > 0) {
+    <table>
+      <caption>Listado de estudiantes</caption>
+      <thead>
+        <tr>
+          <th scope="col">Matrícula</th>
+          <th scope="col">Identificación</th>
+          <th scope="col">Nombre completo</th>
+          <th scope="col">Correo</th>
+          <th scope="col">Carrera</th>
+          <th scope="col">Nivel</th>
+          <th scope="col">Estado académico</th>
+          @if (esAdministrador()) {
+            <th scope="col">Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (estudiante of estudiantesPagina(); track estudiante.id) {
+          <tr>
+            <td>{{ estudiante.numero_matricula }}</td>
+            <td>{{ estudiante.identificacion }}</td>
+            <td>{{ obtenerNombreCompleto(estudiante) }}</td>
+            <td>{{ estudiante.correo }}</td>
+            <td>{{ estudiante.carrera?.nombre ?? 'Sin carrera' }}</td>
+            <td>{{ estudiante.nivel_academico_actual }}</td>
+            <td>{{ obtenerEtiquetaEstado(estudiante.estado_academico) }}</td>
+            @if (esAdministrador()) {
+              <td>
+                <a [routerLink]="['/estudiantes/editar', estudiante.id]">
+                  Editar
+                </a>
+                @if (estudiante.estado_academico !== ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO) {
+                  <button
+                    type="button"
+                    [disabled]="estudianteProcesando() !== null"
+                    (click)="inactivarEstudiante(estudiante)"
+                  >
+                    Inactivar
+                  </button>
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalEstudiantes()"
+    [deshabilitado]="cargandoEstudiantes()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>
