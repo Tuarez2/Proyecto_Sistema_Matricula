@@ -1,1 +1,120 @@
-<section aria-labelledby="titulo-asignaturas"><h1 id="titulo-asignaturas">Asignaturas</h1>@if(mensajeError()){<p role="alert">{{mensajeError()}}</p>}<form [formGroup]="formulario" (ngSubmit)="guardar()"><h2>{{idEdicion()?'Editar asignatura':'Nueva asignatura'}}</h2><label>Código <input formControlName="codigo"></label><label>Nombre <input formControlName="nombre"></label><label>Créditos <input type="number" min="1" formControlName="creditos"></label><label>Nivel académico <input type="number" min="1" formControlName="nivel"></label><button type="submit" [disabled]="cargando()">Guardar</button>@if(idEdicion()){<button type="button" (click)="cancelar()">Cancelar</button>}</form><table><thead><tr><th>Código</th><th>Nombre</th><th>Créditos</th><th>Nivel</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>@for(a of asignaturas();track a.id){<tr><td>{{a.codigo}}</td><td>{{a.nombre}}</td><td>{{a.creditos}}</td><td>{{a.nivel_academico}}</td><td>{{a.activo?'Activa':'Inactiva'}}</td><td><button type="button" (click)="editar(a)">Editar</button>@if(a.activo){<button type="button" (click)="inactivar(a)">Inactivar</button>}</td></tr>}</tbody></table></section>
+<section aria-labelledby="titulo-asignaturas">
+  <h1 id="titulo-asignaturas">Asignaturas</h1>
+
+  @if (esAdministrador()) {
+    <a routerLink="/asignaturas/crear">Crear asignatura</a>
+  }
+
+  <form [formGroup]="filtros" (ngSubmit)="buscarAsignaturas()" novalidate>
+    <div>
+      <label for="codigo">Código</label>
+      <input id="codigo" formControlName="codigo" maxlength="20" />
+      @if (
+        filtros.controls.codigo.touched &&
+        filtros.controls.codigo.hasError('maxlength')
+      ) {
+        <p role="alert">El código no puede superar 20 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="nombre">Nombre</label>
+      <input id="nombre" formControlName="nombre" maxlength="150" />
+      @if (
+        filtros.controls.nombre.touched &&
+        filtros.controls.nombre.hasError('maxlength')
+      ) {
+        <p role="alert">El nombre no puede superar 150 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="activo">Estado</label>
+      <select id="activo" formControlName="activo">
+        <option value="">Todas</option>
+        <option value="true">Activas</option>
+        <option value="false">Inactivas</option>
+      </select>
+    </div>
+
+    <button type="submit" [disabled]="cargando()">Buscar</button>
+    <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (cargando()) {
+    <p role="status" aria-live="polite">Consultando asignaturas...</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && !mensajeError() && asignaturasFiltradas().length === 0) {
+    <p>No se encontraron asignaturas.</p>
+  }
+
+  @if (asignaturasPagina().length > 0) {
+    <table>
+      <caption>Listado de asignaturas</caption>
+      <thead>
+        <tr>
+          <th scope="col">Código</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Créditos</th>
+          <th scope="col">Nivel académico</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Fecha de creación</th>
+          <th scope="col">Detalle</th>
+          @if (esAdministrador()) {
+            <th scope="col">Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (asignatura of asignaturasPagina(); track asignatura.id) {
+          <tr>
+            <td>{{ asignatura.codigo }}</td>
+            <td>{{ asignatura.nombre }}</td>
+            <td>{{ asignatura.creditos }}</td>
+            <td>{{ asignatura.nivel_academico }}</td>
+            <td>{{ obtenerEtiquetaEstado(asignatura) }}</td>
+            <td>
+              {{ asignatura.created_at ? (asignatura.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
+            </td>
+            <td>
+              <a [routerLink]="['/asignaturas', asignatura.id]">Ver</a>
+            </td>
+            @if (esAdministrador()) {
+              <td>
+                <a [routerLink]="['/asignaturas/editar', asignatura.id]">Editar</a>
+                @if (asignatura.activo) {
+                  <button
+                    type="button"
+                    [disabled]="asignaturaProcesando() !== null"
+                    (click)="inactivarAsignatura(asignatura)"
+                  >
+                    Inactivar
+                  </button>
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalAsignaturas()"
+    [deshabilitado]="cargando()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>
