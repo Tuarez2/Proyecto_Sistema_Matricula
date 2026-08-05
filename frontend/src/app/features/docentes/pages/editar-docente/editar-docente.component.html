@@ -1,14 +1,25 @@
-<section class="pagina-docente">
-  <h1>Editar docente</h1>
+<section class="pagina-docente" aria-labelledby="titulo-editar-docente">
+  <h1 id="titulo-editar-docente">Editar docente</h1>
 
-  @if (docente) {
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (cargandoDocente()) {
+    <p role="status" aria-live="polite">Consultando docente...</p>
+  }
+
+  @if (docente()) {
     <app-docente-form
-      [initialData]="docente"
-      [isEdit]="true"
-      (onSave)="guardar($event)"
-      (onCancel)="cancelar()"
+      [docenteInicial]="docente()"
+      [modoEdicion]="true"
+      [enviando]="enviando()"
+      (guardarDocente)="guardarDocente($event)"
+      (cancelarFormulario)="cancelar()"
     />
-  } @else if (docenteNoEncontrado) {
-    <p class="mensaje-vacio">No se encontró el docente solicitado.</p>
   }
 </section>

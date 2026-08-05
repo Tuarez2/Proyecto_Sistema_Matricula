@@ -1,1 +1,47 @@
-<p>docente-filter works!</p>
+<form
+  [formGroup]="formularioFiltros"
+  (ngSubmit)="aplicarFiltros()"
+  novalidate
+>
+  <div>
+    <label for="busquedaDocente">Búsqueda</label>
+    <input
+      id="busquedaDocente"
+      type="search"
+      formControlName="busqueda"
+      maxlength="150"
+      placeholder="Identificación, nombres, apellidos o correo"
+      [attr.aria-invalid]="formularioFiltros.controls.busqueda.invalid"
+    />
+    @if (
+      formularioFiltros.controls.busqueda.touched &&
+      formularioFiltros.controls.busqueda.hasError('maxlength')
+    ) {
+      <p role="alert">La búsqueda no puede superar 150 caracteres.</p>
+    }
+  </div>
+
+  <div>
+    <label for="especialidadDocente">Especialidad</label>
+    <select id="especialidadDocente" formControlName="especialidad">
+      <option value="">Todas las especialidades</option>
+      @for (especialidad of especialidades; track especialidad) {
+        <option [value]="especialidad">{{ especialidad }}</option>
+      }
+    </select>
+  </div>
+
+  <div>
+    <label for="activoDocente">Estado</label>
+    <select id="activoDocente" formControlName="activo">
+      <option value="">Todos los estados</option>
+      <option value="true">Activo</option>
+      <option value="false">Inactivo</option>
+    </select>
+  </div>
+
+  <button type="submit" [disabled]="cargando">Buscar</button>
+  <button type="button" [disabled]="cargando" (click)="limpiarFiltros()">
+    Limpiar filtros
+  </button>
+</form>

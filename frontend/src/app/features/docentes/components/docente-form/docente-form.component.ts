@@ -1,94 +1,108 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Docente } from '../../models/docente.model';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+  inject,
+} from '@angular/core';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+
+import type {
+  Docente,
+  SolicitudCrearDocente,
+} from '../../models/docente.model';
 
 @Component({
   selector: 'app-docente-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  template: `
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="card shadow-sm p-4">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label font-semibold">Cédula</label>
-          <input type="text" class="form-control" formControlName="cedula" placeholder="130XXXXXXX">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label font-semibold">Título</label>
-          <input type="text" class="form-control" formControlName="titulo" placeholder="ej. Mgtr. en Sistemas">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label font-semibold">Nombres</label>
-          <input type="text" class="form-control" formControlName="nombres">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label font-semibold">Apellidos</label>
-          <input type="text" class="form-control" formControlName="apellidos">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label font-semibold">Correo Electrónico</label>
-          <input type="email" class="form-control" formControlName="email">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label font-semibold">Teléfono</label>
-          <input type="text" class="form-control" formControlName="telefono">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label font-semibold">Especialidad</label>
-          <input type="text" class="form-control" formControlName="especialidad">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label font-semibold">Estado</label>
-          <select class="form-select" formControlName="estado">
-            <option value="ACTIVO">ACTIVO</option>
-            <option value="INACTIVO">INACTIVO</option>
-          </select>
-        </div>
-
-        <div class="col-12 d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-secondary" (click)="onCancel.emit()">Cancelar</button>
-          <button type="submit" class="btn btn-success" [disabled]="form.invalid">
-            {{ isEdit ? 'Actualizar' : 'Guardar' }} Docente
-          </button>
-        </div>
-      </div>
-    </form>
-  `
+  imports: [ReactiveFormsModule],
+  templateUrl: './docente-form.component.html',
+  styleUrl: './docente-form.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DocenteFormComponent implements OnInit {
-  @Input() initialData?: Docente;
-  @Input() isEdit: boolean = false;
-  @Output() onSave = new EventEmitter<Docente>();
-  @Output() onCancel = new EventEmitter<void>();
+export class DocenteFormComponent implements OnInit, OnChanges {
+  private readonly constructorFormulario = inject(NonNullableFormBuilder);
 
-  form!: FormGroup;
+  @Input() docenteInicial: Docente | null = null;
+  @Input() modoEdicion = false;
+  @Input() enviando = false;
 
-  constructor(private fb: FormBuilder) {}
+  @Output() guardarDocente = new EventEmitter<SolicitudCrearDocente>();
+  @Output() cancelarFormulario = new EventEmitter<void>();
+
+  readonly formularioDocente = this.constructorFormulario.group({
+    identificacion: ['', [Validators.required, Validators.maxLength(20)]],
+    nombres: ['', [Validators.required, Validators.maxLength(100)]],
+    apellidos: ['', [Validators.required, Validators.maxLength(100)]],
+    correo: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
+    telefono: ['', [Validators.maxLength(20)]],
+    especialidad: ['', [Validators.required, Validators.maxLength(150)]],
+    activo: true,
+  });
 
   ngOnInit(): void {
-    this.form = this.fb.group({
-      cedula: [this.initialData?.cedula || '', [Validators.required]],
-      nombres: [this.initialData?.nombres || '', [Validators.required]],
-      apellidos: [this.initialData?.apellidos || '', [Validators.required]],
-      email: [this.initialData?.email || '', [Validators.required, Validators.email]],
-      telefono: [this.initialData?.telefono || '', [Validators.required]],
-      titulo: [this.initialData?.titulo || '', [Validators.required]],
-      especialidad: [this.initialData?.especialidad || '', [Validators.required]],
-      estado: [this.initialData?.estado || 'ACTIVO', [Validators.required]]
+    this.poblarFormulario();
+  }
+
+  ngOnChanges(cambios: SimpleChanges): void {
+    if (cambios['docenteInicial'] && !cambios['docenteInicial'].firstChange) {
+      this.poblarFormulario();
+    }
+  }
+
+  enviarFormulario(): void {
+    if (this.enviando) {
+      return;
+    }
+
+    if (this.formularioDocente.invalid) {
+      this.formularioDocente.markAllAsTouched();
+      return;
+    }
+
+    this.guardarDocente.emit(this.construirSolicitud());
+  }
+
+  cancelar(): void {
+    if (!this.enviando) {
+      this.cancelarFormulario.emit();
+    }
+  }
+
+  private poblarFormulario(): void {
+    const docente = this.docenteInicial;
+
+    if (!docente) {
+      return;
+    }
+
+    this.formularioDocente.reset({
+      identificacion: docente.identificacion,
+      nombres: docente.nombres,
+      apellidos: docente.apellidos,
+      correo: docente.correo,
+      telefono: docente.telefono ?? '',
+      especialidad: docente.especialidad,
+      activo: docente.activo,
     });
   }
 
-  onSubmit(): void {
-    if (this.form.valid) {
-      this.onSave.emit(this.form.value);
-    }
+  private construirSolicitud(): SolicitudCrearDocente {
+    const valores = this.formularioDocente.getRawValue();
+    const telefono = valores.telefono.trim();
+
+    return {
+      identificacion: valores.identificacion.trim(),
+      nombres: valores.nombres.trim(),
+      apellidos: valores.apellidos.trim(),
+      correo: valores.correo.trim(),
+      telefono: telefono || null,
+      especialidad: valores.especialidad.trim(),
+      activo: valores.activo,
+    };
   }
 }

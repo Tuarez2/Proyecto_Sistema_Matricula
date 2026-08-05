@@ -1,8 +1,17 @@
-<section class="pagina-docente">
-  <h1>Registrar docente</h1>
+<section class="pagina-docente" aria-labelledby="titulo-crear-docente">
+  <h1 id="titulo-crear-docente">Registrar docente</h1>
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
 
   <app-docente-form
-    (onSave)="guardar($event)"
-    (onCancel)="cancelar()"
+    [enviando]="enviando()"
+    (guardarDocente)="guardarDocente($event)"
+    (cancelarFormulario)="cancelar()"
   />
 </section>

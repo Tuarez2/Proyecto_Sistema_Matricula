@@ -1,1 +1,47 @@
-<p>listar-docentes works!</p>
+<section aria-labelledby="titulo-docentes">
+  <h1 id="titulo-docentes">Docentes</h1>
+
+  @if (esAdministrador()) {
+    <a routerLink="/docentes/crear">Crear docente</a>
+  }
+
+  <app-docente-filter
+    [cargando]="cargandoDocentes()"
+    [especialidades]="especialidadesDisponibles()"
+    (filtrarDocentes)="filtrar($event)"
+  />
+
+  @if (cargandoDocentes()) {
+    <p role="status" aria-live="polite">Consultando docentes...</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargandoDocentes() && !mensajeError() && docentesFiltrados().length === 0) {
+    <p>No se encontraron docentes.</p>
+  }
+
+  @if (docentesFiltrados().length > 0) {
+    <app-docente-table
+      [docentes]="docentesPagina()"
+      [esAdministrador]="esAdministrador()"
+      [idDocenteProcesando]="docenteProcesando()"
+      (editarDocente)="editarDocente($event)"
+      (cambiarEstadoDocente)="cambiarEstadoDocente($event)"
+    />
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalDocentes()"
+    [deshabilitado]="cargandoDocentes()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>

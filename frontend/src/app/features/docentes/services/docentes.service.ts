@@ -1,64 +1,146 @@
-import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject, of } from 'rxjs';
-import { Docente, FiltrosDocente } from '../models/docente.model';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
+
+import { obtenerUrlApi } from '../../../core/config/configuracion-api';
+import type {
+  Docente,
+  FiltrosDocentes,
+  RespuestaCambioEstadoDocente,
+  RespuestaDocente,
+  RespuestaListadoDocentes,
+  SolicitudActualizarDocente,
+  SolicitudCrearDocente,
+} from '../models/docente.model';
+
+interface FiltrosCompatibilidadDocentes extends FiltrosDocentes {
+  estado?: string;
+}
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DocentesService {
-  private mockDocentes: Docente[] = [
-    { id: 1, cedula: '1308765432', nombres: 'Roberto', apellidos: 'Vera', email: 'rvera@universidad.edu.ec', telefono: '0981234567', titulo: 'Mgtr. en Sistemas', especialidad: 'Desarrollo Web', estado: 'ACTIVO' },
-    { id: 2, cedula: '1301122334', nombres: 'María', apellidos: 'Zambrano', email: 'mzambrano@universidad.edu.ec', telefono: '0991122334', titulo: 'Ph.D. en Ciencias Computacionales', especialidad: 'Inteligencia Artificial', estado: 'ACTIVO' }
-  ];
+  private readonly http = inject(HttpClient);
 
-  private docentes$ = new BehaviorSubject<Docente[]>(this.mockDocentes);
+  listarDocentes(): Observable<RespuestaListadoDocentes> {
+    return this.http.get<RespuestaListadoDocentes>(obtenerUrlApi('docentes'));
+  }
 
-  getDocentes(filtros?: FiltrosDocente): Observable<Docente[]> {
-    let resultado = [...this.mockDocentes];
+  obtenerDocente(idDocente: number): Observable<RespuestaDocente> {
+    return this.http.get<RespuestaDocente>(obtenerUrlApi(`docentes/${idDocente}`));
+  }
 
-    if (filtros) {
-      if (filtros.busqueda) {
-        const busqueda = filtros.busqueda.toLowerCase();
-        resultado = resultado.filter(d => 
-          d.nombres.toLowerCase().includes(busqueda) ||
-          d.apellidos.toLowerCase().includes(busqueda) ||
-          d.cedula.includes(busqueda)
-        );
-      }
-      if (filtros.especialidad) {
-        resultado = resultado.filter(d => d.especialidad === filtros.especialidad);
-      }
-      if (filtros.estado) {
-        resultado = resultado.filter(d => d.estado === filtros.estado);
-      }
+  crearDocente(solicitud: SolicitudCrearDocente): Observable<RespuestaDocente> {
+    return this.http.post<RespuestaDocente>(obtenerUrlApi('docentes'), solicitud);
+  }
+
+  actualizarDocente(
+    idDocente: number,
+    solicitud: SolicitudActualizarDocente,
+  ): Observable<RespuestaDocente> {
+    return this.http.put<RespuestaDocente>(
+      obtenerUrlApi(`docentes/${idDocente}`),
+      solicitud,
+    );
+  }
+
+  cambiarEstadoDocente(
+    idDocente: number,
+    activo: boolean,
+  ): Observable<RespuestaCambioEstadoDocente> {
+    if (activo) {
+      return this.actualizarDocente(idDocente, { activo });
     }
 
-    return of(resultado);
+    return this.http.delete<RespuestaCambioEstadoDocente>(
+      obtenerUrlApi(`docentes/${idDocente}`),
+    );
   }
 
-  getDocenteById(id: number): Observable<Docente | undefined> {
-    return of(this.mockDocentes.find(d => d.id === id));
+  getDocentes(
+    filtros: FiltrosCompatibilidadDocentes = {},
+  ): Observable<Docente[]> {
+    return this.listarDocentes().pipe(
+      map((respuesta) => this.filtrarDocentes(respuesta.data ?? [], filtros)),
+    );
   }
 
-  crearDocente(docente: Docente): Observable<Docente> {
-    const nuevo = { ...docente, id: this.mockDocentes.length + 1 };
-    this.mockDocentes.push(nuevo);
-    this.docentes$.next(this.mockDocentes);
-    return of(nuevo);
+  getDocenteById(idDocente: number): Observable<Docente> {
+    return this.obtenerDocente(idDocente).pipe(
+      map((respuesta) => {
+        if (!respuesta.data) {
+          throw new Error('La respuesta no contiene docente.');
+        }
+
+        return respuesta.data;
+      }),
+    );
   }
 
-  actualizarDocente(id: number, docente: Docente): Observable<Docente> {
-    const index = this.mockDocentes.findIndex(d => d.id === id);
-    if (index !== -1) {
-      this.mockDocentes[index] = { ...docente, id };
-      this.docentes$.next(this.mockDocentes);
+  eliminarDocente(idDocente: number): Observable<RespuestaCambioEstadoDocente> {
+    return this.cambiarEstadoDocente(idDocente, false);
+  }
+
+  private filtrarDocentes(
+    docentes: Docente[],
+    filtros: FiltrosCompatibilidadDocentes,
+  ): Docente[] {
+    const busqueda = filtros.busqueda?.trim().toLowerCase();
+    const activo = this.normalizarActivo(filtros.activo, filtros.estado);
+    let resultado = docentes;
+
+    if (busqueda) {
+      resultado = resultado.filter((docente) =>
+        [
+          docente.identificacion,
+          docente.nombres,
+          docente.apellidos,
+          docente.correo,
+          docente.especialidad,
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(busqueda),
+      );
     }
-    return of(this.mockDocentes[index]);
+
+    if (filtros.especialidad?.trim()) {
+      const especialidad = filtros.especialidad.trim().toLowerCase();
+      resultado = resultado.filter(
+        (docente) => docente.especialidad.toLowerCase() === especialidad,
+      );
+    }
+
+    if (activo !== null) {
+      resultado = resultado.filter((docente) => docente.activo === activo);
+    }
+
+    return resultado;
   }
 
-  eliminarDocente(id: number): Observable<boolean> {
-    this.mockDocentes = this.mockDocentes.filter(d => d.id !== id);
-    this.docentes$.next(this.mockDocentes);
-    return of(true);
+  private normalizarActivo(
+    activo: boolean | undefined,
+    estado: string | undefined,
+  ): boolean | null {
+    if (activo !== undefined) {
+      return activo;
+    }
+
+    if (!estado) {
+      return null;
+    }
+
+    const estadoNormalizado = estado.toLowerCase();
+
+    if (estadoNormalizado === 'activo') {
+      return true;
+    }
+
+    if (estadoNormalizado === 'inactivo') {
+      return false;
+    }
+
+    return null;
   }
 }
