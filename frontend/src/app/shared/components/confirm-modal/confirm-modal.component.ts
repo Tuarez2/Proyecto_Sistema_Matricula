@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div *ngIf="isOpen" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div *ngIf="isOpen" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5); z-index: 1055;">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
@@ -14,7 +14,7 @@ import { CommonModule } from '@angular/common';
             <button type="button" class="btn-close" (click)="onCancel()"></button>
           </div>
           <div class="modal-body">
-            <p>{{ mensaje }}</p>
+            <p class="mb-0">{{ mensaje }}</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancelar</button>
@@ -29,7 +29,7 @@ export class ConfirmModalComponent {
   @Input() isOpen = false;
   @Input() titulo = 'Confirmar Acción';
   @Input() mensaje = '¿Está seguro de realizar esta acción?';
-  @Input() btnClass = 'btn-danger';
+  @Input() btnClass = 'btn-primary';
 
   @Output() confirmed = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();

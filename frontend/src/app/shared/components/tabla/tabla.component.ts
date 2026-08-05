@@ -53,4 +53,3 @@ export class TablaComponent {
     this.eliminar.emit(item);
   }
 }
-git add .
