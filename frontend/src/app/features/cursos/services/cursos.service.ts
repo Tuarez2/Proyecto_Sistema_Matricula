@@ -1,41 +1,90 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { obtenerUrlApi } from '../../../core/config/configuracion-api';
-import type { Curso, EstadoCurso, RespuestaCurso, RespuestaListadoCursos, SolicitudCurso } from '../models/curso.model';
+import { Observable } from 'rxjs';
 
-@Injectable({ providedIn: 'root' })
+import { obtenerUrlApi } from '../../../core/config/configuracion-api';
+import type {
+  FiltrosCursos,
+  RespuestaCambioEstadoCurso,
+  RespuestaCurso,
+  RespuestaListadoCursos,
+  SolicitudActualizarCurso,
+  SolicitudCrearCurso,
+} from '../models/curso.model';
+
+@Injectable({
+  providedIn: 'root',
+})
 export class CursosService {
   private readonly http = inject(HttpClient);
+  private readonly urlCursos = obtenerUrlApi('cursos');
 
-  // Método adaptador para obtener la lista de cursos como un arreglo de Curso
-  getCursos(filtros?: { estado?: string }): Observable<Curso[]> {
-    const estado = filtros?.estado as EstadoCurso;
-    return this.listar({ estado }).pipe(
-      map((respuesta) => respuesta.data ?? [])
+  listar(filtros: FiltrosCursos = {}): Observable<RespuestaListadoCursos> {
+    return this.http.get<RespuestaListadoCursos>(this.urlCursos, {
+      params: this.construirParametros(filtros),
+    });
+  }
+
+  obtenerCurso(idCurso: number): Observable<RespuestaCurso> {
+    return this.http.get<RespuestaCurso>(obtenerUrlApi(`cursos/${idCurso}`));
+  }
+
+  crearCurso(solicitud: SolicitudCrearCurso): Observable<RespuestaCurso> {
+    return this.http.post<RespuestaCurso>(this.urlCursos, solicitud);
+  }
+
+  actualizarCurso(
+    idCurso: number,
+    solicitud: SolicitudActualizarCurso,
+  ): Observable<RespuestaCurso> {
+    return this.http.put<RespuestaCurso>(
+      obtenerUrlApi(`cursos/${idCurso}`),
+      solicitud,
     );
   }
 
-  listar(f: { periodoId?: number; asignaturaId?: number; docenteId?: number; estado?: EstadoCurso; pagina?: number; limite?: number } = {}): Observable<RespuestaListadoCursos> {
-    let p = new HttpParams();
-    if (f.periodoId) p = p.set('periodo_id', f.periodoId);
-    if (f.asignaturaId) p = p.set('asignatura_id', f.asignaturaId);
-    if (f.docenteId) p = p.set('docente_id', f.docenteId);
-    if (f.estado) p = p.set('estado', f.estado);
-    if (f.pagina) p = p.set('page', f.pagina);
-    if (f.limite) p = p.set('limit', f.limite);
-    return this.http.get<RespuestaListadoCursos>(obtenerUrlApi('cursos'), { params: p });
+  cancelarCurso(idCurso: number): Observable<RespuestaCambioEstadoCurso> {
+    return this.http.delete<RespuestaCambioEstadoCurso>(
+      obtenerUrlApi(`cursos/${idCurso}`),
+    );
   }
 
-  crear(s: SolicitudCurso): Observable<RespuestaCurso> {
-    return this.http.post<RespuestaCurso>(obtenerUrlApi('cursos'), s);
-  }
+  private construirParametros(filtros: FiltrosCursos): HttpParams {
+    let parametros = new HttpParams();
 
-  actualizar(id: number, s: Partial<SolicitudCurso>): Observable<RespuestaCurso> {
-    return this.http.put<RespuestaCurso>(obtenerUrlApi(`cursos/${id}`), s);
-  }
+    if (filtros.periodo_id !== undefined) {
+      parametros = parametros.set('periodo_id', String(filtros.periodo_id));
+    }
 
-  cancelar(id: number): Observable<RespuestaCurso> {
-    return this.http.delete<RespuestaCurso>(obtenerUrlApi(`cursos/${id}`));
+    if (filtros.asignatura_id !== undefined) {
+      parametros = parametros.set(
+        'asignatura_id',
+        String(filtros.asignatura_id),
+      );
+    }
+
+    if (filtros.docente_id !== undefined) {
+      parametros = parametros.set('docente_id', String(filtros.docente_id));
+    }
+
+    if (filtros.estado !== undefined) {
+      parametros = parametros.set('estado', filtros.estado);
+    }
+
+    const paralelo = filtros.paralelo?.trim();
+
+    if (paralelo) {
+      parametros = parametros.set('paralelo', paralelo);
+    }
+
+    if (filtros.pagina !== undefined) {
+      parametros = parametros.set('page', String(filtros.pagina));
+    }
+
+    if (filtros.limite !== undefined) {
+      parametros = parametros.set('limit', String(filtros.limite));
+    }
+
+    return parametros;
   }
 }

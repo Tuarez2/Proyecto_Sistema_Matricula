@@ -1,1 +1,140 @@
-<section aria-labelledby="titulo-cursos"><h1 id="titulo-cursos">Oferta académica</h1>@if(mensajeError()){<p role="alert">{{mensajeError()}}</p>}<form [formGroup]="filtros" (ngSubmit)="buscar()"><label>Período <select formControlName="periodoId"><option value="">Todos</option>@for(p of periodos();track p.id){<option [value]="p.id">{{p.nombre}}</option>}</select></label><label>Asignatura <select formControlName="asignaturaId"><option value="">Todas</option>@for(a of asignaturas();track a.id){<option [value]="a.id">{{a.nombre}}</option>}</select></label><label>Docente <select formControlName="docenteId"><option value="">Todos</option>@for(d of docentes();track d.id){<option [value]="d.id">{{nombreDocente(d)}}</option>}</select></label><label>Estado <select formControlName="estado"><option value="">Todos</option><option value="abierto">Abierto</option><option value="cerrado">Cerrado</option><option value="cancelado">Cancelado</option></select></label><button type="submit">Filtrar</button></form><form [formGroup]="formulario" (ngSubmit)="guardar()"><h2>Nuevo curso</h2><label>Período <select formControlName="periodoId"><option value="">Seleccione</option>@for(p of periodos();track p.id){<option [value]="p.id">{{p.nombre}}</option>}</select></label><label>Asignatura <select formControlName="asignaturaId"><option value="">Seleccione</option>@for(a of asignaturas();track a.id){<option [value]="a.id">{{a.nombre}}</option>}</select></label><label>Docente <select formControlName="docenteId"><option value="">Seleccione</option>@for(d of docentes();track d.id){<option [value]="d.id">{{nombreDocente(d)}}</option>}</select></label><label>Paralelo <input formControlName="paralelo"></label><label>Aula <input formControlName="aula"></label><label>Horario <input formControlName="horario"></label><label>Cupo máximo <input type="number" min="1" formControlName="cupo"></label><button type="submit" [disabled]="cargando()">Crear curso</button></form><table><thead><tr><th>Curso</th><th>Docente</th><th>Cupo máximo</th><th>Disponibles</th><th>Estado</th><th>Acción</th></tr></thead><tbody>@for(c of cursos();track c.id){<tr><td>{{c.asignatura?.nombre}} - {{c.paralelo}}</td><td>{{c.docente?.nombres}} {{c.docente?.apellidos}}</td><td>{{c.cupo_maximo}}</td><td>{{c.cupos_disponibles}}</td><td>{{c.estado}}</td><td>@if(c.estado!=='cancelado'){<button type="button" (click)="cancelar(c)">Cancelar curso</button>}</td></tr>}</tbody></table><button type="button" (click)="anterior()" [disabled]="paginaActual()===1">Anterior</button><span>Página {{paginaActual()}} de {{totalPaginas()}}</span><button type="button" (click)="siguiente()" [disabled]="paginaActual()>=totalPaginas()">Siguiente</button></section>
+<section aria-labelledby="titulo-cursos">
+  <h1 id="titulo-cursos">Cursos</h1>
+
+  @if (esAdministrador()) {
+    <a routerLink="/cursos/crear">Crear curso</a>
+  }
+
+  <form [formGroup]="filtros" (ngSubmit)="buscar()" novalidate>
+    <div>
+      <label for="periodo_id">Período</label>
+      <select id="periodo_id" formControlName="periodo_id">
+        <option value="">Todos</option>
+        @for (periodo of periodos(); track periodo.id) {
+          <option [value]="periodo.id">{{ periodo.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label for="asignatura_id">Asignatura</label>
+      <select id="asignatura_id" formControlName="asignatura_id">
+        <option value="">Todas</option>
+        @for (asignatura of asignaturas(); track asignatura.id) {
+          <option [value]="asignatura.id">
+            {{ asignatura.codigo }} - {{ asignatura.nombre }}
+          </option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label for="docente_id">Docente</label>
+      <select id="docente_id" formControlName="docente_id">
+        <option value="">Todos</option>
+        @for (docente of docentes(); track docente.id) {
+          <option [value]="docente.id">
+            {{ docente.nombres }} {{ docente.apellidos }}
+          </option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label for="estado">Estado</label>
+      <select id="estado" formControlName="estado">
+        <option value="">Todos</option>
+        <option value="abierto">Abierto</option>
+        <option value="cerrado">Cerrado</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="paralelo">Paralelo</label>
+      <input id="paralelo" formControlName="paralelo" maxlength="10" />
+    </div>
+
+    <button type="submit" [disabled]="cargando()">Buscar</button>
+    <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (cargando()) {
+    <p role="status" aria-live="polite">Consultando cursos...</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && !mensajeError() && cursos().length === 0) {
+    <p>No se encontraron cursos.</p>
+  }
+
+  @if (cursos().length > 0) {
+    <table>
+      <caption>Listado de cursos</caption>
+      <thead>
+        <tr>
+          <th scope="col">Curso</th>
+          <th scope="col">Docente</th>
+          <th scope="col">Período</th>
+          <th scope="col">Aula</th>
+          <th scope="col">Horario</th>
+          <th scope="col">Cupo máximo</th>
+          <th scope="col">Disponibles</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Detalle</th>
+          @if (esAdministrador()) {
+            <th scope="col">Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (curso of cursos(); track curso.id) {
+          <tr>
+            <td>{{ obtenerNombreAsignatura(curso) }} ({{ curso.paralelo }})</td>
+            <td>{{ obtenerNombreDocente(curso) }}</td>
+            <td>{{ obtenerNombrePeriodo(curso) }}</td>
+            <td>{{ curso.aula }}</td>
+            <td>{{ curso.horario }}</td>
+            <td>{{ curso.cupo_maximo }}</td>
+            <td>{{ curso.cupos_disponibles ?? '—' }}</td>
+            <td>{{ obtenerEtiquetaEstado(curso) }}</td>
+            <td>
+              <a [routerLink]="['/cursos', curso.id]">Ver</a>
+            </td>
+            @if (esAdministrador()) {
+              <td>
+                <a [routerLink]="['/cursos/editar', curso.id]">Editar</a>
+                @if (curso.estado !== 'cancelado') {
+                  <button
+                    type="button"
+                    [disabled]="cursoProcesando() !== null"
+                    (click)="cancelarCurso(curso)"
+                  >
+                    Cancelar
+                  </button>
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalRegistros()"
+    [deshabilitado]="cargando()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>

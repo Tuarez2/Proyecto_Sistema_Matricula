@@ -1,0 +1,48 @@
+<section aria-labelledby="titulo-detalle-curso">
+  <h1 id="titulo-detalle-curso">Detalle de curso</h1>
+
+  @if (cargando()) {
+    <p role="status" aria-live="polite">Consultando curso...</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (curso()) {
+    <dl>
+      <dt>Curso</dt>
+      <dd>{{ obtenerNombreAsignatura() }} ({{ curso()?.paralelo }})</dd>
+
+      <dt>Docente</dt>
+      <dd>{{ obtenerNombreDocente() }}</dd>
+
+      <dt>Período académico</dt>
+      <dd>{{ obtenerNombrePeriodo() }}</dd>
+
+      <dt>Aula</dt>
+      <dd>{{ curso()?.aula }}</dd>
+
+      <dt>Horario</dt>
+      <dd>{{ curso()?.horario }}</dd>
+
+      <dt>Cupo máximo</dt>
+      <dd>{{ curso()?.cupo_maximo }}</dd>
+
+      <dt>Matriculados</dt>
+      <dd>{{ curso()?.cantidad_matriculados ?? '—' }}</dd>
+
+      <dt>Cupos disponibles</dt>
+      <dd>{{ curso()?.cupos_disponibles ?? '—' }}</dd>
+
+      <dt>Estado</dt>
+      <dd>{{ obtenerEtiquetaEstado() }}</dd>
+    </dl>
+
+    <a routerLink="/cursos">Volver a cursos</a>
+
+    @if (esAdministrador()) {
+      <a [routerLink]="['/cursos/editar', curso()?.id]">Editar curso</a>
+    }
+  }
+</section>
