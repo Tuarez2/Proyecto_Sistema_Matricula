@@ -1,44 +1,63 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-confirm-modal',
+  selector: 'app-pagination',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div *ngIf="isOpen" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">{{ titulo }}</h5>
-            <button type="button" class="btn-close" (click)="onCancel()"></button>
-          </div>
-          <div class="modal-body">
-            <p>{{ mensaje }}</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancelar</button>
-            <button type="button" class="btn" [ngClass]="btnClass" (click)="onConfirm()">Confirmar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
+  templateUrl: './pagination.component.html',
+  styleUrl: './pagination.component.css'
 })
-export class ConfirmModalComponent {
-  @Input() isOpen = false;
-  @Input() titulo = 'Confirmar Acción';
-  @Input() mensaje = '¿Está seguro de realizar esta acción?';
-  @Input() btnClass = 'btn-danger';
+export class PaginationComponent {
+  @Input('currentPage') paginaActual = 1;
+  @Input('totalPages') totalPaginas = 1;
+  @Input() totalRegistros: number | null = null;
+  @Input() deshabilitado = false;
 
-  @Output() confirmed = new EventEmitter<void>();
-  @Output() cancelled = new EventEmitter<void>();
+  @Output('pageChange') cambioPagina = new EventEmitter<number>();
 
-  onConfirm(): void {
-    this.confirmed.emit();
+  get puedeRetroceder(): boolean {
+    return !this.deshabilitado && this.paginaNormalizada > 1;
   }
 
-  onCancel(): void {
-    this.cancelled.emit();
+  get puedeAvanzar(): boolean {
+    return !this.deshabilitado && this.paginaNormalizada < this.totalPaginasNormalizado;
+  }
+
+  get paginaNormalizada(): number {
+    return this.normalizarEnteroPositivo(this.paginaActual, 1);
+  }
+
+  get totalPaginasNormalizado(): number {
+    return this.normalizarEnteroPositivo(this.totalPaginas, 1);
+  }
+
+  irAPagina(pagina: number): void {
+    const paginaDestino = Math.min(
+      Math.max(this.normalizarEnteroPositivo(pagina, this.paginaNormalizada), 1),
+      this.totalPaginasNormalizado
+    );
+
+    if (this.deshabilitado || paginaDestino === this.paginaNormalizada) {
+      return;
+    }
+
+    this.cambioPagina.emit(paginaDestino);
+  }
+
+  irAnterior(): void {
+    this.irAPagina(this.paginaNormalizada - 1);
+  }
+
+  irSiguiente(): void {
+    this.irAPagina(this.paginaNormalizada + 1);
+  }
+
+  private normalizarEnteroPositivo(valor: number, predeterminado: number): number {
+    if (!Number.isInteger(valor) || valor < 1) {
+      return predeterminado;
+    }
+
+    return valor;
   }
 }

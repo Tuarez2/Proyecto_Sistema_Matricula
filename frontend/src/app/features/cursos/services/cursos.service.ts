@@ -2,8 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
-import type { RespuestaApi } from '../../../core/models/respuesta-api.model';
-import type { Curso, EstadoCurso, RespuestaListadoCursos, SolicitudCurso } from '../models/curso.model';
+import type { Curso, EstadoCurso, RespuestaCurso, RespuestaListadoCursos, SolicitudCurso } from '../models/curso.model';
 
 @Injectable({ providedIn: 'root' })
 export class CursosService {
@@ -13,7 +12,7 @@ export class CursosService {
   getCursos(filtros?: { estado?: string }): Observable<Curso[]> {
     const estado = filtros?.estado as EstadoCurso;
     return this.listar({ estado }).pipe(
-      map((res: RespuestaListadoCursos) => res.data || res['items'] || [])
+      map((respuesta) => respuesta.data ?? [])
     );
   }
 
@@ -28,15 +27,15 @@ export class CursosService {
     return this.http.get<RespuestaListadoCursos>(obtenerUrlApi('cursos'), { params: p });
   }
 
-  crear(s: SolicitudCurso): Observable<RespuestaApi<Curso>> {
-    return this.http.post<RespuestaApi<Curso>>(obtenerUrlApi('cursos'), s);
+  crear(s: SolicitudCurso): Observable<RespuestaCurso> {
+    return this.http.post<RespuestaCurso>(obtenerUrlApi('cursos'), s);
   }
 
-  actualizar(id: number, s: Partial<SolicitudCurso>): Observable<RespuestaApi<Curso>> {
-    return this.http.put<RespuestaApi<Curso>>(obtenerUrlApi(`cursos/${id}`), s);
+  actualizar(id: number, s: Partial<SolicitudCurso>): Observable<RespuestaCurso> {
+    return this.http.put<RespuestaCurso>(obtenerUrlApi(`cursos/${id}`), s);
   }
 
-  cancelar(id: number): Observable<RespuestaApi<Curso>> {
-    return this.http.delete<RespuestaApi<Curso>>(obtenerUrlApi(`cursos/${id}`));
+  cancelar(id: number): Observable<RespuestaCurso> {
+    return this.http.delete<RespuestaCurso>(obtenerUrlApi(`cursos/${id}`));
   }
 }
