@@ -92,7 +92,7 @@ describe('LayoutPrincipalComponent', () => {
   it('existe enlace Periodos académicos', () => {
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Periodos académicos')).toBeTruthy();
+    expect(obtenerEnlaces('Periodos académicos')).toHaveLength(1);
   });
 
   it('el enlace Periodos académicos apunta a /periodos-academicos', () => {
@@ -522,11 +522,15 @@ describe('LayoutPrincipalComponent', () => {
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {
+    return obtenerEnlaces(texto)[0] ?? null;
+  }
+
+  function obtenerEnlaces(texto: string): HTMLAnchorElement[] {
     const enlaces = Array.from(
       fixture.nativeElement.querySelectorAll('a'),
     ) as HTMLAnchorElement[];
 
-    return enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null;
+    return enlaces.filter((enlace) => enlace.textContent?.includes(texto));
   }
 
   function obtenerTexto(): string {
