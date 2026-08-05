@@ -262,7 +262,7 @@ export class ListadoCursosComponent implements OnInit {
       });
 
     this.docentesServicio
-      .listarDocentes()
+      .listarDocentes({ limite: 100 })
       .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: (respuesta) => this.estadoDocentes.set(respuesta.data ?? []),

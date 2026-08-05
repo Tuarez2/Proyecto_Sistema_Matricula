@@ -16,6 +16,7 @@ import type {
 import { AsignaturasService } from '../../../asignaturas/services/asignaturas.service';
 import type {
   Docente,
+  FiltrosDocentes,
   RespuestaListadoDocentes,
 } from '../../../docentes/models/docente.model';
 import { DocentesService } from '../../../docentes/services/docentes.service';
@@ -67,7 +68,9 @@ interface AsignaturasServiceMock {
 
 interface DocentesServiceMock {
   listarDocentes: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoDocentes>>
+    typeof vi.fn<
+      (filtros?: FiltrosDocentes) => Observable<RespuestaListadoDocentes>
+    >
   >;
 }
 
@@ -144,6 +147,10 @@ describe('EditarCursoComponent', () => {
 
     expect(cursosService.obtenerCurso).toHaveBeenCalledWith(7);
     expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      activo: true,
+      limite: 100,
+    });
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
       activo: true,
       limite: 100,
     });
@@ -477,5 +484,9 @@ function crearRespuestaDocentes(docentes: Docente[]): RespuestaListadoDocentes {
   return {
     success: true,
     data: docentes,
+    page: 1,
+    limit: 100,
+    total: docentes.length,
+    totalPages: Math.ceil(docentes.length / 100),
   };
 }

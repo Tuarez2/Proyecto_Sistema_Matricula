@@ -11,13 +11,13 @@ import { ROLE_CODES } from '../constants/domain.constants.js';
 import authenticate from '../middlewares/authenticate.js';
 import authorizeRoles from '../middlewares/authorizeRoles.js';
 import validarSolicitud from '../middlewares/validateRequest.js';
-import { validarCreacionDocente, validarIdParam, validarActualizacionDocente } from '../validators/docente.validator.js';
+import { validarCreacionDocente, validarIdParam, validarActualizacionDocente, validarListadoDocentes } from '../validators/docente.validator.js';
 
 const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 
 router.use(authenticate);
-router.get('/', obtenerDocentes);
+router.get('/', validarListadoDocentes, validarSolicitud, obtenerDocentes);
 router.get('/:id', validarIdParam, validarSolicitud, obtenerDocentePorId);
 router.post('/', adminOnly, validarCreacionDocente, validarSolicitud, crearDocente);
 router.put('/:id', adminOnly, validarIdParam, validarActualizacionDocente, validarSolicitud, actualizarDocente);

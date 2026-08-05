@@ -21,6 +21,8 @@ import { DocenteTableComponent } from '../../components/docente-table/docente-ta
 import type { Docente, FiltrosDocentes } from '../../models/docente.model';
 import { DocentesService } from '../../services/docentes.service';
 
+const LIMITE_POR_PAGINA = 10;
+
 @Component({
   selector: 'app-listar-docentes',
   standalone: true,
@@ -35,46 +37,27 @@ export class ListarDocentesComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly referenciaDestruccion = inject(DestroyRef);
   private readonly estadoDocentes = signal<Docente[]>([]);
+  private readonly estadoTotalDocentes = signal(0);
+  private readonly estadoTotalPaginas = signal(1);
+  private readonly estadoFiltrosAplicados = signal<FiltrosDocentes>({});
   private readonly estadoCargandoDocentes = signal(false);
   private readonly estadoMensajeError = signal<string | null>(null);
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
-  private readonly estadoLimitePorPagina = signal(10);
   private readonly estadoDocenteProcesando = signal<number | null>(null);
-  private readonly estadoFiltrosAplicados = signal<FiltrosDocentes>({});
 
   readonly docentes = this.estadoDocentes.asReadonly();
+  readonly totalDocentes = this.estadoTotalDocentes.asReadonly();
+  readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly cargandoDocentes = this.estadoCargandoDocentes.asReadonly();
   readonly mensajeError = this.estadoMensajeError.asReadonly();
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly paginaActual = this.estadoPaginaActual.asReadonly();
-  readonly limitePorPagina = this.estadoLimitePorPagina.asReadonly();
   readonly docenteProcesando = this.estadoDocenteProcesando.asReadonly();
   readonly esAdministrador = computed(
     () =>
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
-  );
-  readonly docentesFiltrados = computed(() =>
-    this.filtrarDocentes(this.docentes(), this.estadoFiltrosAplicados()),
-  );
-  readonly totalDocentes = computed(() => this.docentesFiltrados().length);
-  readonly totalPaginas = computed(() =>
-    Math.ceil(this.totalDocentes() / this.limitePorPagina()),
-  );
-  readonly docentesPagina = computed(() => {
-    const inicio = (this.paginaActual() - 1) * this.limitePorPagina();
-
-    return this.docentesFiltrados().slice(inicio, inicio + this.limitePorPagina());
-  });
-  readonly especialidadesDisponibles = computed(() =>
-    Array.from(
-      new Set(
-        this.docentes()
-          .map((docente) => docente.especialidad)
-          .filter((especialidad) => especialidad.trim().length > 0),
-      ),
-    ).sort((actual, siguiente) => actual.localeCompare(siguiente)),
   );
 
   ngOnInit(): void {
@@ -87,9 +70,12 @@ export class ListarDocentesComponent implements OnInit {
     }
 
     this.estadoMensajeError.set(null);
-    this.estadoMensajeExito.set(null);
     this.estadoCargandoDocentes.set(true);
-    this.docentesService.listarDocentes()
+    this.docentesService.listarDocentes({
+      ...this.estadoFiltrosAplicados(),
+      pagina: this.estadoPaginaActual(),
+      limite: LIMITE_POR_PAGINA,
+    })
       .pipe(
         takeUntilDestroyed(this.referenciaDestruccion),
         finalize(() => this.estadoCargandoDocentes.set(false)),
@@ -97,9 +83,14 @@ export class ListarDocentesComponent implements OnInit {
       .subscribe({
         next: (respuesta) => {
           this.estadoDocentes.set(respuesta.data ?? []);
-          this.asegurarPaginaValida();
+          this.estadoTotalDocentes.set(respuesta.total);
+          this.estadoTotalPaginas.set(respuesta.totalPages);
+          this.estadoPaginaActual.set(respuesta.page);
         },
         error: (error: unknown) => {
+          this.estadoDocentes.set([]);
+          this.estadoTotalDocentes.set(0);
+          this.estadoTotalPaginas.set(1);
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
@@ -112,15 +103,16 @@ export class ListarDocentesComponent implements OnInit {
 
     this.estadoFiltrosAplicados.set(filtros);
     this.estadoPaginaActual.set(1);
+    this.cargarDocentes();
   }
 
   cambiarPagina(pagina: number): void {
-    if (this.cargandoDocentes()) {
+    if (this.cargandoDocentes() || pagina === this.paginaActual()) {
       return;
     }
 
     this.estadoPaginaActual.set(pagina);
-    this.asegurarPaginaValida();
+    this.cargarDocentes();
   }
 
   editarDocente(docente: Docente): void {
@@ -151,15 +143,13 @@ export class ListarDocentesComponent implements OnInit {
       )
       .subscribe({
         next: (respuesta) => {
-          if (respuesta.data) {
-            this.reemplazarDocente(respuesta.data);
-          }
           this.estadoMensajeExito.set(
             respuesta.message ??
               (docente.activo
                 ? 'Docente inactivado correctamente.'
                 : 'Docente activado correctamente.'),
           );
+          this.cargarDocentes();
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
@@ -169,63 +159,6 @@ export class ListarDocentesComponent implements OnInit {
 
   obtenerNombreCompleto(docente: Docente): string {
     return `${docente.nombres} ${docente.apellidos}`.trim();
-  }
-
-  private filtrarDocentes(
-    docentes: Docente[],
-    filtros: FiltrosDocentes,
-  ): Docente[] {
-    const busqueda = filtros.busqueda?.toLowerCase();
-    let resultado = docentes;
-
-    if (busqueda) {
-      resultado = resultado.filter((docente) =>
-        [
-          docente.identificacion,
-          docente.nombres,
-          docente.apellidos,
-          docente.correo,
-          docente.especialidad,
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(busqueda),
-      );
-    }
-
-    if (filtros.especialidad) {
-      const especialidad = filtros.especialidad.toLowerCase();
-      resultado = resultado.filter(
-        (docente) => docente.especialidad.toLowerCase() === especialidad,
-      );
-    }
-
-    if (filtros.activo !== undefined) {
-      resultado = resultado.filter((docente) => docente.activo === filtros.activo);
-    }
-
-    return resultado;
-  }
-
-  private reemplazarDocente(docenteActualizado: Docente): void {
-    this.estadoDocentes.update((docentes) =>
-      docentes.map((docente) =>
-        docente.id === docenteActualizado.id ? docenteActualizado : docente,
-      ),
-    );
-  }
-
-  private asegurarPaginaValida(): void {
-    const totalPaginas = this.totalPaginas();
-
-    if (totalPaginas === 0) {
-      this.estadoPaginaActual.set(1);
-      return;
-    }
-
-    if (this.paginaActual() > totalPaginas) {
-      this.estadoPaginaActual.set(totalPaginas);
-    }
   }
 
   private obtenerMensajeError(error: unknown): string {

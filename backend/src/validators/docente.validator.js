@@ -1,8 +1,14 @@
-import { body } from 'express-validator';
+import { body, query } from 'express-validator';
 
-import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
+import {
+  validarCamposPermitidos,
+  validarFiltrosPermitidos,
+  validarIdParam
+} from './common.validator.js';
 
 const camposPermitidos = ['identificacion', 'nombres', 'apellidos', 'correo', 'telefono', 'especialidad', 'activo'];
+
+const camposListado = ['identificacion', 'nombres', 'apellidos', 'correo', 'especialidad', 'activo', 'page', 'limit'];
 
 const reglas = [
   body('identificacion').optional().isLength({ min: 1, max: 20 }).withMessage('La identificacion es invalida.'),
@@ -26,10 +32,62 @@ export const validarCreacionDocente = [
 
 export const validarActualizacionDocente = [validarCamposPermitidos(camposPermitidos, { requireAtLeastOne: true }), ...reglas];
 
+export const validarListadoDocentes = [
+  validarFiltrosPermitidos(camposListado),
+  query('identificacion')
+    .optional()
+    .isString()
+    .withMessage('El filtro identificacion debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 20 })
+    .withMessage('El filtro identificacion tiene una longitud invalida.'),
+  query('nombres')
+    .optional()
+    .isString()
+    .withMessage('El filtro nombres debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('El filtro nombres tiene una longitud invalida.'),
+  query('apellidos')
+    .optional()
+    .isString()
+    .withMessage('El filtro apellidos debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('El filtro apellidos tiene una longitud invalida.'),
+  query('correo')
+    .optional()
+    .isString()
+    .withMessage('El filtro correo debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 150 })
+    .withMessage('El filtro correo tiene una longitud invalida.'),
+  query('especialidad')
+    .optional()
+    .isString()
+    .withMessage('El filtro especialidad debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 150 })
+    .withMessage('El filtro especialidad tiene una longitud invalida.'),
+  query('activo')
+    .optional()
+    .isIn(['true', 'false'])
+    .withMessage('El filtro activo debe ser un booleano valido.')
+    .toBoolean(),
+  query('page').optional().isInt({ min: 1 }).withMessage('La pagina debe ser un entero positivo.').toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('El limite debe estar entre 1 y 100.').toInt()
+];
+
 export { validarIdParam };
 
 export default {
   validarCreacionDocente,
   validarActualizacionDocente,
+  validarListadoDocentes,
   validarIdParam
 };

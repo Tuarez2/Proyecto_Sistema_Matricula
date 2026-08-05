@@ -2,11 +2,15 @@ import * as docenteService from '../services/docente.service.js';
 import manejadorAsync from '../utils/asyncHandler.js';
 
 export const obtenerDocentes = manejadorAsync(async (req, res) => {
-  const docentes = await docenteService.listarDocentes();
+  const resultado = await docenteService.listarDocentes(req.query);
 
   res.status(200).json({
     success: true,
-    data: docentes
+    data: resultado.data,
+    page: resultado.page,
+    limit: resultado.limit,
+    total: resultado.total,
+    totalPages: resultado.totalPages
   });
 });
 

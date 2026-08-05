@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
 import type {
@@ -13,26 +13,29 @@ import type {
   SolicitudCrearDocente,
 } from '../models/docente.model';
 
-interface FiltrosCompatibilidadDocentes extends FiltrosDocentes {
-  estado?: string;
-}
-
 @Injectable({
   providedIn: 'root',
 })
 export class DocentesService {
   private readonly http = inject(HttpClient);
+  private readonly urlDocentes = obtenerUrlApi('docentes');
 
-  listarDocentes(): Observable<RespuestaListadoDocentes> {
-    return this.http.get<RespuestaListadoDocentes>(obtenerUrlApi('docentes'));
+  listarDocentes(
+    filtros: FiltrosDocentes = {},
+  ): Observable<RespuestaListadoDocentes> {
+    return this.http.get<RespuestaListadoDocentes>(this.urlDocentes, {
+      params: this.construirParametros(filtros),
+    });
   }
 
   obtenerDocente(idDocente: number): Observable<RespuestaDocente> {
-    return this.http.get<RespuestaDocente>(obtenerUrlApi(`docentes/${idDocente}`));
+    return this.http.get<RespuestaDocente>(
+      obtenerUrlApi(`docentes/${idDocente}`),
+    );
   }
 
   crearDocente(solicitud: SolicitudCrearDocente): Observable<RespuestaDocente> {
-    return this.http.post<RespuestaDocente>(obtenerUrlApi('docentes'), solicitud);
+    return this.http.post<RespuestaDocente>(this.urlDocentes, solicitud);
   }
 
   actualizarDocente(
@@ -58,89 +61,64 @@ export class DocentesService {
     );
   }
 
-  getDocentes(
-    filtros: FiltrosCompatibilidadDocentes = {},
-  ): Observable<Docente[]> {
-    return this.listarDocentes().pipe(
-      map((respuesta) => this.filtrarDocentes(respuesta.data ?? [], filtros)),
+  private construirParametros(filtros: FiltrosDocentes): HttpParams {
+    let parametros = new HttpParams();
+
+    parametros = this.agregarTexto(
+      parametros,
+      'identificacion',
+      filtros.identificacion,
     );
-  }
-
-  getDocenteById(idDocente: number): Observable<Docente> {
-    return this.obtenerDocente(idDocente).pipe(
-      map((respuesta) => {
-        if (!respuesta.data) {
-          throw new Error('La respuesta no contiene docente.');
-        }
-
-        return respuesta.data;
-      }),
+    parametros = this.agregarTexto(parametros, 'nombres', filtros.nombres);
+    parametros = this.agregarTexto(parametros, 'apellidos', filtros.apellidos);
+    parametros = this.agregarTexto(parametros, 'correo', filtros.correo);
+    parametros = this.agregarTexto(
+      parametros,
+      'especialidad',
+      filtros.especialidad,
     );
+
+    if (filtros.activo !== undefined) {
+      parametros = parametros.set('activo', String(filtros.activo));
+    }
+
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'page',
+      filtros.pagina,
+    );
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'limit',
+      filtros.limite,
+    );
+
+    return parametros;
   }
 
-  eliminarDocente(idDocente: number): Observable<RespuestaCambioEstadoDocente> {
-    return this.cambiarEstadoDocente(idDocente, false);
+  private agregarTexto(
+    parametros: HttpParams,
+    nombre: string,
+    valor: string | undefined,
+  ): HttpParams {
+    const valorNormalizado = valor?.trim();
+
+    if (!valorNormalizado) {
+      return parametros;
+    }
+
+    return parametros.set(nombre, valorNormalizado);
   }
 
-  private filtrarDocentes(
-    docentes: Docente[],
-    filtros: FiltrosCompatibilidadDocentes,
-  ): Docente[] {
-    const busqueda = filtros.busqueda?.trim().toLowerCase();
-    const activo = this.normalizarActivo(filtros.activo, filtros.estado);
-    let resultado = docentes;
-
-    if (busqueda) {
-      resultado = resultado.filter((docente) =>
-        [
-          docente.identificacion,
-          docente.nombres,
-          docente.apellidos,
-          docente.correo,
-          docente.especialidad,
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(busqueda),
-      );
+  private agregarEnteroPositivo(
+    parametros: HttpParams,
+    nombre: string,
+    valor: number | undefined,
+  ): HttpParams {
+    if (valor === undefined || !Number.isInteger(valor) || valor < 1) {
+      return parametros;
     }
 
-    if (filtros.especialidad?.trim()) {
-      const especialidad = filtros.especialidad.trim().toLowerCase();
-      resultado = resultado.filter(
-        (docente) => docente.especialidad.toLowerCase() === especialidad,
-      );
-    }
-
-    if (activo !== null) {
-      resultado = resultado.filter((docente) => docente.activo === activo);
-    }
-
-    return resultado;
-  }
-
-  private normalizarActivo(
-    activo: boolean | undefined,
-    estado: string | undefined,
-  ): boolean | null {
-    if (activo !== undefined) {
-      return activo;
-    }
-
-    if (!estado) {
-      return null;
-    }
-
-    const estadoNormalizado = estado.toLowerCase();
-
-    if (estadoNormalizado === 'activo') {
-      return true;
-    }
-
-    if (estadoNormalizado === 'inactivo') {
-      return false;
-    }
-
-    return null;
+    return parametros.set(nombre, String(valor));
   }
 }

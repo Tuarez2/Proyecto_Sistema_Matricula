@@ -9,6 +9,7 @@ import type { UsuarioAutenticado } from '../../../../core/models/autenticacion.m
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import type {
   Docente,
+  FiltrosDocentes,
   RespuestaDocente,
   RespuestaListadoDocentes,
 } from '../../models/docente.model';
@@ -16,7 +17,11 @@ import { DocentesService } from '../../services/docentes.service';
 import { ListarDocentesComponent } from './listar-docentes.component';
 
 interface DocentesServiceMock {
-  listarDocentes: ReturnType<typeof vi.fn<() => Observable<RespuestaListadoDocentes>>>;
+  listarDocentes: ReturnType<
+    typeof vi.fn<
+      (filtros?: FiltrosDocentes) => Observable<RespuestaListadoDocentes>
+    >
+  >;
   cambiarEstadoDocente: ReturnType<
     typeof vi.fn<
       (idDocente: number, activo: boolean) => Observable<RespuestaDocente>
@@ -37,11 +42,18 @@ describe('ListarDocentesComponent', () => {
     );
     docentesService = {
       listarDocentes: vi.fn(() =>
-        respuestaObservable(crearRespuestaListado([
-          crearDocente({ id: 1, nombres: 'Ana', especialidad: 'Matemática' }),
+        respuestaObservable(crearRespuestaDocentes([
+          crearDocente({
+            id: 1,
+            nombres: 'Ana',
+            apellidos: 'Vera',
+            identificacion: '1002003004',
+            especialidad: 'Matemática',
+          }),
           crearDocente({
             id: 2,
             nombres: 'Luis',
+            apellidos: 'Gómez',
             identificacion: '222',
             especialidad: 'Programación',
           }),
@@ -74,17 +86,220 @@ describe('ListarDocentesComponent', () => {
     navegar = vi.spyOn(enrutador, 'navigate').mockResolvedValue(true);
   });
 
-  it('carga docentes al iniciar', () => {
+  it('solicita la primera página con límite explícito al iniciar', () => {
     crearComponente();
 
     expect(docentesService.listarDocentes).toHaveBeenCalledTimes(1);
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
     expect(obtenerTexto()).toContain('Ana Vera');
-    expect(obtenerTexto()).toContain('Luis Vera');
+    expect(obtenerTexto()).toContain('Luis Gómez');
   });
 
-  it('muestra estado vacio', () => {
+  it('usa total y totalPages de la respuesta del backend', () => {
     docentesService.listarDocentes.mockReturnValueOnce(
-      respuestaObservable(crearRespuestaListado([])),
+      respuestaObservable(
+        crearRespuestaDocentes([crearDocente()], {
+          total: 25,
+          totalPages: 3,
+        }),
+      ),
+    );
+
+    crearComponente();
+
+    expect(componente.totalDocentes()).toBe(25);
+    expect(componente.totalPaginas()).toBe(3);
+  });
+
+  it('cambia de página solicitando los datos al backend sin paginar en memoria', () => {
+    const paginaUno = crearRespuestaDocentes(
+      Array.from({ length: 10 }, (_, indice) =>
+        crearDocente({
+          id: indice + 1,
+          nombres: `Persona ${indice + 1}`,
+          identificacion: String(indice + 1),
+        })),
+      { page: 1, limit: 10, total: 11, totalPages: 2 },
+    );
+    const paginaDos = crearRespuestaDocentes(
+      [crearDocente({ id: 11, nombres: 'Persona 11' })],
+      { page: 2, limit: 10, total: 11, totalPages: 2 },
+    );
+
+    docentesService.listarDocentes
+      .mockReturnValueOnce(respuestaObservable(paginaUno))
+      .mockReturnValueOnce(respuestaObservable(paginaDos));
+
+    crearComponente();
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(2);
+    expect(docentesService.listarDocentes).toHaveBeenLastCalledWith({
+      pagina: 2,
+      limite: 10,
+    });
+    expect(componente.paginaActual()).toBe(2);
+    expect(componente.docentes()).toHaveLength(1);
+    expect(obtenerTexto()).toContain('Persona 11 Vera');
+  });
+
+  it('aplica filtros al backend y restablece a la página 1', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({
+      identificacion: '1002',
+      nombres: 'Ana',
+      apellidos: 'Vera',
+      correo: 'ana',
+      especialidad: 'Matemática',
+      activo: true,
+    });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(1);
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      identificacion: '1002',
+      nombres: 'Ana',
+      apellidos: 'Vera',
+      correo: 'ana',
+      especialidad: 'Matemática',
+      activo: true,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de identificación', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({ identificacion: '1002003004' });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      identificacion: '1002003004',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de nombres', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({ nombres: 'Ana' });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      nombres: 'Ana',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de apellidos', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({ apellidos: 'Vera' });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      apellidos: 'Vera',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de correo', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({ correo: 'ana.vera' });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      correo: 'ana.vera',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de especialidad', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({ especialidad: 'Matemática' });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      especialidad: 'Matemática',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de estado activo', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({ activo: true });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      activo: true,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('restablece a la página 1 al limpiar filtros desde el componente de filtros', () => {
+    crearComponente();
+    componente.filtrar({ identificacion: '222' });
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({});
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(1);
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
+    expect(obtenerTexto()).toContain('Ana Vera');
+    expect(obtenerTexto()).toContain('Luis Gómez');
+  });
+
+  it('no filtra ni pagina localmente los registros devueltos por el backend', () => {
+    docentesService.listarDocentes.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaDocentes(
+          Array.from({ length: 11 }, (_, indice) =>
+            crearDocente({
+              id: indice + 1,
+              nombres: `Persona ${indice + 1}`,
+              identificacion: String(indice + 1),
+            })),
+          { page: 1, limit: 10, total: 11, totalPages: 2 },
+        ),
+      ),
+    );
+
+    crearComponente();
+
+    expect(componente.docentes()).toHaveLength(11);
+    expect(componente.totalDocentes()).toBe(11);
+    expect(componente.totalPaginas()).toBe(2);
+  });
+
+  it('muestra estado vacío cuando no hay resultados', () => {
+    docentesService.listarDocentes.mockReturnValueOnce(
+      respuestaObservable(crearRespuestaDocentes([])),
     );
 
     crearComponente();
@@ -92,66 +307,29 @@ describe('ListarDocentesComponent', () => {
     expect(obtenerTexto()).toContain('No se encontraron docentes.');
   });
 
-  it('muestra error de API', () => {
+  it('muestra error de API al cargar docentes', () => {
     docentesService.listarDocentes.mockReturnValueOnce(
       errorObservable(new HttpErrorResponse({ status: 0 })),
     );
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No fue posible conectar con el servidor.');
-  });
-
-  it('filtra por busqueda', () => {
-    crearComponente();
-
-    componente.filtrar({ busqueda: '222' });
-    fixture.detectChanges();
-
-    expect(obtenerTexto()).not.toContain('Ana Vera');
-    expect(obtenerTexto()).toContain('Luis Vera');
-  });
-
-  it('filtra por especialidad y estado', () => {
-    crearComponente();
-
-    componente.filtrar({ especialidad: 'Programación', activo: true });
-    fixture.detectChanges();
-
-    expect(obtenerTexto()).not.toContain('Ana Vera');
-    expect(obtenerTexto()).toContain('Luis Vera');
-  });
-
-  it('restablece filtros desde el componente de filtros', () => {
-    crearComponente();
-
-    componente.filtrar({ busqueda: '222' });
-    componente.filtrar({});
-    fixture.detectChanges();
-
-    expect(obtenerTexto()).toContain('Ana Vera');
-    expect(obtenerTexto()).toContain('Luis Vera');
-  });
-
-  it('cambia de pagina con el componente compartido', () => {
-    docentesService.listarDocentes.mockReturnValueOnce(
-      respuestaObservable(crearRespuestaListado(
-        Array.from({ length: 11 }, (_valor, indice) =>
-          crearDocente({
-            id: indice + 1,
-            nombres: `Persona ${indice + 1}`,
-            identificacion: String(indice + 1),
-          }),
-        ),
-      )),
+    expect(obtenerTexto()).toContain(
+      'No fue posible conectar con el servidor.',
     );
+  });
+
+  it('limpia los resultados anteriores si falla una carga posterior', () => {
     crearComponente();
 
+    docentesService.listarDocentes.mockReturnValueOnce(
+      errorObservable(new HttpErrorResponse({ status: 0 })),
+    );
     componente.cambiarPagina(2);
     fixture.detectChanges();
 
-    expect(obtenerTexto()).toContain('Persona 11 Vera');
-    expect(obtenerTexto()).not.toContain('Persona 1 Vera');
+    expect(componente.docentes()).toEqual([]);
+    expect(obtenerTexto()).not.toContain('Ana Vera');
   });
 
   it('ADMIN ve acciones administrativas', () => {
@@ -179,7 +357,7 @@ describe('ListarDocentesComponent', () => {
     expect(navegar).toHaveBeenCalledWith(['/docentes/editar', 1]);
   });
 
-  it('confirma antes de inactivar y actualiza la fila despues de respuesta', () => {
+  it('confirma antes de inactivar y recarga la página actual', () => {
     const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
@@ -189,7 +367,11 @@ describe('ListarDocentesComponent', () => {
     expect(confirmar).toHaveBeenCalled();
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledWith(1, false);
     expect(obtenerTexto()).toContain('Operación completada.');
-    expect(componente.docentes()[0].activo).toBe(false);
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(2);
+    expect(docentesService.listarDocentes).toHaveBeenLastCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
   });
 
   it('activa docentes inactivos con confirmacion', () => {
@@ -226,6 +408,22 @@ describe('ListarDocentesComponent', () => {
     componente.cambiarEstadoDocente(componente.docentes()[1]);
 
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledTimes(1);
+  });
+
+  it('no filtra ni cambia de página mientras hay una carga pendiente', () => {
+    const cargaPendiente = new Subject<RespuestaListadoDocentes>();
+
+    docentesService.listarDocentes.mockReturnValueOnce(
+      cargaPendiente.asObservable(),
+    );
+
+    crearComponente();
+    componente.filtrar({ identificacion: '222' });
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(1);
+    cargaPendiente.complete();
   });
 
   it('muestra error al cambiar estado', () => {
@@ -312,10 +510,18 @@ function crearDocente(cambios: Partial<Docente> = {}): Docente {
   };
 }
 
-function crearRespuestaListado(docentes: Docente[]): RespuestaListadoDocentes {
+function crearRespuestaDocentes(
+  docentes: Docente[],
+  paginacion: Partial<RespuestaListadoDocentes> = {},
+): RespuestaListadoDocentes {
   return {
     success: true,
     data: docentes,
+    page: 1,
+    limit: 10,
+    total: docentes.length,
+    totalPages: Math.ceil(docentes.length / 10),
+    ...paginacion,
   };
 }
 

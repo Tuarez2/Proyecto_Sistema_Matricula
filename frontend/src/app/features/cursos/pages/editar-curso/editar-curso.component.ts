@@ -247,7 +247,7 @@ export class EditarCursoComponent implements OnInit {
       });
 
     this.docentesServicio
-      .listarDocentes()
+      .listarDocentes({ activo: true, limite: 100 })
       .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: (respuesta) => this.estadoDocentes.set(respuesta.data ?? []),

@@ -14,22 +14,27 @@ describe('DocenteFilterComponent', () => {
 
     fixture = TestBed.createComponent(DocenteFilterComponent);
     componente = fixture.componentInstance;
-    componente.especialidades = ['Matemática', 'Programación'];
     fixture.detectChanges();
   });
 
-  it('emite filtros tipados para busqueda, especialidad y estado activo', () => {
+  it('emite filtros tipados para todos los campos', () => {
     const filtrar = vi.spyOn(componente.filtrarDocentes, 'emit');
 
     componente.formularioFiltros.setValue({
-      busqueda: ' Ana ',
-      especialidad: 'Matemática',
+      identificacion: ' 1002003004 ',
+      nombres: ' Ana ',
+      apellidos: ' Vera ',
+      correo: ' ana.vera ',
+      especialidad: ' Matemática ',
       activo: 'true',
     });
     componente.aplicarFiltros();
 
     expect(filtrar).toHaveBeenCalledWith({
-      busqueda: 'Ana',
+      identificacion: '1002003004',
+      nombres: 'Ana',
+      apellidos: 'Vera',
+      correo: 'ana.vera',
       especialidad: 'Matemática',
       activo: true,
     } satisfies FiltrosDocentes);
@@ -44,18 +49,32 @@ describe('DocenteFilterComponent', () => {
     expect(filtrar).toHaveBeenCalledWith({ activo: false });
   });
 
+  it('no envía filtros vacíos', () => {
+    const filtrar = vi.spyOn(componente.filtrarDocentes, 'emit');
+
+    componente.aplicarFiltros();
+
+    expect(filtrar).toHaveBeenCalledWith({});
+  });
+
   it('limpia filtros y emite objeto vacio', () => {
     const filtrar = vi.spyOn(componente.filtrarDocentes, 'emit');
 
     componente.formularioFiltros.setValue({
-      busqueda: 'Ana',
+      identificacion: '1002003004',
+      nombres: 'Ana',
+      apellidos: 'Vera',
+      correo: 'ana.vera@universidad.edu',
       especialidad: 'Matemática',
       activo: 'true',
     });
     componente.limpiarFiltros();
 
     expect(componente.formularioFiltros.getRawValue()).toEqual({
-      busqueda: '',
+      identificacion: '',
+      nombres: '',
+      apellidos: '',
+      correo: '',
       especialidad: '',
       activo: '',
     });
@@ -70,12 +89,4 @@ describe('DocenteFilterComponent', () => {
 
     expect(filtrar).not.toHaveBeenCalled();
   });
-
-  it('muestra las especialidades recibidas', () => {
-    expect(obtenerTexto()).toContain('Programación');
-  });
-
-  function obtenerTexto(): string {
-    return fixture.nativeElement.textContent ?? '';
-  }
 });

@@ -11,6 +11,7 @@ import type {
 import { AsignaturasService } from '../../../asignaturas/services/asignaturas.service';
 import type {
   Docente,
+  FiltrosDocentes,
   RespuestaListadoDocentes,
 } from '../../../docentes/models/docente.model';
 import { DocentesService } from '../../../docentes/services/docentes.service';
@@ -54,7 +55,9 @@ interface AsignaturasServiceMock {
 
 interface DocentesServiceMock {
   listarDocentes: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoDocentes>>
+    typeof vi.fn<
+      (filtros?: FiltrosDocentes) => Observable<RespuestaListadoDocentes>
+    >
   >;
 }
 
@@ -97,12 +100,10 @@ describe('CrearCursoComponent', () => {
         respuestaObservable(
           crearRespuestaDocentes([
             crearDocente({ id: 1000 }),
-            crearDocente({ id: 1001, activo: false }),
           ]),
         ),
       ),
     };
-
     await TestBed.configureTestingModule({
       imports: [CrearCursoComponent],
       providers: [
@@ -141,9 +142,13 @@ describe('CrearCursoComponent', () => {
     );
   });
 
-  it('carga solo docentes activos', () => {
+  it('solicita docentes activos con límite explícito para el catálogo', () => {
     crearComponente();
 
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      activo: true,
+      limite: 100,
+    });
     expect(componente.docentes().map((docente) => docente.id)).toEqual([1000]);
   });
 
@@ -412,5 +417,9 @@ function crearRespuestaDocentes(docentes: Docente[]): RespuestaListadoDocentes {
   return {
     success: true,
     data: docentes,
+    page: 1,
+    limit: 100,
+    total: docentes.length,
+    totalPages: Math.ceil(docentes.length / 100),
   };
 }

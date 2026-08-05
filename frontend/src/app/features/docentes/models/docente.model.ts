@@ -39,23 +39,25 @@ export interface SolicitudCrearDocente {
 export type SolicitudActualizarDocente = Partial<SolicitudCrearDocente>;
 
 export interface FiltrosDocentes {
-  busqueda?: string;
+  identificacion?: string;
+  nombres?: string;
+  apellidos?: string;
+  correo?: string;
   especialidad?: string;
   activo?: boolean;
   pagina?: number;
   limite?: number;
 }
 
-export type FiltrosDocente = FiltrosDocentes;
-
 export interface PaginacionDocentes {
-  pagina: number;
-  limite: number;
+  page: number;
+  limit: number;
   total: number;
-  totalPaginas: number;
+  totalPages: number;
 }
 
-export type RespuestaListadoDocentes = RespuestaApi<Docente[]>;
+export type RespuestaListadoDocentes =
+  RespuestaApi<Docente[]> & PaginacionDocentes;
 
 export type RespuestaDocente = RespuestaApi<Docente>;
 

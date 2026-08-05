@@ -7,7 +7,6 @@
 
   <app-docente-filter
     [cargando]="cargandoDocentes()"
-    [especialidades]="especialidadesDisponibles()"
     (filtrarDocentes)="filtrar($event)"
   />
 
@@ -23,13 +22,13 @@
     <p role="alert">{{ mensajeError() }}</p>
   }
 
-  @if (!cargandoDocentes() && !mensajeError() && docentesFiltrados().length === 0) {
+  @if (!cargandoDocentes() && !mensajeError() && docentes().length === 0) {
     <p>No se encontraron docentes.</p>
   }
 
-  @if (docentesFiltrados().length > 0) {
+  @if (docentes().length > 0) {
     <app-docente-table
-      [docentes]="docentesPagina()"
+      [docentes]="docentes()"
       [esAdministrador]="esAdministrador()"
       [idDocenteProcesando]="docenteProcesando()"
       (editarDocente)="editarDocente($event)"

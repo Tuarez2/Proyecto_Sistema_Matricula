@@ -201,13 +201,11 @@ export class CrearCursoComponent implements OnInit {
 
   private cargarDocentes(): void {
     this.docentesServicio
-      .listarDocentes()
+      .listarDocentes({ activo: true, limite: 100 })
       .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: (respuesta) => {
-          this.estadoDocentes.set(
-            (respuesta.data ?? []).filter((docente) => docente.activo),
-          );
+          this.estadoDocentes.set(respuesta.data ?? []);
           this.finalizarCargaCatalogos();
         },
         error: (error: unknown) => {
