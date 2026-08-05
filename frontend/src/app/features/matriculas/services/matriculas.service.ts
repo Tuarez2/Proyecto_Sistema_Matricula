@@ -1,34 +1,122 @@
-import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Matricula, FiltrosMatricula } from '../models/matricula.model';
+
+import { obtenerUrlApi } from '../../../core/config/configuracion-api';
+import type {
+  FiltrosMatriculas,
+  RespuestaCambioEstadoMatricula,
+  RespuestaListadoMatriculas,
+  RespuestaMatricula,
+  SolicitudCambiarEstadoMatricula,
+  SolicitudCrearMatricula,
+} from '../models/matricula.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MatriculasService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8000/api/matriculas';
+  private readonly urlMatriculas = obtenerUrlApi('matriculas');
 
-  getMatriculas(filtros?: FiltrosMatricula): Observable<Matricula[]> {
-    let params = new HttpParams();
-    if (filtros) {
-      if (filtros.estudianteId) params = params.set('estudianteId', filtros.estudianteId.toString());
-      if (filtros.periodoLectivo) params = params.set('periodoLectivo', filtros.periodoLectivo);
-      if (filtros.estado) params = params.set('estado', filtros.estado);
+  listarMatriculas(
+    filtros: FiltrosMatriculas = {},
+  ): Observable<RespuestaListadoMatriculas> {
+    return this.http.get<RespuestaListadoMatriculas>(this.urlMatriculas, {
+      params: this.construirParametros(filtros),
+    });
+  }
+
+  obtenerMatricula(idMatricula: number): Observable<RespuestaMatricula> {
+    return this.http.get<RespuestaMatricula>(
+      obtenerUrlApi(`matriculas/${idMatricula}`),
+    );
+  }
+
+  crearMatricula(
+    solicitud: SolicitudCrearMatricula,
+  ): Observable<RespuestaMatricula> {
+    return this.http.post<RespuestaMatricula>(this.urlMatriculas, solicitud);
+  }
+
+  cambiarEstadoMatricula(
+    idMatricula: number,
+    solicitud: SolicitudCambiarEstadoMatricula,
+  ): Observable<RespuestaCambioEstadoMatricula> {
+    return this.http.patch<RespuestaCambioEstadoMatricula>(
+      obtenerUrlApi(`matriculas/${idMatricula}/estado`),
+      solicitud,
+    );
+  }
+
+  private construirParametros(filtros: FiltrosMatriculas): HttpParams {
+    let parametros = new HttpParams();
+
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'estudiante_id',
+      filtros.estudiante_id,
+    );
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'curso_id',
+      filtros.curso_id,
+    );
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'periodo_id',
+      filtros.periodo_id,
+    );
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'asignatura_id',
+      filtros.asignatura_id,
+    );
+    parametros = this.agregarEnteroPositivo(
+      parametros,
+      'carrera_id',
+      filtros.carrera_id,
+    );
+    parametros = this.agregarEnteroPositivo(parametros, 'page', filtros.page);
+    parametros = this.agregarEnteroPositivo(parametros, 'limit', filtros.limit);
+    parametros = this.agregarTexto(parametros, 'estado', filtros.estado);
+    parametros = this.agregarTexto(
+      parametros,
+      'fecha_desde',
+      filtros.fecha_desde,
+    );
+    parametros = this.agregarTexto(
+      parametros,
+      'fecha_hasta',
+      filtros.fecha_hasta,
+    );
+
+    return parametros;
+  }
+
+  private agregarEnteroPositivo(
+    parametros: HttpParams,
+    nombre: string,
+    valor: number | undefined,
+  ): HttpParams {
+    if (valor === undefined || !Number.isInteger(valor) || valor < 1) {
+      return parametros;
     }
-    return this.http.get<Matricula[]>(this.apiUrl, { params });
+
+    return parametros.set(nombre, String(valor));
   }
 
-  getMatriculaById(id: number): Observable<Matricula> {
-    return this.http.get<Matricula>(`${this.apiUrl}/${id}`);
-  }
+  private agregarTexto(
+    parametros: HttpParams,
+    nombre: string,
+    valor: string | undefined,
+  ): HttpParams {
+    const valorNormalizado = valor?.trim();
 
-  crearMatricula(matricula: Matricula): Observable<Matricula> {
-    return this.http.post<Matricula>(this.apiUrl, matricula);
-  }
+    if (!valorNormalizado) {
+      return parametros;
+    }
 
-  cambiarEstado(id: number, estado: 'REGISTRADA' | 'ANULADA' | 'FINALIZADA'): Observable<Matricula> {
-    return this.http.patch<Matricula>(`${this.apiUrl}/${id}/estado`, { estado });
+    return parametros.set(nombre, valorNormalizado);
   }
 }

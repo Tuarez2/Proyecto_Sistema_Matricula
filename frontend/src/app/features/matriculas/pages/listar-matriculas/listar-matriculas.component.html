@@ -1,0 +1,173 @@
+<section aria-labelledby="titulo-matriculas">
+  <h1 id="titulo-matriculas">Matrículas</h1>
+
+  @if (puedeGestionarMatriculas()) {
+    <a routerLink="/matriculas/crear">Crear matrícula</a>
+  }
+
+  <form
+    [formGroup]="formularioFiltros"
+    (ngSubmit)="buscarMatriculas()"
+    novalidate
+  >
+    <div>
+      <label for="estudiante_id">Estudiante</label>
+      <input
+        id="estudiante_id"
+        type="number"
+        min="1"
+        formControlName="estudiante_id"
+      />
+    </div>
+
+    <div>
+      <label for="curso_id">Curso</label>
+      <input
+        id="curso_id"
+        type="number"
+        min="1"
+        formControlName="curso_id"
+      />
+    </div>
+
+    <div>
+      <label for="periodo_id">Periodo académico</label>
+      <input
+        id="periodo_id"
+        type="number"
+        min="1"
+        formControlName="periodo_id"
+      />
+    </div>
+
+    <div>
+      <label for="asignatura_id">Asignatura</label>
+      <input
+        id="asignatura_id"
+        type="number"
+        min="1"
+        formControlName="asignatura_id"
+      />
+    </div>
+
+    <div>
+      <label for="carrera_id">Carrera</label>
+      <input
+        id="carrera_id"
+        type="number"
+        min="1"
+        formControlName="carrera_id"
+      />
+    </div>
+
+    <div>
+      <label for="estado">Estado</label>
+      <select id="estado" formControlName="estado">
+        <option value="">Todos los estados</option>
+        <option [value]="ESTADOS_MATRICULA.inscrita">Inscrita</option>
+        <option [value]="ESTADOS_MATRICULA.aprobada">Aprobada</option>
+        <option [value]="ESTADOS_MATRICULA.reprobada">Reprobada</option>
+        <option [value]="ESTADOS_MATRICULA.retirada">Retirada</option>
+        <option [value]="ESTADOS_MATRICULA.anulada">Anulada</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="fecha_desde">Fecha desde</label>
+      <input id="fecha_desde" type="date" formControlName="fecha_desde" />
+    </div>
+
+    <div>
+      <label for="fecha_hasta">Fecha hasta</label>
+      <input id="fecha_hasta" type="date" formControlName="fecha_hasta" />
+    </div>
+
+    <button type="submit" [disabled]="cargandoMatriculas()">Buscar</button>
+    <button
+      type="button"
+      [disabled]="cargandoMatriculas()"
+      (click)="limpiarFiltros()"
+    >
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (cargandoMatriculas()) {
+    <p role="status" aria-live="polite">Consultando matrículas...</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargandoMatriculas() && !mensajeError() && matriculas().length === 0) {
+    <p>No se encontraron matrículas.</p>
+  }
+
+  @if (matriculas().length > 0) {
+    <table>
+      <caption>Listado de matrículas</caption>
+      <thead>
+        <tr>
+          <th scope="col">Matrícula</th>
+          <th scope="col">Estudiante</th>
+          <th scope="col">Identificación</th>
+          <th scope="col">Curso</th>
+          <th scope="col">Periodo</th>
+          <th scope="col">Docente</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Estado</th>
+          @if (puedeGestionarMatriculas()) {
+            <th scope="col">Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (matricula of matriculas(); track matricula.id) {
+          <tr>
+            <td>
+              <a [routerLink]="['/matriculas', matricula.id]">
+                #{{ matricula.id }}
+              </a>
+            </td>
+            <td>{{ obtenerNombreEstudiante(matricula) }}</td>
+            <td>{{ matricula.estudiante?.identificacion ?? 'Sin identificación' }}</td>
+            <td>{{ obtenerDescripcionCurso(matricula) }}</td>
+            <td>{{ obtenerPeriodo(matricula) }}</td>
+            <td>{{ obtenerDocente(matricula) }}</td>
+            <td>{{ matricula.fecha_matricula | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ obtenerEtiquetaEstado(matricula.estado) }}</td>
+            @if (puedeGestionarMatriculas()) {
+              <td>
+                @for (accion of obtenerAccionesEstado(matricula); track accion.estado) {
+                  <button
+                    type="button"
+                    [disabled]="matriculaProcesando() !== null"
+                    (click)="solicitarCambioEstado(matricula, accion.estado)"
+                  >
+                    {{ accion.etiqueta }}
+                  </button>
+                }
+                @if (obtenerAccionesEstado(matricula).length === 0) {
+                  <span>Sin acciones</span>
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalMatriculas()"
+    [deshabilitado]="cargandoMatriculas()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>

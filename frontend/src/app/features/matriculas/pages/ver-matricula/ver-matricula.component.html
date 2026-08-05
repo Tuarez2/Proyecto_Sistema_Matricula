@@ -1,0 +1,44 @@
+<section aria-labelledby="titulo-ver-matricula">
+  <h1 id="titulo-ver-matricula">Detalle de matrícula</h1>
+
+  <a routerLink="/matriculas">Volver a matrículas</a>
+
+  @if (cargando()) {
+    <p role="status" aria-live="polite">Consultando matrícula...</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && matricula()) {
+    <dl>
+      <dt>Estudiante</dt>
+      <dd>{{ obtenerNombreEstudiante(matricula()!) }}</dd>
+
+      <dt>Identificación</dt>
+      <dd>{{ matricula()!.estudiante?.identificacion ?? 'Sin identificación' }}</dd>
+
+      <dt>Correo</dt>
+      <dd>{{ matricula()!.estudiante?.correo ?? 'Sin correo' }}</dd>
+
+      <dt>Curso</dt>
+      <dd>{{ obtenerDescripcionCurso(matricula()!) }}</dd>
+
+      <dt>Periodo</dt>
+      <dd>{{ obtenerPeriodo(matricula()!) }}</dd>
+
+      <dt>Docente</dt>
+      <dd>{{ obtenerDocente(matricula()!) }}</dd>
+
+      <dt>Fecha de matrícula</dt>
+      <dd>{{ matricula()!.fecha_matricula | date: 'yyyy-MM-dd' }}</dd>
+
+      <dt>Estado</dt>
+      <dd>{{ obtenerEtiquetaEstado(matricula()!.estado) }}</dd>
+
+      <dt>Calificación final</dt>
+      <dd>{{ matricula()!.calificacion_final ?? 'Sin calificación' }}</dd>
+    </dl>
+  }
+</section>

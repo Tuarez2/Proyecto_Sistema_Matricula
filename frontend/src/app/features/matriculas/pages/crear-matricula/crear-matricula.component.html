@@ -1,0 +1,79 @@
+<section aria-labelledby="titulo-crear-matricula">
+  <h1 id="titulo-crear-matricula">Registrar matrícula</h1>
+
+  <a routerLink="/matriculas">Volver a matrículas</a>
+
+  @if (cargandoCatalogos()) {
+    <p role="status" aria-live="polite">Cargando catálogos...</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargandoCatalogos() && estudiantes().length === 0) {
+    <p>No hay estudiantes activos disponibles para matrícula.</p>
+  }
+
+  @if (!cargandoCatalogos() && cursos().length === 0) {
+    <p>No hay cursos abiertos disponibles para matrícula.</p>
+  }
+
+  <form [formGroup]="formularioMatricula" (ngSubmit)="guardar()" novalidate>
+    <div>
+      <label for="estudiante_id">Estudiante</label>
+      <select
+        id="estudiante_id"
+        formControlName="estudiante_id"
+        [disabled]="cargandoCatalogos() || enviando()"
+      >
+        <option value="">Seleccione un estudiante</option>
+        @for (estudiante of estudiantes(); track estudiante.id) {
+          <option [value]="estudiante.id">
+            {{ obtenerNombreEstudiante(estudiante) }}
+          </option>
+        }
+      </select>
+      @if (
+        formularioMatricula.controls.estudiante_id.touched &&
+        formularioMatricula.controls.estudiante_id.hasError('required')
+      ) {
+        <p role="alert">El estudiante es obligatorio.</p>
+      }
+    </div>
+
+    <div>
+      <label for="curso_id">Curso</label>
+      <select
+        id="curso_id"
+        formControlName="curso_id"
+        [disabled]="cargandoCatalogos() || enviando()"
+      >
+        <option value="">Seleccione un curso</option>
+        @for (curso of cursos(); track curso.id) {
+          <option [value]="curso.id">{{ obtenerDescripcionCurso(curso) }}</option>
+        }
+      </select>
+      @if (
+        formularioMatricula.controls.curso_id.touched &&
+        formularioMatricula.controls.curso_id.hasError('required')
+      ) {
+        <p role="alert">El curso es obligatorio.</p>
+      }
+    </div>
+
+    <button
+      type="submit"
+      [disabled]="cargandoCatalogos() || enviando()"
+    >
+      Guardar matrícula
+    </button>
+    <button type="button" [disabled]="enviando()" (click)="cancelar()">
+      Cancelar
+    </button>
+  </form>
+</section>
