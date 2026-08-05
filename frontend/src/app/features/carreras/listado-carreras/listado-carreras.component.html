@@ -1,1 +1,137 @@
-<section aria-labelledby="titulo-carreras"><h1 id="titulo-carreras">Carreras</h1>@if (mensajeError()) { <p role="alert">{{ mensajeError() }}</p> }<form [formGroup]="formularioCarrera" (ngSubmit)="guardarCarrera()"><h2>{{ idEdicion() ? 'Editar carrera' : 'Nueva carrera' }}</h2><label>Código <input formControlName="codigo" /></label><label>Nombre <input formControlName="nombre" /></label><label>Duración en semestres <input type="number" formControlName="duracion" min="1" /></label><label>Facultad <select formControlName="facultadId"><option value="">Seleccione</option>@for (facultad of facultades(); track facultad.id) { <option [value]="facultad.id">{{ facultad.nombre }}</option> }</select></label><button type="submit" [disabled]="cargando()">Guardar</button>@if (idEdicion()) { <button type="button" (click)="cancelarEdicion()">Cancelar</button> }</form>@if (cargando()) { <p aria-live="polite">Cargando...</p> } @else { <table><thead><tr><th>Código</th><th>Nombre</th><th>Facultad</th><th>Semestres</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>@for (carrera of carreras(); track carrera.id) { <tr><td>{{ carrera.codigo }}</td><td>{{ carrera.nombre }}</td><td>{{ nombreFacultad(carrera) }}</td><td>{{ carrera.duracion_semestres }}</td><td>{{ carrera.activo ? 'Activa' : 'Inactiva' }}</td><td><button type="button" (click)="editarCarrera(carrera)">Editar</button>@if (carrera.activo) { <button type="button" (click)="inactivarCarrera(carrera)">Inactivar</button> }</td></tr> }</tbody></table> }</section>
+<section aria-labelledby="titulo-carreras">
+  <h1 id="titulo-carreras">Carreras</h1>
+
+  @if (esAdministrador()) {
+    <a routerLink="/carreras/crear">Crear carrera</a>
+  }
+
+  <form [formGroup]="filtros" (ngSubmit)="buscarCarreras()" novalidate>
+    <div>
+      <label for="codigo">Código</label>
+      <input id="codigo" formControlName="codigo" maxlength="20" />
+      @if (
+        filtros.controls.codigo.touched &&
+        filtros.controls.codigo.hasError('maxlength')
+      ) {
+        <p role="alert">El código no puede superar 20 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="nombre">Nombre</label>
+      <input id="nombre" formControlName="nombre" maxlength="150" />
+      @if (
+        filtros.controls.nombre.touched &&
+        filtros.controls.nombre.hasError('maxlength')
+      ) {
+        <p role="alert">El nombre no puede superar 150 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="facultad_id">Facultad</label>
+      <select
+        id="facultad_id"
+        formControlName="facultad_id"
+        [attr.disabled]="cargandoFacultades() ? '' : null"
+      >
+        <option value="">Todas las facultades</option>
+        @for (facultad of facultades(); track facultad.id) {
+          <option [value]="facultad.id">
+            {{ facultad.codigo }} - {{ facultad.nombre }}
+            {{ facultad.activo ? '' : '(inactiva)' }}
+          </option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label for="activo">Estado</label>
+      <select id="activo" formControlName="activo">
+        <option value="">Todos</option>
+        <option value="true">Activas</option>
+        <option value="false">Inactivas</option>
+      </select>
+    </div>
+
+    <button type="submit" [disabled]="cargando()">Buscar</button>
+    <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (cargando()) {
+    <p role="status" aria-live="polite">Consultando carreras...</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && !mensajeError() && carrerasFiltradas().length === 0) {
+    <p>No se encontraron carreras.</p>
+  }
+
+  @if (carrerasPagina().length > 0) {
+    <table>
+      <caption>Listado de carreras</caption>
+      <thead>
+        <tr>
+          <th scope="col">Código</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Facultad</th>
+          <th scope="col">Semestres</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Fecha de creación</th>
+          <th scope="col">Detalle</th>
+          @if (esAdministrador()) {
+            <th scope="col">Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (carrera of carrerasPagina(); track carrera.id) {
+          <tr>
+            <td>{{ carrera.codigo }}</td>
+            <td>{{ carrera.nombre }}</td>
+            <td>{{ obtenerNombreFacultad(carrera) }}</td>
+            <td>{{ carrera.duracion_semestres }}</td>
+            <td>{{ obtenerEtiquetaEstado(carrera) }}</td>
+            <td>
+              {{ carrera.created_at ? (carrera.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
+            </td>
+            <td>
+              <a [routerLink]="['/carreras', carrera.id]">Ver</a>
+            </td>
+            @if (esAdministrador()) {
+              <td>
+                <a [routerLink]="['/carreras/editar', carrera.id]">Editar</a>
+                @if (carrera.activo) {
+                  <button
+                    type="button"
+                    [disabled]="carreraProcesando() !== null"
+                    (click)="inactivarCarrera(carrera)"
+                  >
+                    Inactivar
+                  </button>
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalCarreras()"
+    [deshabilitado]="cargando()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>

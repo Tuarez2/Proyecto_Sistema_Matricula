@@ -1,0 +1,99 @@
+<section aria-labelledby="titulo-detalle-carrera">
+  <h1 id="titulo-detalle-carrera">Detalle de carrera</h1>
+
+  @if (cargando()) {
+    <p role="status" aria-live="polite">Consultando carrera...</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (carrera(); as carreraActual) {
+    <dl>
+      <dt>Código</dt>
+      <dd>{{ carreraActual.codigo }}</dd>
+
+      <dt>Nombre</dt>
+      <dd>{{ carreraActual.nombre }}</dd>
+
+      <dt>Facultad</dt>
+      <dd>{{ obtenerNombreFacultad(carreraActual.facultad) }}</dd>
+
+      <dt>Duración</dt>
+      <dd>{{ carreraActual.duracion_semestres }} semestres</dd>
+
+      <dt>Estado</dt>
+      <dd>{{ obtenerEtiquetaEstado(carreraActual) }}</dd>
+
+      <dt>Fecha de creación</dt>
+      <dd>
+        {{ carreraActual.created_at ? (carreraActual.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
+      </dd>
+    </dl>
+
+    <nav aria-label="Acciones de carrera">
+      <a routerLink="/carreras">Volver al listado</a>
+      @if (esAdministrador()) {
+        <a [routerLink]="['/carreras/editar', carreraActual.id]">Editar</a>
+      }
+    </nav>
+
+    <h2>Asignaturas asociadas</h2>
+    @if ((carreraActual.asignaturas ?? []).length === 0) {
+      <p>No hay asignaturas asociadas a esta carrera.</p>
+    } @else {
+      <table>
+        <caption>Asignaturas de la carrera</caption>
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Créditos</th>
+            <th scope="col">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (asignatura of carreraActual.asignaturas ?? []; track asignatura.id) {
+            <tr>
+              <td>{{ asignatura.codigo }}</td>
+              <td>{{ asignatura.nombre }}</td>
+              <td>{{ asignatura.creditos ?? 'Sin créditos' }}</td>
+              <td>{{ asignatura.activo ? 'Activa' : 'Inactiva' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    <h2>Estudiantes asociados</h2>
+    @if ((carreraActual.estudiantes ?? []).length === 0) {
+      <p>No hay estudiantes asociados a esta carrera.</p>
+    } @else {
+      <table>
+        <caption>Estudiantes de la carrera</caption>
+        <thead>
+          <tr>
+            <th scope="col">Identificación</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Estado académico</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (estudiante of carreraActual.estudiantes ?? []; track estudiante.id) {
+            <tr>
+              <td>{{ estudiante.identificacion ?? 'Sin identificación' }}</td>
+              <td>
+                {{ estudiante.nombres ?? 'Sin nombres' }}
+                {{ estudiante.apellidos ?? '' }}
+              </td>
+              <td>{{ estudiante.estado_academico ?? 'Sin estado' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  } @else if (!cargando() && !mensajeError()) {
+    <p>No se encontró información de la carrera.</p>
+  }
+</section>
