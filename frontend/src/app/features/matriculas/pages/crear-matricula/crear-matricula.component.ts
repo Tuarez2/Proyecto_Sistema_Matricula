@@ -49,12 +49,12 @@ export class CrearMatriculaComponent implements OnInit {
     });
   }
 
-  private cargarCursos(): void {
-    this.cursosService.getCursos({ estado: 'ACTIVO' }).subscribe({
-      next: (data) => this.cursos = data,
-      error: (err) => console.error('Error al cargar cursos', err)
-    });
-  }
+ private cargarCursos(): void {
+  this.cursosService.getCursos({ estado: 'ACTIVO' }).subscribe({
+    next: (data: Curso[]) => this.cursos = data,
+    error: (error: any) => console.error('Error al cargar cursos', error)
+  });
+}
 
   onCheckboxChange(e: any): void {
     const checkArray: FormArray = this.form.get('cursosSeleccionados') as FormArray;
