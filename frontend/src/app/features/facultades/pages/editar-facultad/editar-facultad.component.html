@@ -1,0 +1,74 @@
+<section aria-labelledby="titulo-editar-facultad">
+  <h1 id="titulo-editar-facultad">Editar facultad</h1>
+
+  <a routerLink="/facultades">Volver a facultades</a>
+
+  @if (cargando()) {
+    <p role="status" aria-live="polite">Consultando facultad...</p>
+  }
+
+  @if (mensajeExito()) {
+    <p role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  <form [formGroup]="formularioFacultad" (ngSubmit)="guardarFacultad()" novalidate>
+    <div>
+      <label for="codigo">Código</label>
+      <input
+        id="codigo"
+        formControlName="codigo"
+        maxlength="20"
+        [disabled]="cargando() || enviando()"
+      />
+      @if (
+        formularioFacultad.controls.codigo.touched &&
+        formularioFacultad.controls.codigo.hasError('required')
+      ) {
+        <p role="alert">El código es obligatorio.</p>
+      }
+      @if (
+        formularioFacultad.controls.codigo.touched &&
+        formularioFacultad.controls.codigo.hasError('maxlength')
+      ) {
+        <p role="alert">El código no puede superar 20 caracteres.</p>
+      }
+    </div>
+
+    <div>
+      <label for="nombre">Nombre</label>
+      <input
+        id="nombre"
+        formControlName="nombre"
+        maxlength="120"
+        [disabled]="cargando() || enviando()"
+      />
+      @if (
+        formularioFacultad.controls.nombre.touched &&
+        formularioFacultad.controls.nombre.hasError('required')
+      ) {
+        <p role="alert">El nombre es obligatorio.</p>
+      }
+      @if (
+        formularioFacultad.controls.nombre.touched &&
+        formularioFacultad.controls.nombre.hasError('maxlength')
+      ) {
+        <p role="alert">El nombre no puede superar 120 caracteres.</p>
+      }
+    </div>
+
+    @if (facultad()) {
+      <p>Estado actual: {{ facultad()!.activo ? 'Activa' : 'Inactiva' }}</p>
+    }
+
+    <button type="submit" [disabled]="cargando() || enviando()">
+      Guardar cambios
+    </button>
+    <button type="button" [disabled]="enviando()" (click)="cancelar()">
+      Cancelar
+    </button>
+  </form>
+</section>

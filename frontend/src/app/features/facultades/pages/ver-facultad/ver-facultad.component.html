@@ -1,0 +1,56 @@
+<section aria-labelledby="titulo-ver-facultad">
+  <h1 id="titulo-ver-facultad">Detalle de facultad</h1>
+
+  <a routerLink="/facultades">Volver a facultades</a>
+
+  @if (cargando()) {
+    <p role="status" aria-live="polite">Consultando facultad...</p>
+  }
+
+  @if (mensajeError()) {
+    <p role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && facultad()) {
+    <dl>
+      <dt>Código</dt>
+      <dd>{{ facultad()!.codigo }}</dd>
+
+      <dt>Nombre</dt>
+      <dd>{{ facultad()!.nombre }}</dd>
+
+      <dt>Estado</dt>
+      <dd>{{ obtenerEtiquetaEstado(facultad()!) }}</dd>
+
+      <dt>Fecha de creación</dt>
+      <dd>{{ facultad()!.created_at ? (facultad()!.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}</dd>
+    </dl>
+
+    <h2>Carreras asociadas</h2>
+    @if ((facultad()!.carreras ?? []).length === 0) {
+      <p>No hay carreras asociadas a esta facultad.</p>
+    } @else {
+      <table>
+        <caption>Carreras asociadas a la facultad</caption>
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Semestres</th>
+            <th scope="col">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (carrera of facultad()!.carreras ?? []; track carrera.id) {
+            <tr>
+              <td>{{ carrera.codigo }}</td>
+              <td>{{ carrera.nombre }}</td>
+              <td>{{ carrera.duracion_semestres }}</td>
+              <td>{{ carrera.activo ? 'Activa' : 'Inactiva' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+</section>
