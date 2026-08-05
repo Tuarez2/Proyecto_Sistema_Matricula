@@ -13,13 +13,13 @@ import authenticate from '../middlewares/authenticate.js';
 import authorizeRoles from '../middlewares/authorizeRoles.js';
 import validarSolicitud from '../middlewares/validateRequest.js';
 import { validarCarreraId, validarListadoAsignaturasPorCarrera } from '../validators/carreraAsignatura.validator.js';
-import { validarCreacionCarrera, validarIdParam, validarActualizacionCarrera } from '../validators/carrera.validator.js';
+import { validarCreacionCarrera, validarIdParam, validarActualizacionCarrera, validarListadoCarreras } from '../validators/carrera.validator.js';
 
 const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 
 router.use(authenticate);
-router.get('/', obtenerCarreras);
+router.get('/', validarListadoCarreras, validarSolicitud, obtenerCarreras);
 router.get('/:carreraId/asignaturas', validarCarreraId, validarListadoAsignaturasPorCarrera, validarSolicitud, obtenerAsignaturasPorCarrera);
 router.get('/:id', validarIdParam, validarSolicitud, obtenerCarreraPorId);
 router.post('/', adminOnly, validarCreacionCarrera, validarSolicitud, crearCarrera);

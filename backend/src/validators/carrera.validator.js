@@ -1,8 +1,21 @@
-import { body } from 'express-validator';
+import { body, query } from 'express-validator';
 
+import ApiError from '../utils/ApiError.js';
 import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
 
 const camposPermitidos = ['codigo', 'nombre', 'duracion_semestres', 'facultad_id', 'activo'];
+const camposListado = ['codigo', 'nombre', 'facultad_id', 'activo', 'page', 'limit'];
+
+const validarFiltrosPermitidos = (camposPermitidosListado) => (req, res, next) => {
+  const campos = Object.keys(req.query ?? {});
+  const camposDesconocidos = campos.filter((campo) => !camposPermitidosListado.includes(campo));
+
+  if (camposDesconocidos.length > 0) {
+    return next(new ApiError(400, 'Existen filtros no permitidos en la solicitud.', 'UNKNOWN_QUERY_FIELDS', camposDesconocidos));
+  }
+
+  return next();
+};
 
 const reglas = [
   body('codigo').optional().isLength({ min: 1, max: 20 }).withMessage('El codigo es invalido.'),
@@ -27,10 +40,39 @@ export const validarCreacionCarrera = [
 
 export const validarActualizacionCarrera = [validarCamposPermitidos(camposPermitidos, { requireAtLeastOne: true }), ...reglas];
 
+export const validarListadoCarreras = [
+  validarFiltrosPermitidos(camposListado),
+  query('codigo')
+    .optional()
+    .isString()
+    .withMessage('El filtro codigo debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 20 })
+    .withMessage('El filtro codigo tiene una longitud invalida.'),
+  query('nombre')
+    .optional()
+    .isString()
+    .withMessage('El filtro nombre debe ser texto.')
+    .bail()
+    .trim()
+    .isLength({ min: 1, max: 150 })
+    .withMessage('El filtro nombre tiene una longitud invalida.'),
+  query('facultad_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('El filtro facultad debe ser un entero positivo.')
+    .toInt(),
+  query('activo').optional().isBoolean().withMessage('El filtro activo debe ser booleano.').toBoolean(),
+  query('page').optional().isInt({ min: 1 }).withMessage('La pagina debe ser un entero positivo.').toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('El limite debe estar entre 1 y 100.').toInt()
+];
+
 export { validarIdParam };
 
 export default {
   validarCreacionCarrera,
   validarActualizacionCarrera,
+  validarListadoCarreras,
   validarIdParam
 };

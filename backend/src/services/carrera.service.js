@@ -1,8 +1,14 @@
+import { Op } from 'sequelize';
+
 import { Carrera, Facultad } from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
+import { normalizarPaginacion } from '../utils/pagination.js';
 
 const camposPermitidos = ['codigo', 'nombre', 'duracion_semestres', 'facultad_id', 'activo'];
 const inclusiones = [{ association: 'facultad' }, { association: 'asignaturas' }, { association: 'estudiantes' }];
+const inclusionesListado = [{ association: 'facultad' }];
+const atributosCarrera = ['id', 'codigo', 'nombre', 'duracion_semestres', 'facultad_id', 'activo', 'created_at', 'updated_at'];
+const atributosFacultad = ['id', 'codigo', 'nombre', 'activo'];
 
 const seleccionarDatosPermitidos = (cuerpoSolicitud) =>
   camposPermitidos.reduce((datosPermitidos, campo) => {
@@ -20,7 +26,75 @@ const asegurarFacultadExistente = async (facultadId) => {
   }
 };
 
-export const listarCarreras = async () => Carrera.findAll({ include: inclusiones });
+const construirFiltrosCarrera = (filtros = {}) => {
+  const condiciones = {};
+
+  if (filtros.codigo) {
+    condiciones.codigo = { [Op.like]: `%${filtros.codigo.trim().toUpperCase()}%` };
+  }
+
+  if (filtros.nombre) {
+    condiciones.nombre = { [Op.like]: `%${filtros.nombre.trim()}%` };
+  }
+
+  if (filtros.facultad_id !== undefined) {
+    condiciones.facultad_id = filtros.facultad_id;
+  }
+
+  if (filtros.activo !== undefined) {
+    condiciones.activo = filtros.activo;
+  }
+
+  return condiciones;
+};
+
+const sanitizarCarrera = (carrera) => {
+  const carreraPlano = typeof carrera.get === 'function' ? carrera.get({ plain: true }) : carrera;
+
+  return {
+    id: carreraPlano.id,
+    codigo: carreraPlano.codigo,
+    nombre: carreraPlano.nombre,
+    duracion_semestres: carreraPlano.duracion_semestres,
+    facultad_id: carreraPlano.facultad_id,
+    activo: carreraPlano.activo,
+    created_at: carreraPlano.created_at,
+    updated_at: carreraPlano.updated_at,
+    facultad: carreraPlano.facultad
+      ? {
+          id: carreraPlano.facultad.id,
+          codigo: carreraPlano.facultad.codigo,
+          nombre: carreraPlano.facultad.nombre,
+          activo: carreraPlano.facultad.activo
+        }
+      : null
+  };
+};
+
+export const listarCarreras = async (filtros = {}) => {
+  const { page: pagina, limit: limite, offset: desplazamiento } = normalizarPaginacion(filtros.page, filtros.limit);
+
+  const { rows: registros, count: totalRegistros } = await Carrera.findAndCountAll({
+    where: construirFiltrosCarrera(filtros),
+    attributes: atributosCarrera,
+    include: inclusionesListado,
+    distinct: true,
+    limit: limite,
+    offset: desplazamiento,
+    order: [
+      ['nombre', 'ASC'],
+      ['id', 'ASC']
+    ]
+  });
+
+  return {
+    data: registros.map(sanitizarCarrera),
+    page: pagina,
+    limit: limite,
+    total: totalRegistros,
+    totalPages: Math.ceil(totalRegistros / limite)
+  };
+};
 
 export const obtenerCarreraPorId = async (id) => {
   const carrera = await Carrera.findByPk(id, { include: inclusiones });

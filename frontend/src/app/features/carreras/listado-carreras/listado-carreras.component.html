@@ -72,11 +72,11 @@
     <p role="alert">{{ mensajeError() }}</p>
   }
 
-  @if (!cargando() && !mensajeError() && carrerasFiltradas().length === 0) {
+  @if (!cargando() && !mensajeError() && carreras().length === 0) {
     <p>No se encontraron carreras.</p>
   }
 
-  @if (carrerasPagina().length > 0) {
+  @if (carreras().length > 0) {
     <table>
       <caption>Listado de carreras</caption>
       <thead>
@@ -94,7 +94,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (carrera of carrerasPagina(); track carrera.id) {
+        @for (carrera of carreras(); track carrera.id) {
           <tr>
             <td>{{ carrera.codigo }}</td>
             <td>{{ carrera.nombre }}</td>

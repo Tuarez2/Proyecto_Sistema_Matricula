@@ -14,6 +14,7 @@ import type {
 import { FacultadesService } from '../../facultades/services/facultades.service';
 import type {
   Carrera,
+  FiltrosCarreras,
   RespuestaCambioEstadoCarrera,
   RespuestaListadoCarreras,
 } from '../models/carrera.model';
@@ -22,7 +23,9 @@ import { ListadoCarrerasComponent } from './listado-carreras.component';
 
 interface CarrerasServiceMock {
   listarCarreras: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoCarreras>>
+    typeof vi.fn<
+      (filtros?: FiltrosCarreras) => Observable<RespuestaListadoCarreras>
+    >
   >;
   inactivarCarrera: ReturnType<
     typeof vi.fn<(idCarrera: number) => Observable<RespuestaCambioEstadoCarrera>>
@@ -92,10 +95,14 @@ describe('ListadoCarrerasComponent', () => {
     }).compileComponents();
   });
 
-  it('carga carreras y facultades al iniciar', () => {
+  it('carga la primera página y las facultades al iniciar', () => {
     crearComponente();
 
     expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+    expect(carrerasService.listarCarreras).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
     expect(facultadesService.listarFacultades).toHaveBeenCalledWith({
       limite: 100,
     });
@@ -103,6 +110,153 @@ describe('ListadoCarrerasComponent', () => {
     expect(obtenerTexto()).toContain('Medicina');
     expect(obtenerTexto()).toContain('SIS - Sistemas');
     expect(obtenerTexto()).toContain('MED - Medicina');
+  });
+
+  it('usa total y totalPages de la respuesta del backend', () => {
+    carrerasService.listarCarreras.mockReturnValueOnce(
+      respuestaObservable(crearRespuestaCarreras([crearCarrera()], {
+        total: 25,
+        totalPages: 3,
+      })),
+    );
+
+    crearComponente();
+
+    expect(componente.totalCarreras()).toBe(25);
+    expect(componente.totalPaginas()).toBe(3);
+  });
+
+  it('cambia de página solicitando los datos al backend sin paginar en memoria', () => {
+    const paginaUno = crearRespuestaCarreras(
+      Array.from({ length: 10 }, (_, indice) =>
+        crearCarrera({
+          id: indice + 1,
+          codigo: `CAR${indice + 1}`,
+          nombre: `Carrera ${indice + 1}`,
+        })),
+      { page: 1, limit: 10, total: 11, totalPages: 2 },
+    );
+    const paginaDos = crearRespuestaCarreras(
+      [crearCarrera({ id: 11, codigo: 'CAR11', nombre: 'Carrera 11' })],
+      { page: 2, limit: 10, total: 11, totalPages: 2 },
+    );
+
+    carrerasService.listarCarreras
+      .mockReturnValueOnce(respuestaObservable(paginaUno))
+      .mockReturnValueOnce(respuestaObservable(paginaDos));
+
+    crearComponente();
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(2);
+    expect(carrerasService.listarCarreras).toHaveBeenLastCalledWith({
+      pagina: 2,
+      limite: 10,
+    });
+    expect(componente.paginaActual()).toBe(2);
+    expect(componente.carreras()).toHaveLength(1);
+    expect(obtenerTexto()).toContain('Carrera 11');
+  });
+
+  it('aplica filtros al backend y restablece a la página 1', () => {
+    crearComponente();
+    carrerasService.listarCarreras.mockClear();
+
+    componente.filtros.controls.codigo.setValue('SOF');
+    componente.filtros.controls.nombre.setValue('Software');
+    componente.buscarCarreras();
+    fixture.detectChanges();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+    expect(carrerasService.listarCarreras).toHaveBeenCalledWith({
+      codigo: 'SOF',
+      nombre: 'Software',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de facultad como facultad_id', () => {
+    crearComponente();
+    carrerasService.listarCarreras.mockClear();
+
+    componente.filtros.controls.facultad_id.setValue('2');
+    componente.buscarCarreras();
+    fixture.detectChanges();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledWith({
+      facultad_id: 2,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('envía el filtro de estado activo', () => {
+    crearComponente();
+    carrerasService.listarCarreras.mockClear();
+
+    componente.filtros.controls.activo.setValue('false');
+    componente.buscarCarreras();
+    fixture.detectChanges();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledWith({
+      activo: false,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('rechaza filtros inválidos sin volver a consultar la API', () => {
+    crearComponente();
+    carrerasService.listarCarreras.mockClear();
+
+    componente.filtros.controls.nombre.setValue('x'.repeat(151));
+    componente.buscarCarreras();
+    fixture.detectChanges();
+
+    expect(carrerasService.listarCarreras).not.toHaveBeenCalled();
+    expect(obtenerTexto()).toContain('Revise los filtros ingresados.');
+  });
+
+  it('limpia filtros y vuelve a consultar desde la página 1 sin filtros', () => {
+    crearComponente();
+    carrerasService.listarCarreras.mockClear();
+
+    componente.filtros.controls.nombre.setValue('Software');
+    componente.buscarCarreras();
+    carrerasService.listarCarreras.mockClear();
+
+    componente.limpiarFiltros();
+    fixture.detectChanges();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+    expect(carrerasService.listarCarreras).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
+    expect(obtenerTexto()).toContain('Software');
+    expect(obtenerTexto()).toContain('Medicina');
+  });
+
+  it('no pagina ni filtra localmente los registros devueltos por el backend', () => {
+    carrerasService.listarCarreras.mockReturnValueOnce(
+      respuestaObservable(crearRespuestaCarreras(
+        Array.from({ length: 11 }, (_, indice) =>
+          crearCarrera({
+            id: indice + 1,
+            codigo: `CAR${indice + 1}`,
+            nombre: `Carrera ${indice + 1}`,
+          })),
+        { page: 1, limit: 10, total: 11, totalPages: 2 },
+      )),
+    );
+
+    crearComponente();
+
+    expect(componente.carreras()).toHaveLength(11);
+    expect(componente.totalCarreras()).toBe(11);
+    expect(componente.totalPaginas()).toBe(2);
   });
 
   it('muestra estado vacío cuando no hay resultados', () => {
@@ -125,6 +279,19 @@ describe('ListadoCarrerasComponent', () => {
     expect(obtenerTexto()).toContain('No fue posible conectar con el servidor.');
   });
 
+  it('limpia los resultados anteriores si falla una carga posterior', () => {
+    crearComponente();
+
+    carrerasService.listarCarreras.mockReturnValueOnce(
+      errorObservable(new HttpErrorResponse({ status: 0 })),
+    );
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.carreras()).toEqual([]);
+    expect(obtenerTexto()).not.toContain('Software');
+  });
+
   it('muestra error cuando falla el catálogo de facultades', () => {
     facultadesService.listarFacultades.mockReturnValueOnce(
       errorObservable(new HttpErrorResponse({ status: 500 })),
@@ -135,68 +302,6 @@ describe('ListadoCarrerasComponent', () => {
     expect(obtenerTexto()).toContain(
       'No fue posible cargar el catálogo de facultades.',
     );
-  });
-
-  it('filtra localmente por código, nombre, facultad y estado', () => {
-    crearComponente();
-
-    componente.filtros.controls.codigo.setValue('sof');
-    componente.filtros.controls.nombre.setValue('soft');
-    componente.filtros.controls.facultad_id.setValue('2');
-    componente.filtros.controls.activo.setValue('true');
-    componente.buscarCarreras();
-    fixture.detectChanges();
-
-    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
-    expect(obtenerTexto()).toContain('Software');
-    expect(componente.carrerasPagina()).toEqual([
-      expect.objectContaining({ nombre: 'Software' }),
-    ]);
-  });
-
-  it('rechaza filtros inválidos sin volver a consultar la API', () => {
-    crearComponente();
-    carrerasService.listarCarreras.mockClear();
-
-    componente.filtros.controls.nombre.setValue('x'.repeat(151));
-    componente.buscarCarreras();
-    fixture.detectChanges();
-
-    expect(carrerasService.listarCarreras).not.toHaveBeenCalled();
-    expect(obtenerTexto()).toContain('Revise los filtros ingresados.');
-  });
-
-  it('limpia filtros y vuelve a mostrar todos los registros', () => {
-    crearComponente();
-
-    componente.filtros.controls.nombre.setValue('Software');
-    componente.buscarCarreras();
-    componente.limpiarFiltros();
-    fixture.detectChanges();
-
-    expect(obtenerTexto()).toContain('Software');
-    expect(obtenerTexto()).toContain('Medicina');
-  });
-
-  it('pagina localmente cuando el backend devuelve todos los registros', () => {
-    carrerasService.listarCarreras.mockReturnValueOnce(
-      respuestaObservable(crearRespuestaCarreras(
-        Array.from({ length: 11 }, (_, indice) =>
-          crearCarrera({
-            id: indice + 1,
-            codigo: `CAR${indice + 1}`,
-            nombre: `Carrera ${indice + 1}`,
-          }),
-        ),
-      )),
-    );
-
-    crearComponente();
-    componente.cambiarPagina(2);
-    fixture.detectChanges();
-
-    expect(componente.carrerasPagina().length).toBe(1);
-    expect(obtenerTexto()).toContain('Carrera 11');
   });
 
   it('ADMIN ve acciones administrativas', () => {
@@ -226,7 +331,7 @@ describe('ListadoCarrerasComponent', () => {
     );
   });
 
-  it('confirma antes de inactivar una carrera', () => {
+  it('confirma antes de inactivar una carrera y recarga la página actual', () => {
     const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
@@ -237,6 +342,10 @@ describe('ListadoCarrerasComponent', () => {
     expect(carrerasService.inactivarCarrera).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Carrera inactivada correctamente.');
     expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(2);
+    expect(carrerasService.listarCarreras).toHaveBeenLastCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
   });
 
   it('no inactiva si se cancela la confirmación', () => {
@@ -368,10 +477,18 @@ function crearFacultad(cambios: Partial<Facultad> = {}): Facultad {
   };
 }
 
-function crearRespuestaCarreras(carreras: Carrera[]): RespuestaListadoCarreras {
+function crearRespuestaCarreras(
+  carreras: Carrera[],
+  paginacion: Partial<RespuestaListadoCarreras> = {},
+): RespuestaListadoCarreras {
   return {
     success: true,
     data: carreras,
+    page: 1,
+    limit: 10,
+    total: carreras.length,
+    totalPages: Math.ceil(carreras.length / 10),
+    ...paginacion,
   };
 }
 

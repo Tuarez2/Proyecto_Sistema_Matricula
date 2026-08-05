@@ -4,7 +4,10 @@ import { By } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 
-import type { RespuestaCarreras } from '../../../carreras/models/carrera.model';
+import type {
+  FiltrosCarreras,
+  RespuestaCarreras,
+} from '../../../carreras/models/carrera.model';
 import { CarrerasService } from '../../../carreras/services/carreras.service';
 import { EstudianteFormComponent } from '../../components/estudiante-form/estudiante-form.component';
 import {
@@ -31,7 +34,11 @@ interface EstudiantesServiceMock {
 }
 
 interface CarrerasServiceMock {
-  listarCarreras: ReturnType<typeof vi.fn<() => Observable<RespuestaCarreras>>>;
+  listarCarreras: ReturnType<
+    typeof vi.fn<
+      (filtros?: FiltrosCarreras) => Observable<RespuestaCarreras>
+    >
+  >;
 }
 
 describe('EditarEstudianteComponent', () => {
@@ -94,6 +101,10 @@ describe('EditarEstudianteComponent', () => {
     crearComponente();
 
     expect(estudiantesService.obtenerEstudiante).toHaveBeenCalledWith(15);
+    expect(carrerasService.listarCarreras).toHaveBeenCalledWith({
+      activo: true,
+      limite: 100,
+    });
     expect(componente.estudiante()?.identificacion).toBe('1002003004');
   });
 
@@ -250,5 +261,9 @@ function crearRespuestaCarreras(): RespuestaCarreras {
         activo: true,
       },
     ],
+    page: 1,
+    limit: 100,
+    total: 1,
+    totalPages: 1,
   };
 }

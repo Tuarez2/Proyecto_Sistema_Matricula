@@ -65,16 +65,20 @@ export interface FiltrosCarreras {
   nombre?: string;
   facultad_id?: number;
   activo?: boolean;
+  pagina?: number;
+  limite?: number;
 }
 
 export interface PaginacionCarreras {
-  pagina: number;
-  limite: number;
+  page: number;
+  limit: number;
   total: number;
-  totalPaginas: number;
+  totalPages: number;
 }
 
-export type RespuestaListadoCarreras = RespuestaApi<Carrera[]>;
+export interface RespuestaListadoCarreras
+  extends RespuestaApi<Carrera[]>, PaginacionCarreras {}
+
 export type RespuestaCarreras = RespuestaListadoCarreras;
 export type RespuestaCarrera = RespuestaApi<Carrera>;
 export type RespuestaCambioEstadoCarrera = RespuestaCarrera;

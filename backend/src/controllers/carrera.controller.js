@@ -2,11 +2,15 @@ import * as carreraService from '../services/carrera.service.js';
 import manejadorAsync from '../utils/asyncHandler.js';
 
 export const obtenerCarreras = manejadorAsync(async (req, res) => {
-  const carreras = await carreraService.listarCarreras();
+  const resultado = await carreraService.listarCarreras(req.query);
 
   res.status(200).json({
     success: true,
-    data: carreras
+    data: resultado.data,
+    page: resultado.page,
+    limit: resultado.limit,
+    total: resultado.total,
+    totalPages: resultado.totalPages
   });
 });
 

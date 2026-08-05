@@ -143,7 +143,7 @@ export class GestionMallaComponent implements OnInit {
     }
 
     this.estadoCargandoCarreras.set(true);
-    this.carrerasServicio.listarCarreras()
+    this.carrerasServicio.listarCarreras({ activo: true, limite: 100 })
       .pipe(
         takeUntilDestroyed(this.destruccion),
         finalize(() => this.estadoCargandoCarreras.set(false)),

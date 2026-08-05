@@ -14,6 +14,7 @@ import type {
 import { AsignaturasService } from '../../asignaturas/services/asignaturas.service';
 import type {
   Carrera,
+  FiltrosCarreras,
   RespuestaListadoCarreras,
 } from '../../carreras/models/carrera.model';
 import { CarrerasService } from '../../carreras/services/carreras.service';
@@ -61,7 +62,9 @@ interface MallaServiceMock {
 
 interface CarrerasServiceMock {
   listarCarreras: ReturnType<
-    typeof vi.fn<() => Observable<RespuestaListadoCarreras>>
+    typeof vi.fn<
+      (filtros?: FiltrosCarreras) => Observable<RespuestaListadoCarreras>
+    >
   >;
 }
 
@@ -169,6 +172,10 @@ describe('GestionMallaComponent', () => {
     crearComponente();
 
     expect(carrerasServicio.listarCarreras).toHaveBeenCalledTimes(1);
+    expect(carrerasServicio.listarCarreras).toHaveBeenCalledWith({
+      activo: true,
+      limite: 100,
+    });
     expect(asignaturasServicio.listarAsignaturas).toHaveBeenCalledTimes(1);
     expect(componente.carreras()).toHaveLength(1);
     expect(componente.carreras()[0]?.nombre).toBe('Software');
@@ -694,7 +701,14 @@ function crearAsignatura(cambios: Partial<Asignatura> = {}): Asignatura {
 }
 
 function crearRespuestaCarreras(carreras: Carrera[]): RespuestaListadoCarreras {
-  return { success: true, data: carreras };
+  return {
+    success: true,
+    data: carreras,
+    page: 1,
+    limit: 100,
+    total: carreras.length,
+    totalPages: 1,
+  };
 }
 
 function crearRespuestaAsignaturas(

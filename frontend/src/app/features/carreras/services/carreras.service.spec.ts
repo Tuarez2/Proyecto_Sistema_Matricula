@@ -32,13 +32,117 @@ describe('CarrerasService', () => {
     controladorHttp.verify();
   });
 
-  it('listarCarreras ejecuta GET contra la API real sin parámetros inventados', async () => {
+  it('listarCarreras ejecuta GET contra la URL centralizada sin parámetros inventados', async () => {
     const promesaRespuesta = firstValueFrom(servicio.listarCarreras());
 
     const solicitud = controladorHttp.expectOne(obtenerUrlApi('carreras'));
 
     expect(solicitud.request.method).toBe('GET');
     expect(solicitud.request.params.keys()).toEqual([]);
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarCarreras envía page y limit', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarCarreras({ pagina: 2, limite: 25 }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('page')).toBe('2');
+    expect(solicitud.request.params.get('limit')).toBe('25');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarCarreras envía el filtro de código', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarCarreras({ codigo: 'SOF' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('codigo')).toBe('SOF');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarCarreras envía el filtro de nombre', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarCarreras({ nombre: 'Ingeniería' }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('nombre')).toBe('Ingeniería');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarCarreras envía el filtro de facultad como facultad_id', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarCarreras({ facultad_id: 2 }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('facultad_id')).toBe('2');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarCarreras envía el filtro de activo', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarCarreras({ activo: false }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('activo')).toBe('false');
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarCarreras omite filtros vacíos y undefined', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarCarreras({
+        codigo: '   ',
+        nombre: undefined,
+        activo: undefined,
+        facultad_id: undefined,
+        pagina: undefined,
+        limite: undefined,
+      }),
+    );
+
+    const solicitud = controladorHttp.expectOne(obtenerUrlApi('carreras'));
+
+    expect(solicitud.request.params.keys()).toEqual([]);
+    solicitud.flush(crearRespuestaListado());
+    await promesaRespuesta;
+  });
+
+  it('listarCarreras combina filtros y paginación en una sola solicitud', async () => {
+    const promesaRespuesta = firstValueFrom(
+      servicio.listarCarreras({
+        codigo: 'SOF',
+        nombre: 'Software',
+        facultad_id: 2,
+        activo: true,
+        pagina: 3,
+        limite: 50,
+      }),
+    );
+
+    const solicitud = controladorHttp.expectOne(esperarSolicitudListado);
+
+    expect(solicitud.request.params.get('codigo')).toBe('SOF');
+    expect(solicitud.request.params.get('nombre')).toBe('Software');
+    expect(solicitud.request.params.get('facultad_id')).toBe('2');
+    expect(solicitud.request.params.get('activo')).toBe('true');
+    expect(solicitud.request.params.get('page')).toBe('3');
+    expect(solicitud.request.params.get('limit')).toBe('50');
     solicitud.flush(crearRespuestaListado());
     await promesaRespuesta;
   });
@@ -118,6 +222,12 @@ describe('CarrerasService', () => {
   });
 });
 
+function esperarSolicitudListado(peticion: {
+  url: string;
+}): boolean {
+  return peticion.url === obtenerUrlApi('carreras');
+}
+
 function crearCarrera(cambios: Partial<Carrera> = {}): Carrera {
   return {
     id: 7,
@@ -144,6 +254,10 @@ function crearRespuestaListado(
   return {
     success: true,
     data: carreras,
+    page: 1,
+    limit: 10,
+    total: carreras.length,
+    totalPages: Math.ceil(carreras.length / 10),
   };
 }
 

@@ -3,7 +3,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { Observable, Subject } from 'rxjs';
 
-import type { RespuestaCarreras } from '../../../carreras/models/carrera.model';
+import type {
+  FiltrosCarreras,
+  RespuestaCarreras,
+} from '../../../carreras/models/carrera.model';
 import { CarrerasService } from '../../../carreras/services/carreras.service';
 import {
   ESTADOS_ACADEMICOS_ESTUDIANTE,
@@ -23,7 +26,11 @@ interface EstudiantesServiceMock {
 }
 
 interface CarrerasServiceMock {
-  listarCarreras: ReturnType<typeof vi.fn<() => Observable<RespuestaCarreras>>>;
+  listarCarreras: ReturnType<
+    typeof vi.fn<
+      (filtros?: FiltrosCarreras) => Observable<RespuestaCarreras>
+    >
+  >;
 }
 
 describe('CrearEstudianteComponent', () => {
@@ -71,6 +78,10 @@ describe('CrearEstudianteComponent', () => {
 
   it('carga carreras activas al iniciar', () => {
     expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+    expect(carrerasService.listarCarreras).toHaveBeenCalledWith({
+      activo: true,
+      limite: 100,
+    });
     expect(componente.carreras()).toEqual([
       expect.objectContaining({ id: 2, nombre: 'Ingeniería de Software' }),
     ]);
@@ -194,5 +205,9 @@ function crearRespuestaCarreras(): RespuestaCarreras {
         activo: false,
       },
     ],
+    page: 1,
+    limit: 100,
+    total: 2,
+    totalPages: 1,
   };
 }

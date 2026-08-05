@@ -51,6 +51,8 @@ export class ListadoCarrerasComponent implements OnInit {
   private readonly destruccion = inject(DestroyRef);
   private readonly estadoCarreras = signal<Carrera[]>([]);
   private readonly estadoFacultades = signal<Facultad[]>([]);
+  private readonly estadoTotalCarreras = signal(0);
+  private readonly estadoTotalPaginas = signal(1);
   private readonly estadoFiltrosAplicados = signal<FiltrosCarreras>({});
   private readonly estadoCargandoCarreras = signal(false);
   private readonly estadoCargandoFacultades = signal(false);
@@ -61,6 +63,8 @@ export class ListadoCarrerasComponent implements OnInit {
 
   readonly carreras = this.estadoCarreras.asReadonly();
   readonly facultades = this.estadoFacultades.asReadonly();
+  readonly totalCarreras = this.estadoTotalCarreras.asReadonly();
+  readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly cargandoCarreras = this.estadoCargandoCarreras.asReadonly();
   readonly cargandoFacultades = this.estadoCargandoFacultades.asReadonly();
   readonly mensajeError = this.estadoMensajeError.asReadonly();
@@ -75,17 +79,6 @@ export class ListadoCarrerasComponent implements OnInit {
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
   );
-  readonly carrerasFiltradas = computed(() =>
-    this.aplicarFiltros(this.carreras(), this.estadoFiltrosAplicados()),
-  );
-  readonly totalCarreras = computed(() => this.carrerasFiltradas().length);
-  readonly totalPaginas = computed(() =>
-    Math.max(Math.ceil(this.totalCarreras() / LIMITE_POR_PAGINA), 1),
-  );
-  readonly carrerasPagina = computed(() => {
-    const inicio = (this.paginaActual() - 1) * LIMITE_POR_PAGINA;
-    return this.carrerasFiltradas().slice(inicio, inicio + LIMITE_POR_PAGINA);
-  });
 
   readonly filtros = new FormGroup<ControlesFiltrosCarreras>({
     codigo: new FormControl('', {
@@ -105,28 +98,40 @@ export class ListadoCarrerasComponent implements OnInit {
     this.cargarFacultades();
   }
 
-  cargarCarreras(): void {
-    if (this.cargandoCarreras()) {
+  buscarCarreras(): void {
+    if (this.filtros.invalid) {
+      this.filtros.markAllAsTouched();
+      this.estadoMensajeError.set('Revise los filtros ingresados.');
       return;
     }
 
-    this.estadoCargandoCarreras.set(true);
     this.estadoMensajeError.set(null);
-    this.servicio.listarCarreras()
-      .pipe(
-        takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoCargandoCarreras.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoCarreras.set(respuesta.data ?? []);
-          this.ajustarPaginaActual();
-        },
-        error: (error: unknown) => {
-          this.estadoCarreras.set([]);
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
+    this.estadoPaginaActual.set(1);
+    this.estadoFiltrosAplicados.set(this.obtenerFiltrosActuales());
+    this.cargarCarreras();
+  }
+
+  limpiarFiltros(): void {
+    this.filtros.reset({
+      codigo: '',
+      nombre: '',
+      facultad_id: '',
+      activo: '',
+    });
+    this.estadoMensajeError.set(null);
+    this.estadoPaginaActual.set(1);
+    this.estadoFiltrosAplicados.set({});
+    this.cargarCarreras();
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina === this.paginaActual()) {
+      return;
+    }
+
+    this.estadoPaginaActual.set(pagina);
+    this.estadoMensajeError.set(null);
+    this.cargarCarreras();
   }
 
   cargarFacultades(): void {
@@ -153,36 +158,36 @@ export class ListadoCarrerasComponent implements OnInit {
       });
   }
 
-  buscarCarreras(): void {
-    if (this.filtros.invalid) {
-      this.filtros.markAllAsTouched();
-      this.estadoMensajeError.set('Revise los filtros ingresados.');
+  private cargarCarreras(): void {
+    if (this.cargandoCarreras()) {
       return;
     }
 
+    this.estadoCargandoCarreras.set(true);
     this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
-    this.estadoFiltrosAplicados.set(this.obtenerFiltrosActuales());
-  }
-
-  limpiarFiltros(): void {
-    this.filtros.reset({
-      codigo: '',
-      nombre: '',
-      facultad_id: '',
-      activo: '',
-    });
-    this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
-    this.estadoFiltrosAplicados.set({});
-  }
-
-  cambiarPagina(pagina: number): void {
-    if (pagina === this.paginaActual()) {
-      return;
-    }
-
-    this.estadoPaginaActual.set(pagina);
+    this.servicio.listarCarreras({
+      ...this.estadoFiltrosAplicados(),
+      pagina: this.estadoPaginaActual(),
+      limite: LIMITE_POR_PAGINA,
+    })
+      .pipe(
+        takeUntilDestroyed(this.destruccion),
+        finalize(() => this.estadoCargandoCarreras.set(false)),
+      )
+      .subscribe({
+        next: (respuesta) => {
+          this.estadoCarreras.set(respuesta.data ?? []);
+          this.estadoTotalCarreras.set(respuesta.total);
+          this.estadoTotalPaginas.set(respuesta.totalPages);
+          this.estadoPaginaActual.set(respuesta.page);
+        },
+        error: (error: unknown) => {
+          this.estadoCarreras.set([]);
+          this.estadoTotalCarreras.set(0);
+          this.estadoTotalPaginas.set(1);
+          this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        },
+      });
   }
 
   inactivarCarrera(carrera: Carrera): void {
@@ -266,35 +271,6 @@ export class ListadoCarrerasComponent implements OnInit {
     }
 
     return undefined;
-  }
-
-  private aplicarFiltros(
-    carreras: Carrera[],
-    filtros: FiltrosCarreras,
-  ): Carrera[] {
-    return carreras.filter((carrera) => {
-      const coincideCodigo = !filtros.codigo
-        || carrera.codigo.toLowerCase().includes(filtros.codigo.toLowerCase());
-      const coincideNombre = !filtros.nombre
-        || carrera.nombre.toLowerCase().includes(filtros.nombre.toLowerCase());
-      const coincideFacultad = filtros.facultad_id === undefined
-        || carrera.facultad_id === filtros.facultad_id;
-      const coincideEstado = filtros.activo === undefined
-        || carrera.activo === filtros.activo;
-
-      return (
-        coincideCodigo &&
-        coincideNombre &&
-        coincideFacultad &&
-        coincideEstado
-      );
-    });
-  }
-
-  private ajustarPaginaActual(): void {
-    if (this.paginaActual() > this.totalPaginas()) {
-      this.estadoPaginaActual.set(this.totalPaginas());
-    }
   }
 
   private obtenerMensajeError(error: unknown): string {

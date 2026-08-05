@@ -120,7 +120,7 @@ export class EditarEstudianteComponent implements OnInit {
     }
 
     this.estadoCargandoCarreras.set(true);
-    this.carrerasService.listarCarreras()
+    this.carrerasService.listarCarreras({ activo: true, limite: 100 })
       .pipe(
         takeUntilDestroyed(this.referenciaDestruccion),
         finalize(() => this.estadoCargandoCarreras.set(false)),
