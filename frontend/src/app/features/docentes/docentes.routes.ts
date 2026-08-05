@@ -14,3 +14,4 @@ export const DOCENTES_ROUTES: Routes = [
     loadComponent: () => import('./pages/editar-docente/editar-docente.component').then(m => m.EditarDocenteComponent)
   }
 ];
+
