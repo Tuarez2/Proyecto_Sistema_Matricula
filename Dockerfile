@@ -21,4 +21,4 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["sh", "-c", "cd backend && npm run db:migrate && npm run db:seed:all && node src/server.js"]
+CMD ["sh", "-c", "cd backend && npm run db:migrate && npm run db:seed && node src/server.js"]
