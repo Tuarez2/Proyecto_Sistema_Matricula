@@ -1,6 +1,6 @@
 .renovar-matricula__pasos {
   list-style: none;
-  margin: 0 0 var(--espacio-5);
+  margin: 0;
   padding: 0;
   display: flex;
   gap: var(--espacio-2);
@@ -10,6 +10,7 @@
 .renovar-matricula__pasos li {
   display: inline-flex;
   align-items: center;
+  gap: 0.4rem;
   padding: 0.4rem 0.9rem;
   border-radius: var(--radius-pill);
   background: var(--color-surface-secondary);
@@ -19,10 +20,45 @@
   font-size: var(--font-size-sm);
 }
 
+.renovar-matricula__paso-indice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
 .renovar-matricula__paso--activo {
   background: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
   color: var(--color-surface) !important;
+}
+
+.renovar-matricula__paso--activo .renovar-matricula__paso-indice {
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.renovar-matricula__paso--completado {
+  border-color: var(--color-success) !important;
+  color: var(--color-success) !important;
+}
+
+.renovar-matricula__paso--completado .renovar-matricula__paso-indice {
+  background: var(--color-success);
+  color: var(--color-surface);
+}
+
+.renovar-matricula__progreso {
+  margin: var(--espacio-2) 0 var(--espacio-5);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .renovar-matricula__bloque {

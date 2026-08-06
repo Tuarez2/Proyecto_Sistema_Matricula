@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { CODIGOS_ROL } from '../../core/config/codigos-rol';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
+import { FechaPipe } from '../../shared/pipes/fecha.pipe';
 
 interface ModuloAcceso {
   ruta: string;
@@ -14,7 +15,7 @@ interface ModuloAcceso {
 
 @Component({
   selector: 'app-inicio',
-  imports: [RouterLink],
+  imports: [RouterLink, FechaPipe],
   templateUrl: './inicio.component.html',
   styleUrl: './inicio.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +57,7 @@ export class InicioComponent {
   readonly esAdministrador = computed(
     () => this.usuarioActual?.()?.rol?.codigo === CODIGOS_ROL.ADMIN,
   );
+  readonly fechaHoy = new Date();
 
   private readonly modulos: ModuloAcceso[] = [
     { ruta: '/periodos-academicos', titulo: 'Periodos académicos', descripcion: 'Gestiona los periodos del calendario académico.', icono: 'M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z' },

@@ -131,6 +131,10 @@
   }
 
   @if (matriculas().length > 0) {
+    <p class="listar-matriculas__conteo" role="status">
+      Se encontraron <strong>{{ totalMatriculas() }}</strong>
+      {{ totalMatriculas() === 1 ? 'matrícula' : 'matrículas' }}
+    </p>
     <div class="table-wrap">
       <table>
         <caption>Listado de matrículas</caption>
@@ -166,7 +170,7 @@
               <td>{{ obtenerDescripcionCurso(matricula) }}</td>
               <td>{{ obtenerPeriodo(matricula) }}</td>
               <td>{{ obtenerDocente(matricula) }}</td>
-              <td>{{ matricula.fecha_matricula | date: 'yyyy-MM-dd' }}</td>
+              <td>{{ matricula.fecha_matricula | fecha }}</td>
               <td>
                 <span class="estado-badge {{ obtenerClaseEstado(matricula.estado) }}">
                   {{ obtenerEtiquetaEstado(matricula.estado) }}

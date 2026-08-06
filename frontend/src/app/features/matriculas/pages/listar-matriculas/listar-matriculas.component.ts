@@ -23,6 +23,7 @@ import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
 import {
   ESTADOS_MATRICULA,
   type EstadoMatricula,
@@ -52,8 +53,9 @@ const LIMITE_POR_PAGINA = 10;
 @Component({
   selector: 'app-listar-matriculas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe],
   templateUrl: './listar-matriculas.component.html',
+  styleUrl: './listar-matriculas.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListarMatriculasComponent implements OnInit {

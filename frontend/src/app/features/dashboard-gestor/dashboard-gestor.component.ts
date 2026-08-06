@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import type { ErrorApi } from '../../core/models/respuesta-api.model';
+import { FechaPipe } from '../../shared/pipes/fecha.pipe';
 import {
   ESTADOS_MATRICULA,
   type EstadoMatricula,
@@ -24,7 +25,7 @@ import { MatriculasService } from '../matriculas/services/matriculas.service';
 @Component({
   selector: 'app-dashboard-gestor',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FechaPipe],
   templateUrl: './dashboard-gestor.component.html',
   styleUrl: './dashboard-gestor.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -91,6 +92,25 @@ export class DashboardGestorComponent implements OnInit {
     };
 
     return etiquetas[estado];
+  }
+
+  diasRestantesDeMatricula(resumen: ResumenMatriculas): number | null {
+    if (!resumen.ventana_matricula_abierta || !resumen.periodo_actual?.fecha_fin_matricula) {
+      return null;
+    }
+
+    const fin = new Date(resumen.periodo_actual.fecha_fin_matricula);
+    const hoy = new Date();
+
+    if (Number.isNaN(fin.getTime())) {
+      return null;
+    }
+
+    const milisegundosPorDia = 1000 * 60 * 60 * 24;
+    return Math.max(
+      0,
+      Math.round((fin.getTime() - hoy.getTime()) / milisegundosPorDia),
+    );
   }
 
   private obtenerMensajeError(error: unknown): string {

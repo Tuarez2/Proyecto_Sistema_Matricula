@@ -13,13 +13,26 @@
 .rol-inicio {
   display: inline-flex;
   align-items: center;
-  margin: 0 0 var(--espacio-3);
+  margin: 0;
   border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
   color: var(--color-primary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   padding: 0.3rem 0.8rem;
+}
+
+.saludo-inicio__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-3);
+  margin: 0 0 var(--espacio-3);
+}
+
+.fecha-inicio {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .descripcion-inicio {

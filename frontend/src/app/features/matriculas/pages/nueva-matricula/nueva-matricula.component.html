@@ -8,19 +8,39 @@
   </header>
 
   <ol class="nueva-matricula__pasos">
-    <li [class.nueva-matricula__paso--activo]="pasoActual() === 1">
-      1. Estudiante
+    <li
+      [class.nueva-matricula__paso--activo]="pasoActual() === 1"
+      [class.nueva-matricula__paso--completado]="pasoActual() > 1"
+    >
+      <span class="nueva-matricula__paso-indice" aria-hidden="true">1</span>
+      <span class="nueva-matricula__paso-nombre">Estudiante</span>
     </li>
-    <li [class.nueva-matricula__paso--activo]="pasoActual() === 2">
-      2. Periodo
+    <li
+      [class.nueva-matricula__paso--activo]="pasoActual() === 2"
+      [class.nueva-matricula__paso--completado]="pasoActual() > 2"
+    >
+      <span class="nueva-matricula__paso-indice" aria-hidden="true">2</span>
+      <span class="nueva-matricula__paso-nombre">Periodo</span>
     </li>
-    <li [class.nueva-matricula__paso--activo]="pasoActual() === 3">
-      3. Cursos
+    <li
+      [class.nueva-matricula__paso--activo]="pasoActual() === 3"
+      [class.nueva-matricula__paso--completado]="pasoActual() > 3"
+    >
+      <span class="nueva-matricula__paso-indice" aria-hidden="true">3</span>
+      <span class="nueva-matricula__paso-nombre">Cursos</span>
     </li>
-    <li [class.nueva-matricula__paso--activo]="pasoActual() === 4">
-      4. Confirmar
+    <li
+      [class.nueva-matricula__paso--activo]="pasoActual() === 4"
+      [class.nueva-matricula__paso--completado]="pasoActual() > 4"
+    >
+      <span class="nueva-matricula__paso-indice" aria-hidden="true">4</span>
+      <span class="nueva-matricula__paso-nombre">Confirmar</span>
     </li>
   </ol>
+
+  <p class="nueva-matricula__progreso" aria-live="polite">
+    Paso {{ pasoActual() }} de 4
+  </p>
 
   @if (mensajeError()) {
     <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
@@ -259,7 +279,7 @@
           </div>
           <div class="comprobante__meta">
             <p>Matrícula registrada</p>
-            <p>Fecha: {{ resultado.matriculas[0]?.fecha_matricula | date: 'yyyy-MM-dd' }}</p>
+            <p>Fecha: {{ resultado.matriculas[0]?.fecha_matricula | fecha }}</p>
           </div>
         </header>
 

@@ -1,8 +1,8 @@
-<section class="page" aria-labelledby="titulo-estudiantes">
+<section class="page listar-estudiantes" aria-labelledby="titulo-estudiantes">
   <header class="page-header">
     <div>
       <h1 id="titulo-estudiantes">Estudiantes</h1>
-      <p class="page-subtitle">Consulta y administra los estudiantes.</p>
+      <p class="page-subtitle">Busca, consulta y administra el registro de estudiantes.</p>
     </div>
     @if (esAdministrador()) {
       <div class="page-actions">
@@ -150,11 +150,19 @@
 
   @if (!cargandoEstudiantes() && !mensajeError() && estudiantes().length === 0) {
     <div class="empty-state">
-      <p>No se encontraron estudiantes.</p>
+      <h2>No se encontraron estudiantes.</h2>
+      <p>No hay resultados con los criterios indicados. Ajusta los filtros o regístralo nuevamente.</p>
     </div>
   }
 
   @if (estudiantes().length > 0) {
+    <div class="listar-estudiantes__filtros-barra">
+      <p class="listar-estudiantes__conteo" role="status">
+        Se encontraron <span class="listar-estudiantes__total">{{ totalEstudiantes() }}</span>
+        {{ totalEstudiantes() === 1 ? 'estudiante' : 'estudiantes' }}
+      </p>
+    </div>
+
     <div class="table-wrap">
       <table>
         <caption>Listado de estudiantes</caption>
@@ -163,7 +171,6 @@
             <th scope="col">Matrícula</th>
             <th scope="col">Identificación</th>
             <th scope="col">Nombre completo</th>
-            <th scope="col">Correo</th>
             <th scope="col">Carrera</th>
             <th scope="col">Nivel</th>
             <th scope="col">Estado académico</th>
@@ -176,10 +183,13 @@
               <td>{{ estudiante.numero_matricula }}</td>
               <td>{{ estudiante.identificacion }}</td>
               <td>{{ obtenerNombreCompleto(estudiante) }}</td>
-              <td>{{ estudiante.correo }}</td>
               <td>{{ estudiante.carrera?.nombre ?? 'Sin carrera' }}</td>
               <td>{{ estudiante.nivel_academico_actual }}</td>
-              <td>{{ obtenerEtiquetaEstado(estudiante.estado_academico) }}</td>
+              <td>
+                <span class="estado-badge estado-badge--info">
+                  {{ obtenerEtiquetaEstado(estudiante.estado_academico) }}
+                </span>
+              </td>
               <td>
                 <div class="row-actions">
                   <a class="btn btn-sm btn-neutral" [routerLink]="['/estudiantes', estudiante.id]">

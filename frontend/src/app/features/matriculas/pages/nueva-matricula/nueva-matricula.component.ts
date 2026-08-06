@@ -20,6 +20,7 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
+import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
 import {
   ESTADOS_PERIODO_ACADEMICO,
   type PeriodoAcademico,
@@ -45,7 +46,7 @@ const PASO_CONFIRMACION = 4;
 @Component({
   selector: 'app-nueva-matricula',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FechaPipe],
   templateUrl: './nueva-matricula.component.html',
   styleUrl: './nueva-matricula.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

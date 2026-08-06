@@ -44,7 +44,7 @@
         </div>
         <div class="comprobante__meta">
           <p>Comprobante #{{ matricula.id }}</p>
-          <p>Fecha: {{ matricula.fecha_matricula | date: 'yyyy-MM-dd' }}</p>
+          <p>Fecha: {{ matricula.fecha_matricula | fecha }}</p>
           <p>Generado: {{ fechaHoy | date: 'yyyy-MM-dd HH:mm' }}</p>
         </div>
       </header>
