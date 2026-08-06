@@ -18,11 +18,12 @@ import type {
   SolicitudActualizarDocente,
 } from '../../models/docente.model';
 import { DocentesService } from '../../services/docentes.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 @Component({
   selector: 'app-editar-docente',
   standalone: true,
-  imports: [DocenteFormComponent],
+  imports: [DocenteFormComponent, BotonAtrasComponent],
   templateUrl: './editar-docente.component.html',
   styleUrl: './editar-docente.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

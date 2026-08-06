@@ -375,7 +375,7 @@ export const actualizarUsuario = async (id, datos, usuarioAutenticadoId) =>
 
     if (
       Object.prototype.hasOwnProperty.call(datosPermitidos, 'estado') &&
-      usuario.estado !== ESTADO_ADMIN_ACTIVO
+      datosPermitidos.estado !== ESTADO_ADMIN_ACTIVO
     ) {
       await revocarSesionesUsuario(usuario.id, { transaction });
     }

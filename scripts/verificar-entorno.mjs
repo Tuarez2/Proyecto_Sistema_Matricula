@@ -2,9 +2,9 @@ import { existsSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import process from 'node:process';
 
-const VERSION_MINIMA = '24.15.0';
-const VERSION_MAXIMA_EXCLUSIVA = '25.0.0';
-const RANGO_REQUERIDO = '>=24.15.0 <25';
+const VERSION_MINIMA = '25.0.0';
+const VERSION_MAXIMA_INCLUSIVA = '25.99.99';
+const RANGO_REQUERIDO = '>=25.0.0 <=25.99.99';
 
 function obtenerVersionNode() {
   return process.version;
@@ -46,18 +46,20 @@ function mostrarError(mensaje, detalles = []) {
 
 function verificarVersionNode() {
   const versionDetectada = obtenerVersionNode();
-  const [mayor] = normalizarVersion(versionDetectada);
-  const cumpleMayor = mayor === 24;
-  const cumpleMinima = compararVersiones(versionDetectada, VERSION_MINIMA) >= 0;
-  const cumpleMaxima = compararVersiones(versionDetectada, VERSION_MAXIMA_EXCLUSIVA) < 0;
+  const normalizada = normalizarVersion(versionDetectada);
+  const [mayor, minor, patch] = normalizada;
 
-  if (!cumpleMayor || !cumpleMinima || !cumpleMaxima) {
-    mostrarError('Version de Node no compatible.', [
-      `Detectada: ${versionDetectada}`,
-      `Requerida: ${RANGO_REQUERIDO}`,
-      'Ejecuta: nvm use',
-    ]);
+  const cumpleMinima = compararVersiones(versionDetectada, VERSION_MINIMA) >= 0;
+  const cumpleMaxima = compararVersiones(versionDetectada, VERSION_MAXIMA_INCLUSIVA) <= 0;
+
+  if (cumpleMinima && cumpleMaxima) {
+    return;
   }
+
+  mostrarError('Version de Node no compatible.', [
+    `Detectada: ${versionDetectada}`,
+    `Requerida: ${RANGO_REQUERIDO}`,
+  ]);
 }
 
 function verificarArchivo(rutaRelativa) {

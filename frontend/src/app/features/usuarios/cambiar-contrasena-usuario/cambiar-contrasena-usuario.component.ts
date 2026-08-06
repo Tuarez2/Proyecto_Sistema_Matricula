@@ -26,12 +26,14 @@ import type {
   Usuario,
 } from '../models/usuario.model';
 import { UsuariosService } from '../services/usuarios.service';
+import { BotonAtrasComponent } from '../../../shared/components/boton-atras/boton-atras.component';
 
 @Component({
   selector: 'app-cambiar-contrasena-usuario',
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    BotonAtrasComponent,
   ],
   templateUrl: './cambiar-contrasena-usuario.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

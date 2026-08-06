@@ -23,6 +23,7 @@ import type { Facultad } from '../../../facultades/models/facultad.model';
 import { FacultadesService } from '../../../facultades/services/facultades.service';
 import type { SolicitudCrearCarrera } from '../../models/carrera.model';
 import { CarrerasService } from '../../services/carreras.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 interface ControlesFormularioCarrera {
   codigo: FormControl<string>;
@@ -35,7 +36,7 @@ interface ControlesFormularioCarrera {
 @Component({
   selector: 'app-crear-carrera',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, BotonAtrasComponent],
   templateUrl: './crear-carrera.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

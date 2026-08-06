@@ -1,67 +1,156 @@
-<section aria-labelledby="titulo-inicio-sesion">
-  <h1 id="titulo-inicio-sesion">Iniciar sesión</h1>
-
-  <form [formGroup]="formularioInicioSesion" (ngSubmit)="enviarFormulario()" novalidate>
-    <div>
-      <label for="correo">Correo</label>
-      <input
-        id="correo"
-        type="email"
-        formControlName="correo"
-        autocomplete="username"
-        maxlength="150"
-        aria-describedby="correo-errores"
-        [attr.aria-invalid]="controlCorreo.touched && controlCorreo.invalid ? 'true' : null"
-      />
-
-      <div id="correo-errores">
-        @if (controlCorreo.touched && controlCorreo.hasError('required')) {
-          <p>Correo obligatorio.</p>
-        }
-
-        @if (controlCorreo.touched && controlCorreo.hasError('email')) {
-          <p>Formato inválido.</p>
-        }
-
-        @if (controlCorreo.touched && controlCorreo.hasError('maxlength')) {
-          <p>Máximo 150 caracteres.</p>
-        }
+<main class="pagina-login">
+  <section class="contenedor-login" aria-labelledby="titulo-inicio-sesion">
+    <header class="marca-login">
+      <span class="emblema-login" aria-hidden="true">U</span>
+      <div class="texto-marca">
+        <p class="institucion-login">Universidad Nacional</p>
+        <h1 id="titulo-inicio-sesion" class="titulo-login">Portal de Matrícula</h1>
       </div>
-    </div>
+    </header>
 
-    <div>
-      <label for="contrasena">Contraseña</label>
-      <input
-        id="contrasena"
-        type="password"
-        formControlName="contrasena"
-        autocomplete="current-password"
-        maxlength="128"
-        aria-describedby="contrasena-errores"
-        [attr.aria-invalid]="controlContrasena.touched && controlContrasena.invalid ? 'true' : null"
-      />
+    <p class="sistema-login">Sistema Integrado de Matrícula Universitaria</p>
 
-      <div id="contrasena-errores">
-        @if (controlContrasena.touched && controlContrasena.hasError('required')) {
-          <p>Contraseña obligatoria.</p>
-        }
+    <p class="bienvenida-login">
+      Ingresa con tu correo institucional y contraseña para acceder al sistema académico.
+    </p>
 
-        @if (controlContrasena.touched && controlContrasena.hasError('maxlength')) {
-          <p>Máximo 128 caracteres.</p>
-        }
+    <form
+      [formGroup]="formularioInicioSesion"
+      (ngSubmit)="enviarFormulario()"
+      novalidate
+      class="formulario-login">
+      <div class="campo-login">
+        <label for="correo">Correo institucional</label>
+        <div class="entrada-login">
+          <span class="icono-login" aria-hidden="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="12" cy="7" r="4" />
+              <path d="M4 21c0-4 3.6-8 8-8s8 4 8 8" />
+            </svg>
+          </span>
+          <input
+            id="correo"
+            type="email"
+            formControlName="correo"
+            autocomplete="username"
+            maxlength="150"
+            placeholder="usuario&#64;universidad.edu"
+            aria-describedby="correo-errores"
+            [attr.aria-invalid]="controlCorreo.touched && controlCorreo.invalid ? 'true' : null"
+          />
+        </div>
+
+        <div id="correo-errores">
+          @if (controlCorreo.touched && controlCorreo.hasError('required')) {
+            <p>Correo obligatorio.</p>
+          }
+
+          @if (controlCorreo.touched && controlCorreo.hasError('email')) {
+            <p>Formato de correo inválido.</p>
+          }
+
+          @if (controlCorreo.touched && controlCorreo.hasError('maxlength')) {
+            <p>Máximo 150 caracteres.</p>
+          }
+        </div>
       </div>
-    </div>
 
-    @if (mensajeError()) {
-      <p role="alert" aria-live="polite">{{ mensajeError() }}</p>
-    }
+      <div class="campo-login">
+        <label for="contrasena">Contraseña</label>
+        <div class="entrada-login">
+          <span class="icono-login" aria-hidden="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+          </span>
+          <input
+            id="contrasena"
+            type="password"
+            formControlName="contrasena"
+            autocomplete="current-password"
+            maxlength="128"
+            placeholder="••••••••••••"
+            aria-describedby="contrasena-errores"
+            [attr.aria-invalid]="controlContrasena.touched && controlContrasena.invalid ? 'true' : null"
+          />
+        </div>
 
-    <button type="submit" [disabled]="enviandoFormulario()">
-      @if (enviandoFormulario()) {
-        Iniciando sesión...
-      } @else {
-        Iniciar sesión
+        <div id="contrasena-errores">
+          @if (controlContrasena.touched && controlContrasena.hasError('required')) {
+            <p>Contraseña obligatoria.</p>
+          }
+
+          @if (controlContrasena.touched && controlContrasena.hasError('maxlength')) {
+            <p>Máximo 128 caracteres.</p>
+          }
+        </div>
+      </div>
+
+      @if (mensajeError()) {
+        <div class="mensaje-error-login" role="alert" aria-live="polite">
+          <span class="icono-login" aria-hidden="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 8v4" />
+              <path d="M12 16h.01" />
+            </svg>
+          </span>
+          {{ mensajeError() }}
+        </div>
       }
-    </button>
-  </form>
-</section>
+
+      <button type="submit" class="boton-ingresar" [disabled]="enviandoFormulario()">
+        @if (enviandoFormulario()) {
+          Iniciando sesión...
+        } @else {
+          <span class="icono-boton" aria-hidden="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <path d="M10 17l5-5-5-5" />
+              <path d="M15 12H3" />
+            </svg>
+          </span>
+          Iniciar sesión
+        }
+      </button>
+
+      <a class="enlace-olvidar" href="mailto:mesa.ayuda&#64;universidad.edu">
+        ¿Has olvidado tu contraseña?
+      </a>
+
+      <p class="nota-terminos-login">
+        Al utilizar este sistema, acepta cumplir con los Términos de Servicio y la
+        Política de Privacidad de la institución.
+      </p>
+    </form>
+  </section>
+</main>

@@ -4,7 +4,7 @@
   "private": true,
   "description": "Monorepositorio del Sistema de Matricula Universitaria",
   "engines": {
-    "node": ">=24.15.0 <25"
+    "node": ">=25.0.0 <26"
   },
   "scripts": {
     "verificar:entorno": "node scripts/verificar-entorno.mjs",

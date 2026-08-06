@@ -30,6 +30,7 @@ import {
 import { PeriodosAcademicosService } from '../../../periodos-academicos/services/periodos-academicos.service';
 import type { SolicitudCrearCurso } from '../../models/curso.model';
 import { CursosService } from '../../services/cursos.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 interface ControlesFormularioCurso {
   periodo_id: FormControl<string>;
@@ -44,7 +45,7 @@ interface ControlesFormularioCurso {
 @Component({
   selector: 'app-crear-curso',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BotonAtrasComponent],
   templateUrl: './crear-curso.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

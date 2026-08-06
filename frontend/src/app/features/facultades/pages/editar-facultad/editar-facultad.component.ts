@@ -24,6 +24,7 @@ import type {
   SolicitudActualizarFacultad,
 } from '../../models/facultad.model';
 import { FacultadesService } from '../../services/facultades.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 interface ControlesFormularioEdicionFacultad {
   codigo: FormControl<string>;
@@ -33,7 +34,7 @@ interface ControlesFormularioEdicionFacultad {
 @Component({
   selector: 'app-editar-facultad',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, BotonAtrasComponent],
   templateUrl: './editar-facultad.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

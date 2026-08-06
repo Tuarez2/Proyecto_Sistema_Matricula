@@ -28,6 +28,7 @@ import {
 import { EstudiantesService } from '../../../estudiantes/services/estudiantes.service';
 import type { SolicitudCrearMatricula } from '../../models/matricula.model';
 import { MatriculasService } from '../../services/matriculas.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 interface ControlesFormularioMatricula {
   estudiante_id: FormControl<string>;
@@ -37,7 +38,7 @@ interface ControlesFormularioMatricula {
 @Component({
   selector: 'app-crear-matricula',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, BotonAtrasComponent],
   templateUrl: './crear-matricula.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -20,6 +20,7 @@ import { finalize } from 'rxjs';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import type { SolicitudCrearAsignatura } from '../../models/asignatura.model';
 import { AsignaturasService } from '../../services/asignaturas.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 interface ControlesFormularioAsignatura {
   codigo: FormControl<string>;
@@ -31,7 +32,7 @@ interface ControlesFormularioAsignatura {
 @Component({
   selector: 'app-crear-asignatura',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, BotonAtrasComponent],
   templateUrl: './crear-asignatura.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

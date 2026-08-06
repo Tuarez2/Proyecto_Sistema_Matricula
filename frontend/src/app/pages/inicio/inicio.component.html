@@ -1,15 +1,104 @@
-<section class="pagina-inicio">
-  <h1>Sistema de Matrícula Universitaria</h1>
-  <p>Acceso rápido a los módulos principales del sistema.</p>
+<section class="pagina-inicio" aria-labelledby="titulo-inicio">
+  <header class="bienvenida-inicio">
+    <span class="emblema-inicio" aria-hidden="true">U</span>
+    <div>
+      <p class="saludo-inicio">Bienvenido al portal académico</p>
+      <h1 id="titulo-inicio">Sistema de Matrícula Universitaria</h1>
+      <p>Acceso rápido a los módulos principales del sistema.</p>
+    </div>
+  </header>
 
   <div class="modulos-inicio" aria-label="Módulos del sistema">
-    <a routerLink="/periodos-academicos">Periodos académicos</a>
-    <a routerLink="/facultades">Facultades</a>
-    <a routerLink="/carreras">Carreras</a>
-    <a routerLink="/asignaturas">Asignaturas</a>
-    <a routerLink="/malla-curricular">Malla curricular</a>
-    <a routerLink="/cursos">Cursos</a>
-    <a routerLink="/estudiantes">Estudiantes</a>
-    <a routerLink="/docentes">Docentes</a>
+    <a class="tarjeta-modulo" routerLink="/periodos-academicos">
+      <span class="icono-modulo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      </span>
+      <span class="etiqueta-modulo">Periodos académicos</span>
+    </a>
+    <a class="tarjeta-modulo" routerLink="/facultades">
+      <span class="icono-modulo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 21V8l8-5 8 5v13" />
+          <path d="M9 21v-6h6v6" />
+          <path d="M8 10h.01M12 10h.01M16 10h.01" />
+        </svg>
+      </span>
+      <span class="etiqueta-modulo">Facultades</span>
+    </a>
+    <a class="tarjeta-modulo" routerLink="/carreras">
+      <span class="icono-modulo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m22 10-10-5-10 5 10 5 10-5Z" />
+          <path d="M6 12.5V17c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" />
+        </svg>
+      </span>
+      <span class="etiqueta-modulo">Carreras</span>
+    </a>
+    <a class="tarjeta-modulo" routerLink="/asignaturas">
+      <span class="icono-modulo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+        </svg>
+      </span>
+      <span class="etiqueta-modulo">Asignaturas</span>
+    </a>
+    <a class="tarjeta-modulo" routerLink="/malla-curricular">
+      <span class="icono-modulo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      </span>
+      <span class="etiqueta-modulo">Malla curricular</span>
+    </a>
+    <a class="tarjeta-modulo" routerLink="/cursos">
+      <span class="icono-modulo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="8" y="2" width="8" height="4" rx="1" />
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          <path d="M9 12h6M9 16h4" />
+        </svg>
+      </span>
+      <span class="etiqueta-modulo">Cursos</span>
+    </a>
+    @if (esGestorLecturaPersonas()) {
+      <a class="tarjeta-modulo" routerLink="/estudiantes">
+        <span class="icono-modulo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </span>
+        <span class="etiqueta-modulo">Estudiantes</span>
+      </a>
+      <a class="tarjeta-modulo" routerLink="/docentes">
+        <span class="icono-modulo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
+          </svg>
+        </span>
+        <span class="etiqueta-modulo">Docentes</span>
+      </a>
+    }
+    @if (esAdministrador()) {
+      <a class="tarjeta-modulo" routerLink="/usuarios">
+        <span class="icono-modulo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </span>
+        <span class="etiqueta-modulo">Usuarios</span>
+      </a>
+    }
   </div>
 </section>

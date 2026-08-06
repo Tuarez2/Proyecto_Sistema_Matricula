@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { validarCamposPermitidos } from './common.validator.js';
 
 export const validarLogin = [
-  validarCamposPermitidos(['correo', 'password']),
+  validarCamposPermitidos(['correo', 'password', 'tipo']),
   body('correo')
     .exists()
     .withMessage('El correo es obligatorio.')
@@ -22,7 +22,11 @@ export const validarLogin = [
     .withMessage('La contrasena debe ser texto.')
     .bail()
     .isLength({ min: 1, max: 128 })
-    .withMessage('La contrasena tiene una longitud invalida.')
+    .withMessage('La contrasena tiene una longitud invalida.'),
+  body('tipo')
+    .optional()
+    .isIn(['docente', 'estudiante'])
+    .withMessage('El tipo de perfil es invalido.')
 ];
 
 export const validarRefresh = [

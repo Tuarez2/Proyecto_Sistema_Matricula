@@ -21,11 +21,12 @@ import type {
   SolicitudActualizarEstudiante,
 } from '../../models/estudiante.model';
 import { EstudiantesService } from '../../services/estudiantes.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 @Component({
   selector: 'app-editar-estudiante',
   standalone: true,
-  imports: [EstudianteFormComponent],
+  imports: [EstudianteFormComponent, BotonAtrasComponent],
   templateUrl: './editar-estudiante.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

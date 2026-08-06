@@ -88,7 +88,7 @@ const obtenerUserAgent = (req) => {
   return userAgent ? userAgent.slice(0, 255) : null;
 };
 
-export const login = async ({ correo, password }, req) => {
+export const login = async ({ correo, password, tipo }, req) => {
   const usuario = await Usuario.findOne({
     where: { correo },
     include: inclusionesUsuario
@@ -102,6 +102,14 @@ export const login = async ({ correo, password }, req) => {
 
   if (!passwordValido) {
     throw new ApiError(401, MENSAJE_CREDENCIALES_INVALIDAS, 'INVALID_CREDENTIALS');
+  }
+
+  if (tipo === 'docente' && usuario.rol.codigo !== ROLE_CODES.TEACHER) {
+    throw new ApiError(400, 'El correo no pertenece a un docente.', 'PROFILE_ROLE_MISMATCH');
+  }
+
+  if (tipo === 'estudiante' && usuario.rol.codigo !== ROLE_CODES.STUDENT) {
+    throw new ApiError(400, 'El correo no pertenece a un estudiante.', 'PROFILE_ROLE_MISMATCH');
   }
 
   return sequelize.transaction(async (transaction) => {
@@ -152,46 +160,53 @@ export const refresh = async (refreshToken) => {
     throw new ApiError(401, MENSAJE_TOKEN_INVALIDO, 'INVALID_REFRESH_TOKEN');
   }
 
-  const sesion = await Sesion.findByPk(sesionId, {
-    include: [
+  return sequelize.transaction(async (transaction) => {
+    const sesion = await Sesion.findByPk(sesionId, {
+      lock: transaction.LOCK.UPDATE,
+      transaction,
+      include: [
+        {
+          model: Usuario,
+          as: 'usuario',
+          include: inclusionesUsuario
+        }
+      ]
+    });
+
+    if (
+      !sesion ||
+      sesion.usuario_id !== usuarioId ||
+      sesion.revocada_en ||
+      !sesion.fecha_expiracion ||
+      sesion.fecha_expiracion <= new Date()
+    ) {
+      throw new ApiError(401, MENSAJE_TOKEN_INVALIDO, 'INVALID_REFRESH_TOKEN');
+    }
+
+    asegurarUsuarioActivo(sesion.usuario);
+
+    const tokenValido = compararTokenRenovacion(refreshToken, sesion.refresh_token_hash);
+
+    if (!tokenValido) {
+      throw new ApiError(401, MENSAJE_TOKEN_INVALIDO, 'INVALID_REFRESH_TOKEN');
+    }
+
+    const tokens = emitirParTokens(sesion.usuario, sesion.id);
+    const hashTokenRenovacion = generarHashTokenRenovacion(tokens.refreshToken);
+
+    await sesion.update(
       {
-        model: Usuario,
-        as: 'usuario',
-        include: inclusionesUsuario
-      }
-    ]
+        refresh_token_hash: hashTokenRenovacion,
+        fecha_expiracion: tokens.refreshTokenExpiresAt
+      },
+      { transaction }
+    );
+
+    return {
+      user: sanitizarUsuario(sesion.usuario),
+      tokens
+    };
   });
-
-  if (
-    !sesion ||
-    sesion.usuario_id !== usuarioId ||
-    sesion.revocada_en ||
-    !sesion.fecha_expiracion ||
-    sesion.fecha_expiracion <= new Date()
-  ) {
-    throw new ApiError(401, MENSAJE_TOKEN_INVALIDO, 'INVALID_REFRESH_TOKEN');
-  }
-
-  asegurarUsuarioActivo(sesion.usuario);
-
-  const tokenValido = compararTokenRenovacion(refreshToken, sesion.refresh_token_hash);
-
-  if (!tokenValido) {
-    throw new ApiError(401, MENSAJE_TOKEN_INVALIDO, 'INVALID_REFRESH_TOKEN');
-  }
-
-  const tokens = emitirParTokens(sesion.usuario, sesion.id);
-  const hashTokenRenovacion = generarHashTokenRenovacion(tokens.refreshToken);
-
-  await sesion.update({
-    refresh_token_hash: hashTokenRenovacion,
-    fecha_expiracion: tokens.refreshTokenExpiresAt
-  });
-
-  return {
-    user: sanitizarUsuario(sesion.usuario),
-    tokens
-  };
 };
 
 export const logout = async (sesionId) => {

@@ -3,6 +3,7 @@ import type { RespuestaApi } from './respuesta-api.model';
 export interface CredencialesInicioSesion {
   correo: string;
   password: string;
+  tipo?: 'docente' | 'estudiante';
 }
 
 export interface SolicitudRenovacionSesion {

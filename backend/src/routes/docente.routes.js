@@ -15,10 +15,11 @@ import { validarCreacionDocente, validarIdParam, validarActualizacionDocente, va
 
 const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
+const rolesLectura = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER);
 
 router.use(authenticate);
-router.get('/', validarListadoDocentes, validarSolicitud, obtenerDocentes);
-router.get('/:id', validarIdParam, validarSolicitud, obtenerDocentePorId);
+router.get('/', rolesLectura, validarListadoDocentes, validarSolicitud, obtenerDocentes);
+router.get('/:id', rolesLectura, validarIdParam, validarSolicitud, obtenerDocentePorId);
 router.post('/', adminOnly, validarCreacionDocente, validarSolicitud, crearDocente);
 router.put('/:id', adminOnly, validarIdParam, validarActualizacionDocente, validarSolicitud, actualizarDocente);
 router.delete('/:id', adminOnly, validarIdParam, validarSolicitud, eliminarDocente);

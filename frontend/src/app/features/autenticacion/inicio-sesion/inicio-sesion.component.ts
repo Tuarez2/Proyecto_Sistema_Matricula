@@ -17,7 +17,11 @@ import { AutenticacionService } from '../../../core/services/autenticacion.servi
 @Component({
   selector: 'app-inicio-sesion',
   imports: [ReactiveFormsModule],
+  host: {
+    '[class.tema-docente]': 'esLoginDocente()',
+  },
   templateUrl: './inicio-sesion.component.html',
+  styleUrl: './inicio-sesion.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InicioSesionComponent {
@@ -26,6 +30,10 @@ export class InicioSesionComponent {
   private readonly router = inject(Router);
   private readonly rutaActiva = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly esLoginDocente = signal(
+    this.rutaActiva.snapshot.queryParamMap.get('tipo') === 'docente',
+  );
 
   readonly enviandoFormulario = signal(false);
   readonly mensajeError = signal<string | null>(null);
@@ -60,6 +68,12 @@ export class InicioSesionComponent {
       correo: datosFormulario.correo.trim(),
       password: datosFormulario.contrasena,
     };
+
+    const tipoPerfil = this.rutaActiva.snapshot.queryParamMap.get('tipo');
+
+    if (tipoPerfil === 'docente' || tipoPerfil === 'estudiante') {
+      credenciales.tipo = tipoPerfil;
+    }
 
     this.enviandoFormulario.set(true);
     this.autenticacionService

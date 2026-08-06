@@ -43,7 +43,7 @@ describe('routes', () => {
     const harness = await crearHarness(false, '/');
 
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain(
-      'Iniciar sesión',
+      'Portal de Matrícula',
     );
   });
 

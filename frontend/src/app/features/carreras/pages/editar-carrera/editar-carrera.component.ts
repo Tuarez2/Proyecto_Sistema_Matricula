@@ -26,6 +26,7 @@ import type {
   SolicitudActualizarCarrera,
 } from '../../models/carrera.model';
 import { CarrerasService } from '../../services/carreras.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 interface ControlesFormularioEdicionCarrera {
   codigo: FormControl<string>;
@@ -38,7 +39,7 @@ interface ControlesFormularioEdicionCarrera {
 @Component({
   selector: 'app-editar-carrera',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, BotonAtrasComponent],
   templateUrl: './editar-carrera.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

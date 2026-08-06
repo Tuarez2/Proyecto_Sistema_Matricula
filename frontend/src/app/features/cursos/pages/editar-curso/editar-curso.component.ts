@@ -36,6 +36,7 @@ import {
   type ReferenciaPeriodoCurso,
 } from '../../models/curso.model';
 import { CursosService } from '../../services/cursos.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 interface ControlesFormularioCurso {
   periodo_id: FormControl<string>;
@@ -50,7 +51,7 @@ interface ControlesFormularioCurso {
 @Component({
   selector: 'app-editar-curso',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BotonAtrasComponent],
   templateUrl: './editar-curso.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

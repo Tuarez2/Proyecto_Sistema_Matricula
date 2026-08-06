@@ -76,7 +76,7 @@ describe('rutasAutenticacion', () => {
     const harness = await RouterTestingHarness.create('/iniciar-sesion');
 
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain(
-      'Iniciar sesión',
+      'Portal de Matrícula',
     );
   });
 

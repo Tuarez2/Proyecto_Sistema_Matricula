@@ -22,8 +22,8 @@ const rolesGestionMatricula = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLL
 
 router.use(authenticate);
 
-router.get('/', validarListadoMatriculas, validarSolicitud, obtenerMatriculas);
-router.get('/:id', validarIdMatricula, validarSolicitud, obtenerMatriculaPorId);
+router.get('/', rolesGestionMatricula, validarListadoMatriculas, validarSolicitud, obtenerMatriculas);
+router.get('/:id', rolesGestionMatricula, validarIdMatricula, validarSolicitud, obtenerMatriculaPorId);
 router.post('/', rolesGestionMatricula, validarCreacionMatricula, validarSolicitud, crearMatricula);
 router.patch('/:id/estado', rolesGestionMatricula, validarIdMatricula, validarEstadoMatricula, validarSolicitud, cambiarEstadoMatricula);
 

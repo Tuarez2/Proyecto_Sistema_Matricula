@@ -577,8 +577,8 @@ describe('InicioSesionComponent', () => {
     expect(componente.mensajeError()).not.toContain('clave-ficticia');
   });
 
-  it('existe un h1 con el texto Iniciar sesión', () => {
-    expect(obtenerElemento('h1').textContent).toContain('Iniciar sesión');
+  it('existe un h1 con el texto Portal de Matrícula', () => {
+    expect(obtenerElemento('h1').textContent).toContain('Portal de Matrícula');
   });
 
   it('existe un formulario reactivo', () => {

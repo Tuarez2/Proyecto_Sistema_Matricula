@@ -1,7 +1,64 @@
+/* ==========================================================================
+   Sistema de diseño - Portal Académico de Matrícula
+   Paleta suave, bordes redondeados, tipografía legible.
+   ========================================================================== */
+
+:root {
+  --color-fondo: #f1f5f9;
+  --color-fondo-suave: #eef2f7;
+  --color-superficie: #ffffff;
+  --color-borde: #e2e8f0;
+  --color-borde-fuerte: #cbd5e1;
+  --color-texto: #1e293b;
+  --color-texto-suave: #64748b;
+  --color-texto-claro: #94a3b8;
+
+  --color-primario: #3b6fe0;
+  --color-primario-oscuro: #2f57b8;
+  --color-primario-suave: #eaf0fd;
+  --color-primario-borde: #c7d7f8;
+
+  --color-exito: #2e9e6b;
+  --color-exito-suave: #e6f6ee;
+  --color-peligro: #d1504e;
+  --color-peligro-suave: #fbecec;
+  --color-advertencia: #d4900f;
+  --color-advertencia-suave: #fdf3e0;
+  --color-inactivo: #8b98a9;
+
+  /* Variante verde (tema docente) */
+  --color-verde: #3d9e63;
+  --color-verde-oscuro: #2f7a4d;
+  --color-verde-suave: #e8f5ec;
+  --color-verde-borde: #c5e5d0;
+  --color-verde-superficie: #f7fbf8;
+  --color-verde-fondo: #edf6f0;
+  --color-verde-fondo-suave: #e2f0e7;
+  --sombra-verde-flotante: 0 12px 28px rgba(46, 125, 79, 0.18);
+
+  --radio-borde-simple: 0.5rem;
+  --radio-borde: 0.75rem;
+  --radio-borde-grande: 1rem;
+
+  --radio-boton: 2rem;
+  --radio-tarjeta: 0.875rem;
+
+  --sombra-suave: 0 1px 2px rgba(30, 41, 59, 0.06), 0 1px 3px rgba(30, 41, 59, 0.08);
+  --sombra-media: 0 4px 12px rgba(30, 41, 59, 0.08);
+  --sombra-flotante: 0 12px 28px rgba(30, 41, 59, 0.14);
+
+  --radio-transicion: 160ms ease;
+  --ancho-contenedor: 1180px;
+}
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 html,
@@ -11,9 +68,14 @@ body {
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f5f5f5;
-  color: #1f2937;
+  font-family:
+    'Segoe UI', 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, Roboto,
+    Arial, sans-serif;
+  background: linear-gradient(180deg, var(--color-fondo) 0%, var(--color-fondo-suave) 100%);
+  background-attachment: fixed;
+  color: var(--color-texto);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -21,4 +83,553 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+a {
+  color: var(--color-primario);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-primario-oscuro);
+}
+
+h1,
+h2,
+h3 {
+  color: var(--color-texto);
+  line-height: 1.25;
+}
+
+/* --------------------------------------------------------------------------
+   Contenedor de contenido dentro del layout
+   -------------------------------------------------------------------------- */
+.contenido-principal {
+  flex: 1;
+  width: min(100% - 2.5rem, 1220px);
+  margin: 0 auto;
+  padding: 1.5rem 0 3rem;
+}
+
+/* Tarjetas de página: toda sección raíz de un módulo se presenta como tarjeta */
+.contenido-principal section[aria-labelledby],
+.contenido-principal .contenido section {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra-suave);
+  padding: 1.75rem;
+  max-width: 100%;
+}
+
+.contenido-principal h1 {
+  font-size: 1.55rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   Controles de formulario
+   -------------------------------------------------------------------------- */
+label {
+  display: inline-block;
+  color: var(--color-texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='date'],
+input[type='datetime-local'],
+select,
+textarea {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio-borde);
+  color: var(--color-texto);
+  outline: none;
+  transition: border-color var(--radio-transicion), box-shadow var(--radio-transicion);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-texto-claro);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px var(--color-primario-suave);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--color-fondo-suave);
+  color: var(--color-texto-claro);
+  cursor: not-allowed;
+}
+
+textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+/* Grupos de campos con espaciado */
+.contenido-principal form > div,
+.contenido-principal .form-campo,
+.contenido-principal form > * {
+  margin-bottom: 0.25rem;
+}
+
+/* Mensajes de validación y errores de página */
+p[role='alert'] {
+  background: var(--color-peligro-suave);
+  color: #a94442;
+  border-radius: var(--radio-borde-simple);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+p[role='status'] {
+  background: var(--color-exito-suave);
+  color: #256a4d;
+  border-radius: var(--radio-borde-simple);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0.6rem 0 0;
+}
+
+/* Error global de página (fuera de los campos) */
+fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Botones
+   -------------------------------------------------------------------------- */
+button {
+  border: 1px solid transparent;
+  border-radius: var(--radio-borde);
+  background: var(--color-primario);
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.6rem 1.1rem;
+  transition: background var(--radio-transicion), box-shadow var(--radio-transicion),
+    transform var(--radio-transicion);
+}
+
+button:hover:not(:disabled) {
+  background: var(--color-primario-oscuro);
+  box-shadow: var(--sombra-suave);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Botón secundario (fondo blanco) */
+.btn-secundario,
+button[type='button'] {
+  background: var(--color-superficie);
+  border-color: var(--color-borde-fuerte);
+  color: var(--color-texto);
+}
+
+.btn-secundario:hover:not(:disabled),
+button[type='button']:hover:not(:disabled) {
+  background: var(--color-fondo-suave);
+  border-color: var(--color-borde-fuerte);
+  color: var(--color-texto);
+}
+
+/* Botón de peligro */
+.btn-peligro {
+  background: var(--color-peligro-suave);
+  border-color: transparent;
+  color: #b23432;
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background: var(--color-peligro);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Enlaces tipo botón (Ver / Editar dentro de tablas)
+   -------------------------------------------------------------------------- */
+td a {
+  display: inline-block;
+  background: var(--color-primario-suave);
+  border-radius: var(--radio-borde-simple);
+  color: var(--color-primario-oscuro);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  margin: 0.15rem 0.15rem 0.15rem 0;
+  transition: background var(--radio-transicion), color var(--radio-transicion);
+}
+
+td a:hover {
+  background: var(--color-primario);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Tablas
+   -------------------------------------------------------------------------- */
+.table-contenedor {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-borde-grande);
+  overflow: hidden;
+  background: var(--color-superficie);
+  font-size: 0.885rem;
+}
+
+caption {
+  caption-side: top;
+  text-align: left;
+  color: var(--color-texto-suave);
+  font-size: 0.82rem;
+  padding: 0 0 0.75rem;
+}
+
+th {
+  background: var(--color-fondo-suave);
+  color: var(--color-texto-suave);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-align: left;
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--color-borde);
+  white-space: nowrap;
+}
+
+td {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--color-borde);
+  color: var(--color-texto);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover td {
+  background: var(--color-fondo-suave);
+}
+
+tbody tr td:first-child,
+thead th:first-child {
+  padding-left: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   Encabezados dentro de tarjetas
+   -------------------------------------------------------------------------- */
+.contenido-principal section h2,
+.contenido-principal section h3 {
+  margin: 1.75rem 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.contenido-principal section h2 + p,
+.contenido-principal section p {
+  color: var(--color-texto-suave);
+}
+
+/* --------------------------------------------------------------------------
+   Listas de detalle (páginas "ver")
+   -------------------------------------------------------------------------- */
+.contenido-principal dl {
+  display: grid;
+  grid-template-columns: minmax(10rem, 12rem) 1fr;
+  gap: 0;
+  margin: 1.25rem 0 0;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-borde-grande);
+  overflow: hidden;
+}
+
+.contenido-principal dl dt,
+.contenido-principal dl dd {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.contenido-principal dl dt:nth-last-child(2):nth-child(odd),
+.contenido-principal dl dd:last-child {
+  border-bottom: none;
+}
+
+.contenido-principal dl dt {
+  background: var(--color-fondo-suave);
+  color: var(--color-texto-suave);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.contenido-principal dl dd {
+  color: var(--color-texto);
+}
+
+/* --------------------------------------------------------------------------
+   Acciones de página (Volver / Editar)
+   -------------------------------------------------------------------------- */
+.contenido-principal nav[aria-label^='Acciones'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.25rem 0 0;
+}
+
+.contenido-principal nav[aria-label^='Acciones'] a {
+  display: inline-block;
+  border-radius: var(--radio-borde);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  text-decoration: none;
+  background: var(--color-primario-suave);
+  color: var(--color-primario-oscuro);
+  border: 1px solid transparent;
+  transition: background var(--radio-transicion), color var(--radio-transicion),
+    border-color var(--radio-transicion);
+}
+
+.contenido-principal nav[aria-label^='Acciones'] a:first-child {
+  background: var(--color-primario);
+  color: #ffffff;
+}
+
+.contenido-principal nav[aria-label^='Acciones'] a:first-child:hover {
+  background: var(--color-primario-oscuro);
+}
+
+.contenido-principal nav[aria-label^='Acciones'] a:not(:first-child):hover {
+  background: var(--color-primario);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Distribución de filtros (formularios de búsqueda)
+   -------------------------------------------------------------------------- */
+.contenido-principal form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: end;
+  background: var(--color-fondo-suave);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-borde-grande);
+  padding: 1rem 1.15rem;
+  margin: 1.25rem 0 0;
+}
+
+.contenido-principal form .form-acciones,
+.contenido-principal form > .form-acciones {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+}
+
+/* --------------------------------------------------------------------------
+   Tarjetas de módulos (inicio)
+   -------------------------------------------------------------------------- */
+.modulos-inicio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.modulos-inicio a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 1.15rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-borde-grande);
+  box-shadow: var(--sombra-suave);
+  color: var(--color-texto);
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color var(--radio-transicion), box-shadow var(--radio-transicion),
+    transform var(--radio-transicion);
+}
+
+.modulos-inicio a::before {
+  content: '';
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--color-primario-suave);
+  border: 1px solid var(--color-primario);
+  flex-shrink: 0;
+}
+
+.modulos-inicio a:hover {
+  border-color: var(--color-primario-borde);
+  box-shadow: var(--sombra-media);
+  transform: translateY(-2px);
+  color: var(--color-primario-oscuro);
+}
+
+/* --------------------------------------------------------------------------
+   Paginación
+   -------------------------------------------------------------------------- */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pagination__button {
+  background: var(--color-superficie);
+  border-color: var(--color-borde-fuerte);
+  color: var(--color-texto);
+}
+
+.pagination__button:hover:not(:disabled) {
+  background: var(--color-primario-suave);
+  border-color: var(--color-primario-borde);
+  color: var(--color-primario-oscuro);
+}
+
+.pagination__button:disabled:hover {
+  background: var(--color-superficie);
+}
+
+.pagination__status {
+  color: var(--color-texto-suave);
+  font-size: 0.85rem;
+}
+
+/* --------------------------------------------------------------------------
+   Utilidades base (compatibilidad con componentes existentes)
+   -------------------------------------------------------------------------- */
+.d-flex { display: flex !important; }
+.flex-grow-1 { flex-grow: 1 !important; }
+.justify-content-center { justify-content: center !important; }
+.align-items-center { align-items: center !important; }
+.my-4 { margin-block: 1.5rem !important; }
+.ms-2 { margin-inline-start: 0.5rem !important; }
+.shadow-sm { box-shadow: var(--sombra-suave) !important; }
+.text-primary { color: var(--color-primario) !important; }
+.text-secondary { color: var(--color-texto-suave) !important; }
+.text-danger { color: var(--color-peligro) !important; }
+.text-success { color: var(--color-exito) !important; }
+.text-muted { color: var(--color-texto-claro) !important; }
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Alertas (legacy bootstrap-like) */
+.alert {
+  position: relative;
+  border-radius: var(--radio-borde);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+
+.alert-success { background: var(--color-exito-suave); border-color: #b7e4cd; color: #1d6a45; }
+.alert-danger { background: var(--color-peligro-suave); border-color: #efc2c1; color: #a2322f; }
+.alert-warning { background: var(--color-advertencia-suave); border-color: #f0e0b5; color: #855c0a; }
+.alert-info { background: var(--color-primario-suave); border-color: var(--color-primario-borde); color: var(--color-primario-oscuro); }
+.alert-dismissible {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: var(--color-texto-suave);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radio-borde-simple);
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  background: rgba(30, 41, 59, 0.08);
+  color: var(--color-texto);
+}
+
+/* Spinner */
+@keyframes opencode-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner-border {
+  display: inline-block;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0.2rem solid var(--color-primario-suave);
+  border-top-color: var(--color-primario);
+  border-radius: 50%;
+  animation: opencode-spin 0.8s linear infinite;
+}
+
+/* Animaciones suaves */
+@keyframes opcode-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade { animation: opcode-fade-in 220ms ease both; }
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .contenido-principal section {
+    padding: 1.25rem;
+  }
+
+  .contenido-principal form {
+    grid-template-columns: 1fr;
+  }
 }

@@ -151,6 +151,27 @@ const contarMatriculasQueOcupanCupo = (cursoId, opciones = {}) =>
     transaction: opciones.transaction
   });
 
+const contarMatriculasPorCurso = async (cursoIds, opciones = {}) => {
+  const identificadores = cursoIds.filter((cursoId) => cursoId !== undefined && cursoId !== null);
+
+  if (identificadores.length === 0) {
+    return new Map();
+  }
+
+  const conteos = await Matricula.findAll({
+    attributes: ['curso_id', [sequelize.fn('COUNT', sequelize.col('matricula.id')), 'cantidad']],
+    where: {
+      curso_id: { [Op.in]: identificadores },
+      estado: { [Op.in]: ESTADOS_MATRICULA_OCUPAN_CUPO }
+    },
+    group: ['curso_id'],
+    raw: true,
+    transaction: opciones.transaction
+  });
+
+  return new Map(conteos.map((conteo) => [conteo.curso_id, Number(conteo.cantidad)]));
+};
+
 const obtenerCursoExistente = async (cursoId, opciones = {}) => {
   const curso = await Curso.findByPk(cursoId, {
     include: opciones.include,
@@ -348,9 +369,10 @@ export const listarCursos = async (filtros = {}) => {
     offset
   });
 
-  const data = await Promise.all(
-    rows.map(async (curso) => sanitizarCurso(curso, await contarMatriculasQueOcupanCupo(curso.id)))
-  );
+  const cursoIds = rows.map((curso) => curso.id);
+  const ocupaciones = await contarMatriculasPorCurso(cursoIds);
+
+  const data = rows.map((curso) => sanitizarCurso(curso, ocupaciones.get(curso.id) ?? 0));
 
   return {
     data,

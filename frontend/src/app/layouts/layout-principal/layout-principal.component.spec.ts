@@ -186,6 +186,174 @@ describe('LayoutPrincipalComponent', () => {
     expect(obtenerEnlace('Inicio')).toBeTruthy();
   });
 
+  it('existe un boton de menu', () => {
+    expect(obtenerElemento<HTMLButtonElement>('button.boton-menu')).toBeTruthy();
+  });
+
+  it('el boton de menu inicia cerrado', () => {
+    expect(componente.menuAbierto()).toBe(false);
+  });
+
+  it('abre el menu al presionar el boton', () => {
+    obtenerBotonMenu()?.click();
+    fixture.detectChanges();
+
+    expect(componente.menuAbierto()).toBe(true);
+  });
+
+  it('cierra el menu al presionar nuevamente el boton', () => {
+    obtenerBotonMenu()?.click();
+    fixture.detectChanges();
+    obtenerBotonMenu()?.click();
+    fixture.detectChanges();
+
+    expect(componente.menuAbierto()).toBe(false);
+  });
+
+  it('abre el menu con llamada directa', () => {
+    componente.alternarMenu();
+    fixture.detectChanges();
+
+    expect(componente.menuAbierto()).toBe(true);
+  });
+
+  it('cierra el menu con la tecla Escape', () => {
+    componente.alternarMenu();
+    fixture.detectChanges();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+
+    expect(componente.menuAbierto()).toBe(false);
+  });
+
+  it('un administrador ve el enlace del menu Usuarios', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Usuarios')).toBeTruthy();
+  });
+
+  it('cierra el menu al hacer clic fuera de el', () => {
+    componente.alternarMenu();
+    fixture.detectChanges();
+
+    document.body.click();
+    fixture.detectChanges();
+
+    expect(componente.menuAbierto()).toBe(false);
+  });
+
+  it('mantiene el menu abierto al interactuar dentro del menu', () => {
+    componente.alternarMenu();
+    fixture.detectChanges();
+
+    obtenerElemento('nav.menu-principal')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    fixture.detectChanges();
+
+    expect(componente.menuAbierto()).toBe(true);
+  });
+
+  it('existe un desplegable de cuenta', () => {
+    expect(obtenerElemento('.cuenta-desplegable')).toBeTruthy();
+  });
+
+  it('el desplegable de cuenta inicia cerrado', () => {
+    expect(componente.cuentaAbierta()).toBe(false);
+  });
+
+  it('abre el desplegable de cuenta al pasar el puntero', () => {
+    obtenerElemento('.grupo-cuenta')?.dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    );
+    fixture.detectChanges();
+
+    expect(componente.cuentaAbierta()).toBe(true);
+  });
+
+  it('cierra el desplegable de cuenta al retirar el puntero', () => {
+    vi.useFakeTimers();
+    try {
+      obtenerElemento('.grupo-cuenta')?.dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      fixture.detectChanges();
+      expect(componente.cuentaAbierta()).toBe(true);
+
+      obtenerElemento('.grupo-cuenta')?.dispatchEvent(
+        new MouseEvent('mouseleave', { bubbles: true }),
+      );
+      vi.advanceTimersByTime(200);
+      fixture.detectChanges();
+
+      expect(componente.cuentaAbierta()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('el desplegable de cuenta ofrece acceso a Estudiante', () => {
+    expect(obtenerEnlaceCuenta('Estudiante')?.getAttribute('href')).toBe(
+      '/estudiantes',
+    );
+  });
+
+  it('el desplegable de cuenta ofrece acceso a Docente', () => {
+    expect(obtenerEnlaceCuenta('Docente')?.getAttribute('href')).toBe(
+      '/docentes',
+    );
+  });
+
+  it.each([
+    'ADMIN',
+    'GESTOR_MATRICULA',
+  ])('%s puede ver el desplegable de cuenta', (codigoRol) => {
+    usuarioActual.set(crearUsuarioConRol(codigoRol));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.cuenta-desplegable')).toBeTruthy();
+  });
+
+  it.each([
+    'ESTUDIANTE',
+    'DOCENTE',
+  ])('%s no ve el desplegable de cuenta', (codigoRol) => {
+    usuarioActual.set(crearUsuarioConRol(codigoRol));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.cuenta-desplegable')).toBeNull();
+  });
+
+  it('sin usuario no se muestra el desplegable de cuenta', () => {
+    usuarioActual.set(null);
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.cuenta-desplegable')).toBeNull();
+  });
+
+  it('la tecla Escape cierra el desplegable de cuenta', () => {
+    componente.abrirCuenta();
+    fixture.detectChanges();
+    expect(componente.cuentaAbierta()).toBe(true);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+
+    expect(componente.cuentaAbierta()).toBe(false);
+  });
+
+  it('hacer clic fuera cierra el desplegable de cuenta', () => {
+    componente.abrirCuenta();
+    fixture.detectChanges();
+
+    document.body.click();
+    fixture.detectChanges();
+
+    expect(componente.cuentaAbierta()).toBe(false);
+  });
+
   it('el comportamiento del enlace Usuarios continua igual', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     fixture.detectChanges();
@@ -521,6 +689,10 @@ describe('LayoutPrincipalComponent', () => {
     return obtenerElemento<HTMLButtonElement>('button');
   }
 
+  function obtenerBotonMenu(): HTMLButtonElement | null {
+    return obtenerElemento<HTMLButtonElement>('button.boton-menu');
+  }
+
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {
     return obtenerEnlaces(texto)[0] ?? null;
   }
@@ -531,6 +703,14 @@ describe('LayoutPrincipalComponent', () => {
     ) as HTMLAnchorElement[];
 
     return enlaces.filter((enlace) => enlace.textContent?.includes(texto));
+  }
+
+  function obtenerEnlaceCuenta(texto: string): HTMLAnchorElement | null {
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('.cuenta-desplegable a'),
+    ) as HTMLAnchorElement[];
+
+    return enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null;
   }
 
   function obtenerTexto(): string {

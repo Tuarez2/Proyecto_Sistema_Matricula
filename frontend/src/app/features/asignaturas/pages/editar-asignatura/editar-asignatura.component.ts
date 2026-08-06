@@ -24,6 +24,7 @@ import type {
   SolicitudActualizarAsignatura,
 } from '../../models/asignatura.model';
 import { AsignaturasService } from '../../services/asignaturas.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 interface ControlesFormularioEdicionAsignatura {
   codigo: FormControl<string>;
@@ -35,7 +36,7 @@ interface ControlesFormularioEdicionAsignatura {
 @Component({
   selector: 'app-editar-asignatura',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, BotonAtrasComponent],
   templateUrl: './editar-asignatura.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

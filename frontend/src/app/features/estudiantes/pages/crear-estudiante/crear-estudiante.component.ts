@@ -20,11 +20,12 @@ import type {
   SolicitudCrearEstudiante,
 } from '../../models/estudiante.model';
 import { EstudiantesService } from '../../services/estudiantes.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 @Component({
   selector: 'app-crear-estudiante',
   standalone: true,
-  imports: [EstudianteFormComponent],
+  imports: [EstudianteFormComponent, BotonAtrasComponent],
   templateUrl: './crear-estudiante.component.html',
   styleUrl: './crear-estudiante.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

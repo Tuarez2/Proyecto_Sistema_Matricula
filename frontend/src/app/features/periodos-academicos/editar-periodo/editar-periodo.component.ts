@@ -27,12 +27,14 @@ import {
   type PeriodoAcademico,
 } from '../models/periodo-academico.model';
 import { PeriodosAcademicosService } from '../services/periodos-academicos.service';
+import { BotonAtrasComponent } from '../../../shared/components/boton-atras/boton-atras.component';
 
 @Component({
   selector: 'app-editar-periodo',
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    BotonAtrasComponent,
   ],
   templateUrl: './editar-periodo.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

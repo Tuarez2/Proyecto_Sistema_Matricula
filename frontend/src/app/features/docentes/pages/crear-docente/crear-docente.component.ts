@@ -14,11 +14,12 @@ import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { DocenteFormComponent } from '../../components/docente-form/docente-form.component';
 import type { SolicitudCrearDocente } from '../../models/docente.model';
 import { DocentesService } from '../../services/docentes.service';
+import { BotonAtrasComponent } from '../../../../shared/components/boton-atras/boton-atras.component';
 
 @Component({
   selector: 'app-crear-docente',
   standalone: true,
-  imports: [DocenteFormComponent],
+  imports: [DocenteFormComponent, BotonAtrasComponent],
   templateUrl: './crear-docente.component.html',
   styleUrl: './crear-docente.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

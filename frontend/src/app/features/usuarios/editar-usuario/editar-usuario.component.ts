@@ -24,12 +24,14 @@ import {
 } from '../models/usuario.model';
 import { RolesService } from '../services/roles.service';
 import { UsuariosService } from '../services/usuarios.service';
+import { BotonAtrasComponent } from '../../../shared/components/boton-atras/boton-atras.component';
 
 @Component({
   selector: 'app-editar-usuario',
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    BotonAtrasComponent,
   ],
   templateUrl: './editar-usuario.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
