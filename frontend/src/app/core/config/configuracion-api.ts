@@ -1,3 +1,6 @@
+// Marcador temporal reemplazado en el build de despliegue por scripts/configurar-api.mjs.
+// Si queda sin reemplazar (desarrollo local), no es una URL válida y se usa la lógica local.
+const URL_API_DESPLIEGUE = '__URL_API_DESPLIEGUE__';
 const URL_BASE_LOCAL = 'http://localhost:3000/api/v1';
 const PUERTO_API = 3000;
 
@@ -12,6 +15,12 @@ function obtenerHostActual(): string {
 }
 
 function construirUrlBase(): string {
+  const urlDespliegue = URL_API_DESPLIEGUE.trim();
+
+  if (urlDespliegue.startsWith('http://') || urlDespliegue.startsWith('https://')) {
+    return urlDespliegue;
+  }
+
   const hostname = obtenerHostActual();
 
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
