@@ -2,14 +2,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const USA_URL_CONEXION = Boolean(process.env.MYSQL_URL || process.env.MYSQL_URI || process.env.DATABASE_URL);
+
 const requiredVariables = [
   'NODE_ENV',
   'PORT',
-  'DB_HOST',
-  'DB_PORT',
-  'DB_NAME',
-  'DB_USER',
-  'DB_PASSWORD',
+  ...(USA_URL_CONEXION ? [] : ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']),
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
   'JWT_ACCESS_EXPIRES_IN',
@@ -110,6 +108,28 @@ const interpretarTrustProxy = () => {
   throw new Error('TRUST_PROXY must be false, 1 or loopback.');
 };
 
+const parsearUrlBaseDeDatos = () => {
+  const url = new URL(process.env.MYSQL_URL || process.env.MYSQL_URI || process.env.DATABASE_URL);
+
+  if (url.protocol !== 'mysql:' && url.protocol !== 'mariadb:') {
+    throw new Error('MYSQL_URL must use the mysql:// or mariadb:// protocol.');
+  }
+
+  const nombre = url.pathname.replace(/^\//, '');
+
+  if (!nombre) {
+    throw new Error('MYSQL_URL must include a database name.');
+  }
+
+  return {
+    host: url.hostname,
+    port: url.port ? Number(url.port) : 3306,
+    name: nombre,
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password)
+  };
+};
+
 const environment = Object.freeze({
   nodeEnv: process.env.NODE_ENV,
   port: toNumber('PORT'),
@@ -124,13 +144,17 @@ const environment = Object.freeze({
     authWindowMs: toOptionalNumber('AUTH_RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
     authMax: toOptionalNumber('AUTH_RATE_LIMIT_MAX', 10)
   }),
-  database: Object.freeze({
-    host: process.env.DB_HOST,
-    port: toNumber('DB_PORT'),
-    name: obtenerNombreBaseDatos(),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD
-  }),
+  database: Object.freeze(
+    USA_URL_CONEXION
+      ? parsearUrlBaseDeDatos()
+      : {
+          host: process.env.DB_HOST,
+          port: toNumber('DB_PORT'),
+          name: obtenerNombreBaseDatos(),
+          user: process.env.DB_USER,
+          password: process.env.DB_PASSWORD
+        }
+  ),
   initialAdmin: Object.freeze({
     firstName: process.env.INITIAL_ADMIN_FIRST_NAME,
     lastName: process.env.INITIAL_ADMIN_LAST_NAME,
