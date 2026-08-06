@@ -116,9 +116,26 @@ describe('VerMatriculaComponent', () => {
     expect(obtenerTexto()).toContain('La matrícula solicitada no existe.');
   });
 
+  it('el enlace de comprobante apunta a la ruta de impresion', () => {
+    crearComponente();
+
+    const enlace = obtenerEnlace('Ver comprobante');
+
+    expect(enlace).toBeTruthy();
+    expect(enlace?.getAttribute('href')).toBe('/matriculas/imprimir/15');
+  });
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(VerMatriculaComponent);
     fixture.detectChanges();
+  }
+
+  function obtenerEnlace(texto: string): HTMLAnchorElement | null {
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('a'),
+    ) as HTMLAnchorElement[];
+
+    return enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null;
   }
 
   function obtenerTexto(): string {

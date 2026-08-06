@@ -12,6 +12,10 @@ export const rutasCarreras: Routes = [
     loadComponent: () =>
       import('./listado-carreras/listado-carreras.component')
         .then((modulo) => modulo.ListadoCarrerasComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE],
+    },
     title: 'Carreras',
   },
   {
@@ -41,6 +45,10 @@ export const rutasCarreras: Routes = [
     loadComponent: () =>
       import('./pages/ver-carrera/ver-carrera.component')
         .then((modulo) => modulo.VerCarreraComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE],
+    },
     title: 'Detalle de carrera',
   },
 ];

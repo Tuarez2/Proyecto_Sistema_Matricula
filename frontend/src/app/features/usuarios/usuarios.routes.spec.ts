@@ -1,6 +1,10 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  RouterStateSnapshot,
+  UrlTree,
+} from '@angular/router';
 
 import { CLAVE_ROLES_PERMITIDOS, CODIGOS_ROL } from '../../core/config/codigos-rol';
 import { guardRoles } from '../../core/guards/roles.guard';
@@ -255,7 +259,7 @@ describe('rutasUsuarios', () => {
   it('otro rol no puede activar usuarios nuevo', () => {
     configurarAutenticacion('DOCENTE');
 
-    expect(ejecutarGuardRutaNuevo()).toBe(false);
+    expectDenegado(ejecutarGuardRutaNuevo());
   });
 
   it('un administrador puede activar usuarios editar', () => {
@@ -267,7 +271,7 @@ describe('rutasUsuarios', () => {
   it('otro rol no puede activar usuarios editar', () => {
     configurarAutenticacion('DOCENTE');
 
-    expect(ejecutarGuardRutaEditar()).toBe(false);
+    expectDenegado(ejecutarGuardRutaEditar());
   });
 
   it('un administrador puede activar usuarios estado', () => {
@@ -279,7 +283,7 @@ describe('rutasUsuarios', () => {
   it('otro rol no puede activar usuarios estado', () => {
     configurarAutenticacion('DOCENTE');
 
-    expect(ejecutarGuardRutaEstado()).toBe(false);
+    expectDenegado(ejecutarGuardRutaEstado());
   });
 
   it('un administrador puede activar usuarios contrasena', () => {
@@ -291,7 +295,7 @@ describe('rutasUsuarios', () => {
   it('otro rol no puede activar usuarios contrasena', () => {
     configurarAutenticacion('DOCENTE');
 
-    expect(ejecutarGuardRutaContrasena()).toBe(false);
+    expectDenegado(ejecutarGuardRutaContrasena());
   });
 
   it('la ruta nuevo no es interpretada como identificador', () => {
@@ -401,42 +405,46 @@ function configurarAutenticacion(codigoRol: string): void {
   });
 }
 
-function ejecutarGuardRutaNuevo(): boolean {
+function ejecutarGuardRutaNuevo(): boolean | UrlTree {
   const ruta = new ActivatedRouteSnapshot();
 
   ruta.data = obtenerRutaNuevo().data ?? {};
 
   return TestBed.runInInjectionContext(() =>
     guardRoles(ruta, { url: '/usuarios/nuevo' } as RouterStateSnapshot),
-  ) as boolean;
+  ) as boolean | UrlTree;
 }
 
-function ejecutarGuardRutaEditar(): boolean {
+function ejecutarGuardRutaEditar(): boolean | UrlTree {
   const ruta = new ActivatedRouteSnapshot();
 
   ruta.data = obtenerRutaEditar().data ?? {};
 
   return TestBed.runInInjectionContext(() =>
     guardRoles(ruta, { url: '/usuarios/15/editar' } as RouterStateSnapshot),
-  ) as boolean;
+  ) as boolean | UrlTree;
 }
 
-function ejecutarGuardRutaEstado(): boolean {
+function ejecutarGuardRutaEstado(): boolean | UrlTree {
   const ruta = new ActivatedRouteSnapshot();
 
   ruta.data = obtenerRutaEstado().data ?? {};
 
   return TestBed.runInInjectionContext(() =>
     guardRoles(ruta, { url: '/usuarios/15/estado' } as RouterStateSnapshot),
-  ) as boolean;
+  ) as boolean | UrlTree;
 }
 
-function ejecutarGuardRutaContrasena(): boolean {
+function ejecutarGuardRutaContrasena(): boolean | UrlTree {
   const ruta = new ActivatedRouteSnapshot();
 
   ruta.data = obtenerRutaContrasena().data ?? {};
 
   return TestBed.runInInjectionContext(() =>
     guardRoles(ruta, { url: '/usuarios/15/contrasena' } as RouterStateSnapshot),
-  ) as boolean;
+  ) as boolean | UrlTree;
+}
+
+function expectDenegado(resultado: boolean | UrlTree): void {
+  expect(resultado instanceof UrlTree).toBe(true);
 }

@@ -1,5 +1,11 @@
 import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
+import {
+  CLAVE_ROLES_PERMITIDOS,
+  CODIGOS_ROL,
+} from './core/config/codigos-rol';
 import { guardAutenticacion } from './core/guards/autenticacion.guard';
+import { guardRoles } from './core/guards/roles.guard';
+import { guardRutaInicial } from './core/guards/ruta-inicial.guard';
 
 export const routes: Routes = [
   {
@@ -17,10 +23,43 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [guardRutaInicial],
         loadComponent: () =>
           import('./pages/inicio/inicio.component')
             .then((modulo) => modulo.InicioComponent),
         title: 'Inicio',
+      },
+      {
+        path: 'dashboard-gestor',
+        loadComponent: () =>
+          import('./features/dashboard-gestor/dashboard-gestor.component')
+            .then((modulo) => modulo.DashboardGestorComponent),
+        canActivate: [guardRoles],
+        data: {
+          [CLAVE_ROLES_PERMITIDOS]: [
+            CODIGOS_ROL.ADMIN,
+            CODIGOS_ROL.GESTOR_MATRICULA,
+          ],
+        },
+        title: 'Dashboard del gestor',
+      },
+      {
+        path: 'portal-estudiante',
+        loadComponent: () =>
+          import('./features/portal-estudiante/portal-estudiante.component')
+            .then((modulo) => modulo.PortalEstudianteComponent),
+        canActivate: [guardRoles],
+        data: {
+          [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ESTUDIANTE],
+        },
+        title: 'Portal del estudiante',
+      },
+      {
+        path: 'acceso-denegado',
+        loadComponent: () =>
+          import('./pages/acceso-denegado/acceso-denegado.component')
+            .then((modulo) => modulo.AccesoDenegadoComponent),
+        title: 'Acceso denegado',
       },
       {
         path: 'usuarios',

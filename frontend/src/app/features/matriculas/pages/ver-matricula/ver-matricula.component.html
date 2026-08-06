@@ -43,7 +43,7 @@
       <dd>{{ matricula()!.calificacion_final ?? 'Sin calificación' }}</dd>
     </dl>
 
-    <a [routerLink]="['/matriculas', matricula()!.id, 'imprimir']">
+    <a [routerLink]="['/matriculas/imprimir', matricula()!.id]">
       Ver comprobante
     </a>
   }

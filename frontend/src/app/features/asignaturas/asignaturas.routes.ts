@@ -12,6 +12,10 @@ export const rutasAsignaturas: Routes = [
     loadComponent: () =>
       import('./listado-asignaturas/listado-asignaturas.component')
         .then((modulo) => modulo.ListadoAsignaturasComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE],
+    },
     title: 'Asignaturas',
   },
   {
@@ -41,6 +45,10 @@ export const rutasAsignaturas: Routes = [
     loadComponent: () =>
       import('./pages/ver-asignatura/ver-asignatura.component')
         .then((modulo) => modulo.VerAsignaturaComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE],
+    },
     title: 'Detalle de asignatura',
   },
 ];

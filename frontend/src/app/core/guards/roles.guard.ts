@@ -1,19 +1,25 @@
 import { inject } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivateFn } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivateFn, Router } from '@angular/router';
 
 import {
   CLAVE_ROLES_PERMITIDOS,
   CODIGOS_ROL,
   type CodigoRol,
 } from '../config/codigos-rol';
+import { RUTA_ACCESO_DENEGADO } from '../config/rutas-por-rol';
 import { AutenticacionService } from '../services/autenticacion.service';
 
 export const guardRoles: CanActivateFn = (ruta) => {
   const autenticacionService = inject(AutenticacionService);
+  const router = inject(Router);
   const rolesPermitidos = obtenerRolesPermitidos(ruta);
   const codigoRolActual = autenticacionService.usuarioActual()?.rol?.codigo;
 
-  return tieneRolPermitido(codigoRolActual, rolesPermitidos);
+  if (tieneRolPermitido(codigoRolActual, rolesPermitidos)) {
+    return true;
+  }
+
+  return router.createUrlTree([RUTA_ACCESO_DENEGADO]);
 };
 
 function obtenerRolesPermitidos(ruta: ActivatedRouteSnapshot): CodigoRol[] | null {

@@ -106,13 +106,137 @@ describe('LayoutPrincipalComponent', () => {
   it.each([
     'ADMIN',
     'GESTOR_MATRICULA',
-    'ESTUDIANTE',
     'DOCENTE',
   ])('%s puede ver Periodos académicos', (codigoRol) => {
     usuarioActual.set(crearUsuarioConRol(codigoRol));
     fixture.detectChanges();
 
     expect(obtenerEnlace('Periodos académicos')).toBeTruthy();
+  });
+
+  it('ESTUDIANTE no ve Periodos académicos', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Periodos académicos')).toBeNull();
+  });
+
+  it('un GESTOR_MATRICULA ve Dashboard del gestor', () => {
+    usuarioActual.set(crearUsuarioConRol('GESTOR_MATRICULA'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Dashboard del gestor')).toBeTruthy();
+  });
+
+  it('un ADMIN ve Dashboard del gestor', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Dashboard del gestor')).toBeTruthy();
+  });
+
+  it('DOCENTE no ve Dashboard del gestor', () => {
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Dashboard del gestor')).toBeNull();
+  });
+
+  it('ESTUDIANTE no ve Dashboard del gestor', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Dashboard del gestor')).toBeNull();
+  });
+
+  it('un GESTOR_MATRICULA ve el enlace Matrículas', () => {
+    usuarioActual.set(crearUsuarioConRol('GESTOR_MATRICULA'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Matrículas')).toBeTruthy();
+  });
+
+  it('DOCENTE no ve Matrículas', () => {
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Matrículas')).toBeNull();
+  });
+
+  it('ESTUDIANTE no ve Matrículas', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Matrículas')).toBeNull();
+  });
+
+  it('un GESTOR_MATRICULA ve Nueva matrícula y Renovar matrícula', () => {
+    usuarioActual.set(crearUsuarioConRol('GESTOR_MATRICULA'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Nueva matrícula')).toBeTruthy();
+    expect(obtenerEnlace('Renovar matrícula')).toBeTruthy();
+  });
+
+  it('un ESTUDIANTE ve Mi portal', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Mi portal')).toBeTruthy();
+  });
+
+  it('el enlace Mi portal apunta a /portal-estudiante', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Mi portal')?.getAttribute('href')).toBe(
+      '/portal-estudiante',
+    );
+  });
+
+  it('un ADMIN no ve Mi portal', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Mi portal')).toBeNull();
+  });
+
+  it('un DOCENTE no ve Mi portal', () => {
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Mi portal')).toBeNull();
+  });
+
+  it('un ESTUDIANTE no ve Inicio', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Inicio')).toBeNull();
+  });
+
+  it('un ESTUDIANTE no ve Facultades ni Carreras', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Facultades')).toBeNull();
+    expect(obtenerEnlace('Carreras')).toBeNull();
+  });
+
+  it('un DOCENTE ve Inicio', () => {
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    fixture.detectChanges();
+
+    expect(obtenerEnlace('Inicio')).toBeTruthy();
+  });
+
+  it('un ESTUDIANTE solo ve Mi portal', () => {
+    usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
+    fixture.detectChanges();
+
+    const enlaces = obtenerEnlacesSinIconos();
+
+    expect(enlaces).toEqual(['Mi portal']);
   });
 
   it('el enlace Usuarios apunta a /usuarios', () => {
@@ -531,6 +655,14 @@ describe('LayoutPrincipalComponent', () => {
     ) as HTMLAnchorElement[];
 
     return enlaces.filter((enlace) => enlace.textContent?.includes(texto));
+  }
+
+  function obtenerEnlacesSinIconos(): string[] {
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('.enlace-navegacion'),
+    ) as HTMLAnchorElement[];
+
+    return enlaces.map((enlace) => enlace.textContent?.trim() ?? '');
   }
 
   function obtenerTexto(): string {

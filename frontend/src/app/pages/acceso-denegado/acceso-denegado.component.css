@@ -1,0 +1,14 @@
+.pagina-acceso-denegado {
+  padding: 3rem 0;
+}
+
+.pagina-acceso-denegado h1 {
+  margin: 0 0 1rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.acceso-denegado__descripcion {
+  margin: 0 0 1.5rem;
+  color: #475569;
+}

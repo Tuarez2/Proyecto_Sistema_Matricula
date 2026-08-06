@@ -13,6 +13,14 @@ export const rutasCursos: Routes = [
       import('./listado-cursos/listado-cursos.component').then(
         (modulo) => modulo.ListadoCursosComponent,
       ),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [
+        CODIGOS_ROL.ADMIN,
+        CODIGOS_ROL.GESTOR_MATRICULA,
+        CODIGOS_ROL.DOCENTE,
+      ],
+    },
     title: 'Cursos',
   },
   {
@@ -45,6 +53,14 @@ export const rutasCursos: Routes = [
       import('./pages/ver-curso/ver-curso.component').then(
         (modulo) => modulo.VerCursoComponent,
       ),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [
+        CODIGOS_ROL.ADMIN,
+        CODIGOS_ROL.GESTOR_MATRICULA,
+        CODIGOS_ROL.DOCENTE,
+      ],
+    },
     title: 'Detalle de curso',
   },
 ];

@@ -1,6 +1,11 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  provideRouter,
+  RouterStateSnapshot,
+  UrlTree,
+} from '@angular/router';
 
 import { CLAVE_ROLES_PERMITIDOS, CODIGOS_ROL } from '../../core/config/codigos-rol';
 import { guardRoles } from '../../core/guards/roles.guard';
@@ -33,12 +38,13 @@ describe('rutasPeriodosAcademicos', () => {
     expect(obtenerRutaRaiz().title).toBe('Periodos académicos');
   });
 
-  it('no utiliza guardRoles', () => {
-    expect(obtenerRutaRaiz().canActivate).toBeUndefined();
-  });
-
-  it('no contiene datos de roles', () => {
-    expect(obtenerRutaRaiz().data).toBeUndefined();
+  it('el listado protege por rol de consulta', () => {
+    expect(obtenerRutaRaiz().canActivate).toEqual([guardRoles]);
+    expect(obtenerRutaRaiz().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+      CODIGOS_ROL.GESTOR_MATRICULA,
+      CODIGOS_ROL.DOCENTE,
+    ]);
   });
 
   it('contiene nuevo, edicion, estado y listado', () => {
@@ -54,12 +60,18 @@ describe('rutasPeriodosAcademicos', () => {
     expect(rutasPeriodosAcademicos.some((ruta) => ruta.redirectTo)).toBe(false);
   });
 
-  it('un usuario autenticado puede activar periodos academicos', () => {
-    expect(obtenerRutaRaiz().canActivate).toBeUndefined();
+  it('GESTOR_MATRICULA y DOCENTE pueden consultar el listado', () => {
+    configurarAutenticacion('GESTOR_MATRICULA');
+    expect(ejecutarGuardRutaRaiz()).toBe(true);
+
+    configurarAutenticacion('DOCENTE');
+    expect(ejecutarGuardRutaRaiz()).toBe(true);
   });
 
-  it('la ruta continua protegida por el layout padre', () => {
-    expect(obtenerRutaRaiz().canActivate).toBeUndefined();
+  it('ESTUDIANTE no puede consultar el listado', () => {
+    configurarAutenticacion('ESTUDIANTE');
+
+    expect(ejecutarGuardRutaRaiz()).toBeInstanceOf(UrlTree);
   });
 
   it('existe ruta nuevo', () => {
@@ -102,19 +114,30 @@ describe('rutasPeriodosAcademicos', () => {
     );
   });
 
-  it('la ruta del listado continua sin guardRoles', () => {
-    expect(obtenerRutaRaiz().canActivate).toBeUndefined();
+  it('la ruta del listado protege por rol de consulta', () => {
+    expect(obtenerRutaRaiz().canActivate).toEqual([guardRoles]);
+    expect(obtenerRutaRaiz().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+      CODIGOS_ROL.GESTOR_MATRICULA,
+      CODIGOS_ROL.DOCENTE,
+    ]);
   });
 
   it.each([
     'GESTOR_MATRICULA',
-    'ESTUDIANTE',
     'DOCENTE',
   ])('%s puede consultar listado pero no crear', (codigoRol) => {
     configurarAutenticacion(codigoRol);
 
-    expect(obtenerRutaRaiz().canActivate).toBeUndefined();
-    expect(ejecutarGuardRutaNuevo()).toBe(false);
+    expect(ejecutarGuardRutaRaiz()).toBe(true);
+    expectDenegado(ejecutarGuardRutaNuevo());
+  });
+
+  it('ESTUDIANTE no puede consultar listado ni crear', () => {
+    configurarAutenticacion('ESTUDIANTE');
+
+    expectDenegado(ejecutarGuardRutaRaiz());
+    expectDenegado(ejecutarGuardRutaNuevo());
   });
 
   it('ADMIN puede crear', () => {
@@ -182,7 +205,7 @@ describe('rutasPeriodosAcademicos', () => {
   ])('%s no puede editar', (codigoRol) => {
     configurarAutenticacion(codigoRol);
 
-    expect(ejecutarGuardRutaEditar()).toBe(false);
+    expectDenegado(ejecutarGuardRutaEditar());
   });
 
   it('la ruta nuevo no se interpreta como ID', () => {
@@ -251,7 +274,7 @@ describe('rutasPeriodosAcademicos', () => {
   ])('%s no puede acceder a cambio de estado', (codigoRol) => {
     configurarAutenticacion(codigoRol);
 
-    expect(ejecutarGuardRutaEstado()).toBe(false);
+    expectDenegado(ejecutarGuardRutaEstado());
   });
 
   it('la ruta de edicion continua funcionando', async () => {
@@ -316,6 +339,7 @@ function configurarAutenticacion(codigoRol: string): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      provideRouter([]),
       {
         provide: AutenticacionService,
         useValue: {
@@ -340,7 +364,20 @@ function configurarAutenticacion(codigoRol: string): void {
   });
 }
 
-function ejecutarGuardRutaNuevo(): boolean {
+function ejecutarGuardRutaRaiz(): boolean | UrlTree {
+  const ruta = new ActivatedRouteSnapshot();
+
+  ruta.data = obtenerRutaRaiz().data ?? {};
+
+  return TestBed.runInInjectionContext(() =>
+    guardRoles(
+      ruta,
+      { url: '/periodos-academicos' } as RouterStateSnapshot,
+    ),
+  ) as boolean | UrlTree;
+}
+
+function ejecutarGuardRutaNuevo(): boolean | UrlTree {
   const ruta = new ActivatedRouteSnapshot();
 
   ruta.data = obtenerRutaNuevo().data ?? {};
@@ -350,10 +387,10 @@ function ejecutarGuardRutaNuevo(): boolean {
       ruta,
       { url: '/periodos-academicos/nuevo' } as RouterStateSnapshot,
     ),
-  ) as boolean;
+  ) as boolean | UrlTree;
 }
 
-function ejecutarGuardRutaEditar(): boolean {
+function ejecutarGuardRutaEditar(): boolean | UrlTree {
   const ruta = new ActivatedRouteSnapshot();
 
   ruta.data = obtenerRutaEditar().data ?? {};
@@ -363,10 +400,10 @@ function ejecutarGuardRutaEditar(): boolean {
       ruta,
       { url: '/periodos-academicos/15/editar' } as RouterStateSnapshot,
     ),
-  ) as boolean;
+  ) as boolean | UrlTree;
 }
 
-function ejecutarGuardRutaEstado(): boolean {
+function ejecutarGuardRutaEstado(): boolean | UrlTree {
   const ruta = new ActivatedRouteSnapshot();
 
   ruta.data = obtenerRutaEstado().data ?? {};
@@ -376,5 +413,9 @@ function ejecutarGuardRutaEstado(): boolean {
       ruta,
       { url: '/periodos-academicos/15/estado' } as RouterStateSnapshot,
     ),
-  ) as boolean;
+  ) as boolean | UrlTree;
+}
+
+function expectDenegado(resultado: boolean | UrlTree): void {
+  expect(resultado instanceof UrlTree).toBe(true);
 }

@@ -150,9 +150,7 @@
           <th scope="col">Carrera</th>
           <th scope="col">Nivel</th>
           <th scope="col">Estado académico</th>
-          @if (esAdministrador()) {
-            <th scope="col">Acciones</th>
-          }
+          <th scope="col">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -165,8 +163,11 @@
             <td>{{ estudiante.carrera?.nombre ?? 'Sin carrera' }}</td>
             <td>{{ estudiante.nivel_academico_actual }}</td>
             <td>{{ obtenerEtiquetaEstado(estudiante.estado_academico) }}</td>
-            @if (esAdministrador()) {
-              <td>
+            <td>
+              <a [routerLink]="['/estudiantes', estudiante.id]">
+                Ver
+              </a>
+              @if (esAdministrador()) {
                 <a [routerLink]="['/estudiantes/editar', estudiante.id]">
                   Editar
                 </a>
@@ -179,8 +180,8 @@
                     Inactivar
                   </button>
                 }
-              </td>
-            }
+              }
+            </td>
           </tr>
         }
       </tbody>

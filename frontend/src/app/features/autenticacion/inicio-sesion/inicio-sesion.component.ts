@@ -11,6 +11,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { obtenerRutaInicialPorRol } from '../../../core/config/rutas-por-rol';
 import type { CredencialesInicioSesion } from '../../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 
@@ -126,7 +127,9 @@ export class InicioSesionComponent {
       return rutaRetorno;
     }
 
-    return '/';
+    return obtenerRutaInicialPorRol(
+      this.autenticacionService.usuarioActual()?.rol?.codigo,
+    );
   }
 
   private esRutaRetornoSegura(ruta: string): boolean {

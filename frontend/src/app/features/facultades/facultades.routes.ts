@@ -12,6 +12,10 @@ export const rutasFacultades: Routes = [
     loadComponent: () =>
       import('./listado-facultades/listado-facultades.component')
         .then((modulo) => modulo.ListadoFacultadesComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE],
+    },
     title: 'Facultades',
   },
   {
@@ -41,6 +45,10 @@ export const rutasFacultades: Routes = [
     loadComponent: () =>
       import('./pages/ver-facultad/ver-facultad.component')
         .then((modulo) => modulo.VerFacultadComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE],
+    },
     title: 'Detalle de facultad',
   },
 ];

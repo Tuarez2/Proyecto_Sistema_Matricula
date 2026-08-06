@@ -4,15 +4,15 @@ import { CanActivateFn, Router } from '@angular/router';
 import { obtenerRutaInicialPorRol } from '../config/rutas-por-rol';
 import { AutenticacionService } from '../services/autenticacion.service';
 
-export const guardInvitado: CanActivateFn = () => {
+export const guardRutaInicial: CanActivateFn = () => {
   const autenticacionService = inject(AutenticacionService);
   const router = inject(Router);
+  const codigoRol = autenticacionService.usuarioActual()?.rol?.codigo;
+  const rutaInicial = obtenerRutaInicialPorRol(codigoRol);
 
-  if (!autenticacionService.estaAutenticado()) {
+  if (rutaInicial === '/') {
     return true;
   }
 
-  const codigoRol = autenticacionService.usuarioActual()?.rol?.codigo;
-
-  return router.createUrlTree([obtenerRutaInicialPorRol(codigoRol)]);
+  return router.createUrlTree([rutaInicial]);
 };

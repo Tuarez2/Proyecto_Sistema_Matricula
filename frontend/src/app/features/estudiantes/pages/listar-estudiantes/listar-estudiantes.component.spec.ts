@@ -340,6 +340,19 @@ describe('ListarEstudiantesComponent', () => {
     expect(obtenerBoton('Inactivar')).toBeNull();
   });
 
+  it('todos los roles ven el enlace Ver', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
+    crearComponente();
+
+    expect(obtenerEnlace('Ver')).toBeTruthy();
+  });
+
+  it('el enlace Ver apunta al detalle del estudiante', () => {
+    crearComponente();
+
+    expect(obtenerEnlace('Ver')?.getAttribute('href')).toBe('/estudiantes/1');
+  });
+
   it('confirma antes de inactivar y recarga la página actual', () => {
     const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
 

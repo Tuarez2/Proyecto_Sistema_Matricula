@@ -1,12 +1,19 @@
 import { Signal, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  provideRouter,
+  Router,
+  RouterStateSnapshot,
+  UrlTree,
+} from '@angular/router';
 import { Observable } from 'rxjs';
 
 import {
   CLAVE_ROLES_PERMITIDOS,
   CODIGOS_ROL,
 } from '../config/codigos-rol';
+import { RUTA_ACCESO_DENEGADO } from '../config/rutas-por-rol';
 import type {
   RespuestaRenovacionSesion,
   UsuarioAutenticado,
@@ -44,6 +51,7 @@ function crearUsuario(codigoRol: string | null): UsuarioAutenticado {
 describe('guardRoles', () => {
   let estadoUsuario: ReturnType<typeof signal<UsuarioAutenticado | null>>;
   let autenticacionService: AutenticacionServiceMock;
+  let router: Router;
 
   beforeEach(() => {
     estadoUsuario = signal<UsuarioAutenticado | null>(null);
@@ -56,12 +64,15 @@ describe('guardRoles', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         {
           provide: AutenticacionService,
           useValue: autenticacionService,
         },
       ],
     });
+
+    router = TestBed.inject(Router);
   });
 
   it('permite a ADMIN cuando ADMIN esta permitido', () => {
@@ -97,57 +108,66 @@ describe('guardRoles', () => {
   it('deniega cuando el rol actual no esta permitido', () => {
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
 
-    expect(ejecutarGuard([CODIGOS_ROL.ADMIN])).toBe(false);
+    expectDenegado([CODIGOS_ROL.ADMIN]);
   });
 
   it('deniega cuando no existe usuario', () => {
     estadoUsuario.set(null);
 
-    expect(ejecutarGuard([CODIGOS_ROL.ADMIN])).toBe(false);
+    expectDenegado([CODIGOS_ROL.ADMIN]);
   });
 
   it('deniega cuando rol es null', () => {
     estadoUsuario.set(crearUsuario(null));
 
-    expect(ejecutarGuard([CODIGOS_ROL.ADMIN])).toBe(false);
+    expectDenegado([CODIGOS_ROL.ADMIN]);
   });
 
   it('deniega cuando no existe rolesPermitidos', () => {
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
 
-    expect(ejecutarGuard(undefined)).toBe(false);
+    expectDenegado(undefined);
   });
 
   it('deniega cuando rolesPermitidos no es un arreglo', () => {
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
 
-    expect(ejecutarGuard(CODIGOS_ROL.ADMIN)).toBe(false);
+    expectDenegado(CODIGOS_ROL.ADMIN);
   });
 
   it('deniega cuando el arreglo esta vacio', () => {
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
 
-    expect(ejecutarGuard([])).toBe(false);
+    expectDenegado([]);
   });
 
   it('deniega cuando contiene un rol desconocido', () => {
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
 
-    expect(ejecutarGuard([CODIGOS_ROL.ADMIN, 'DESCONOCIDO'])).toBe(false);
+    expectDenegado([CODIGOS_ROL.ADMIN, 'DESCONOCIDO']);
   });
 
   it('deniega cuando contiene valores de tipos incorrectos', () => {
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
 
-    expect(ejecutarGuard([CODIGOS_ROL.ADMIN, 1, null, { codigo: 'ADMIN' }])).toBe(
-      false,
-    );
+    expectDenegado([CODIGOS_ROL.ADMIN, 1, null, { codigo: 'ADMIN' }]);
   });
 
   it('deniega cuando el codigo del usuario es desconocido', () => {
     estadoUsuario.set(crearUsuario('DESCONOCIDO'));
 
-    expect(ejecutarGuard([CODIGOS_ROL.ADMIN])).toBe(false);
+    expectDenegado([CODIGOS_ROL.ADMIN]);
+  });
+
+  it('redirige a la ruta de acceso denegado cuando deniega', () => {
+    estadoUsuario.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
+
+    const resultado = ejecutarGuard([CODIGOS_ROL.ADMIN]);
+
+    expect(resultado instanceof UrlTree).toBe(true);
+    expect(router.serializeUrl(resultado as UrlTree)).toBe(
+      RUTA_ACCESO_DENEGADO,
+    );
   });
 
   it('no modifica el usuario', () => {
@@ -180,13 +200,13 @@ describe('guardRoles', () => {
     expect(ejecutarGuard([CODIGOS_ROL.ADMIN])).toBe(true);
 
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
-    expect(ejecutarGuard([CODIGOS_ROL.ADMIN])).toBe(false);
+    expectDenegado([CODIGOS_ROL.ADMIN]);
   });
 
   it('puede reevaluar correctamente cuando cambian los roles de la ruta', () => {
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.DOCENTE));
 
-    expect(ejecutarGuard([CODIGOS_ROL.ADMIN])).toBe(false);
+    expectDenegado([CODIGOS_ROL.ADMIN]);
     expect(ejecutarGuard([CODIGOS_ROL.DOCENTE])).toBe(true);
   });
 
@@ -194,24 +214,29 @@ describe('guardRoles', () => {
     estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
 
     expect(() => ejecutarGuard({ valor: 'invalido' })).not.toThrow();
-    expect(ejecutarGuard({ valor: 'invalido' })).toBe(false);
+    expectDenegado({ valor: 'invalido' });
   });
 });
 
-function ejecutarGuard(rolesPermitidos: unknown): boolean {
+function ejecutarGuard(rolesPermitidos: unknown): boolean | UrlTree {
   const ruta = new ActivatedRouteSnapshot();
 
   ruta.data = {
     [CLAVE_ROLES_PERMITIDOS]: rolesPermitidos,
   };
 
-  const resultado = TestBed.runInInjectionContext(() =>
+  return TestBed.runInInjectionContext(() =>
     guardRoles(ruta, {} as RouterStateSnapshot),
-  );
+  ) as boolean | UrlTree;
+}
 
-  if (typeof resultado !== 'boolean') {
-    throw new Error('El guard debe devolver un valor booleano.');
-  }
+function expectDenegado(rolesPermitidos: unknown): void {
+  const resultado = ejecutarGuard(rolesPermitidos);
 
-  return resultado;
+  expect(resultado instanceof UrlTree).toBe(true);
+
+  const arbol = resultado as UrlTree;
+  const rutaSerializada = TestBed.inject(Router).serializeUrl(arbol);
+
+  expect(rutaSerializada).toBe(RUTA_ACCESO_DENEGADO);
 }

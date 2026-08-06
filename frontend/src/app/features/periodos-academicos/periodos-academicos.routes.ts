@@ -45,6 +45,14 @@ export const rutasPeriodosAcademicos: Routes = [
     loadComponent: () =>
       import('./listado-periodos/listado-periodos.component')
         .then((modulo) => modulo.ListadoPeriodosComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [
+        CODIGOS_ROL.ADMIN,
+        CODIGOS_ROL.GESTOR_MATRICULA,
+        CODIGOS_ROL.DOCENTE,
+      ],
+    },
     title: 'Periodos académicos',
   },
 ];

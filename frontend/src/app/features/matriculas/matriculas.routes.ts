@@ -12,6 +12,13 @@ export const MATRICULAS_ROUTES: Routes = [
     loadComponent: () =>
       import('./pages/listar-matriculas/listar-matriculas.component')
         .then((modulo) => modulo.ListarMatriculasComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [
+        CODIGOS_ROL.ADMIN,
+        CODIGOS_ROL.GESTOR_MATRICULA,
+      ],
+    },
     title: 'Matrículas',
   },
   {

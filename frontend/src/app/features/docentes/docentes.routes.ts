@@ -12,6 +12,10 @@ export const DOCENTES_ROUTES: Routes = [
     loadComponent: () =>
       import('./pages/listar-docentes/listar-docentes.component')
         .then((modulo) => modulo.ListarDocentesComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE],
+    },
     title: 'Docentes',
   },
   {

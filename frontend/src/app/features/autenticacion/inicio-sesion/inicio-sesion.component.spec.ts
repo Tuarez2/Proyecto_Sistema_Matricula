@@ -1,4 +1,5 @@
 import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, ParamMap, Router } from '@angular/router';
 import { Observable, Subject, throwError } from 'rxjs';
@@ -7,6 +8,7 @@ import type {
   CredencialesInicioSesion,
   DatosAutenticacion,
   RespuestaInicioSesion,
+  UsuarioAutenticado,
 } from '../../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import { InicioSesionComponent } from './inicio-sesion.component';
@@ -15,6 +17,7 @@ interface AutenticacionServiceMock {
   iniciarSesion: ReturnType<
     typeof vi.fn<(credenciales: CredencialesInicioSesion) => Observable<RespuestaInicioSesion>>
   >;
+  usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
 }
 
 interface RouterMock {
@@ -50,6 +53,37 @@ function crearRespuestaExitosa(): RespuestaInicioSesion {
   };
 }
 
+function crearUsuarioAdmin(): UsuarioAutenticado {
+  return {
+    id: 1,
+    nombres: 'Persona',
+    apellidos: 'Prueba',
+    correo: 'persona.prueba@universidad.edu',
+    estado: 'ACTIVO',
+    debe_cambiar_password: false,
+    estudiante_id: null,
+    docente_id: null,
+    rol: {
+      id: 1,
+      codigo: 'ADMIN',
+      nombre: 'Administrador',
+    },
+  };
+}
+
+function crearUsuarioConRol(codigoRol: string | null): UsuarioAutenticado {
+  return {
+    ...crearUsuarioAdmin(),
+    rol: codigoRol
+      ? {
+          id: 1,
+          codigo: codigoRol,
+          nombre: codigoRol,
+        }
+      : null,
+  };
+}
+
 describe('InicioSesionComponent', () => {
   let fixture: ComponentFixture<InicioSesionComponent>;
   let componente: InicioSesionComponent;
@@ -60,6 +94,7 @@ describe('InicioSesionComponent', () => {
   beforeEach(async () => {
     autenticacionService = {
       iniciarSesion: vi.fn(() => new Subject<RespuestaInicioSesion>().asObservable()),
+      usuarioActual: signal<UsuarioAutenticado | null>(crearUsuarioAdmin()),
     };
     router = {
       navigateByUrl: vi.fn(() => Promise.resolve(true)),
@@ -365,6 +400,73 @@ describe('InicioSesionComponent', () => {
     solicitud.complete();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/usuarios');
+  });
+
+  it('sin retorno un GESTOR_MATRICULA navega a su dashboard', () => {
+    autenticacionService.usuarioActual.set(
+      crearUsuarioConRol('GESTOR_MATRICULA'),
+    );
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard-gestor');
+  });
+
+  it('sin retorno un ESTUDIANTE navega a su portal', () => {
+    autenticacionService.usuarioActual.set(
+      crearUsuarioConRol('ESTUDIANTE'),
+    );
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/portal-estudiante');
+  });
+
+  it('sin retorno un DOCENTE navega a la raiz', () => {
+    autenticacionService.usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
+  it('sin retorno un usuario sin rol navega a acceso denegado', () => {
+    autenticacionService.usuarioActual.set(crearUsuarioConRol(null));
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/acceso-denegado');
+  });
+
+  it('un retorno valido tiene prioridad sobre la ruta inicial del rol', () => {
+    autenticacionService.usuarioActual.set(
+      crearUsuarioConRol('ESTUDIANTE'),
+    );
+    cambiarRetorno('/estudiantes');
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+    solicitud.next(crearRespuestaExitosa());
+    solicitud.complete();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/estudiantes');
   });
 
   it('no muestra error despues de una respuesta correcta', () => {

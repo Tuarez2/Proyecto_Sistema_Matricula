@@ -15,6 +15,7 @@ import type {
   UsuarioAutenticado,
 } from '../models/autenticacion.model';
 import { AutenticacionService } from '../services/autenticacion.service';
+import { CODIGOS_ROL } from '../config/codigos-rol';
 import { guardInvitado } from './invitado.guard';
 
 interface AutenticacionServiceMock {
@@ -30,17 +31,39 @@ interface RouterNavegacion {
   navigateByUrl: ReturnType<typeof vi.fn>;
 }
 
+function crearUsuario(codigoRol: string | null): UsuarioAutenticado {
+  return {
+    id: 1,
+    nombres: 'Persona',
+    apellidos: 'Prueba',
+    correo: 'persona.prueba@universidad.edu',
+    estado: 'ACTIVO',
+    debe_cambiar_password: false,
+    estudiante_id: null,
+    docente_id: null,
+    rol: codigoRol
+      ? {
+          id: 1,
+          codigo: codigoRol,
+          nombre: 'Rol de prueba',
+        }
+      : null,
+  };
+}
+
 describe('guardInvitado', () => {
   let estadoAutenticacion: ReturnType<typeof signal<boolean>>;
+  let estadoUsuario: ReturnType<typeof signal<UsuarioAutenticado | null>>;
   let autenticacionService: AutenticacionServiceMock;
   let router: Router;
   let routerNavegacion: RouterNavegacion;
 
   beforeEach(() => {
     estadoAutenticacion = signal(false);
+    estadoUsuario = signal<UsuarioAutenticado | null>(null);
     autenticacionService = {
       estaAutenticado: estadoAutenticacion.asReadonly(),
-      usuarioActual: signal<UsuarioAutenticado | null>(null).asReadonly(),
+      usuarioActual: estadoUsuario.asReadonly(),
       limpiarSesion: vi.fn(() => estadoAutenticacion.set(false)),
       consultarPerfil: vi.fn(),
       renovarSesion: vi.fn(),
@@ -71,16 +94,44 @@ describe('guardInvitado', () => {
 
   it('devuelve un UrlTree cuando existe sesion', () => {
     estadoAutenticacion.set(true);
+    estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
 
     expect(ejecutarGuard()).toBeInstanceOf(UrlTree);
   });
 
-  it('el UrlTree apunta a raiz', () => {
+  it('redirige a ADMIN hacia la raiz', () => {
     estadoAutenticacion.set(true);
+    estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
 
-    const resultado = ejecutarGuard();
+    expect(serializarResultado(ejecutarGuard())).toBe('/');
+  });
 
-    expect(serializarResultado(resultado)).toBe('/');
+  it('redirige a DOCENTE hacia la raiz', () => {
+    estadoAutenticacion.set(true);
+    estadoUsuario.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+
+    expect(serializarResultado(ejecutarGuard())).toBe('/');
+  });
+
+  it('redirige a GESTOR_MATRICULA hacia su dashboard', () => {
+    estadoAutenticacion.set(true);
+    estadoUsuario.set(crearUsuario(CODIGOS_ROL.GESTOR_MATRICULA));
+
+    expect(serializarResultado(ejecutarGuard())).toBe('/dashboard-gestor');
+  });
+
+  it('redirige a ESTUDIANTE hacia su portal', () => {
+    estadoAutenticacion.set(true);
+    estadoUsuario.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
+
+    expect(serializarResultado(ejecutarGuard())).toBe('/portal-estudiante');
+  });
+
+  it('redirige a acceso denegado cuando el rol es desconocido', () => {
+    estadoAutenticacion.set(true);
+    estadoUsuario.set(crearUsuario(null));
+
+    expect(serializarResultado(ejecutarGuard())).toBe('/acceso-denegado');
   });
 
   it('consulta el valor actual en cada ejecucion', () => {
@@ -88,11 +139,13 @@ describe('guardInvitado', () => {
     expect(ejecutarGuard()).toBe(true);
 
     estadoAutenticacion.set(true);
+    estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
     expect(ejecutarGuard()).toBeInstanceOf(UrlTree);
   });
 
   it('permite volver al login despues de ejecutar limpiarSesion', () => {
     estadoAutenticacion.set(true);
+    estadoUsuario.set(crearUsuario(CODIGOS_ROL.ADMIN));
     expect(ejecutarGuard()).toBeInstanceOf(UrlTree);
 
     autenticacionService.limpiarSesion();

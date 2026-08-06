@@ -3,10 +3,14 @@ import { guardRoles } from '../../core/guards/roles.guard';
 import { DOCENTES_ROUTES } from './docentes.routes';
 
 describe('DOCENTES_ROUTES', () => {
-  it('permite consultar el listado a usuarios autenticados por la ruta padre', () => {
+  it('protege el listado para ADMIN y DOCENTE', () => {
     const rutaListado = DOCENTES_ROUTES.find((ruta) => ruta.path === '');
 
-    expect(rutaListado?.canActivate).toBeUndefined();
+    expect(rutaListado?.canActivate).toEqual([guardRoles]);
+    expect(rutaListado?.data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
+      CODIGOS_ROL.ADMIN,
+      CODIGOS_ROL.DOCENTE,
+    ]);
     expect(rutaListado?.title).toBe('Docentes');
   });
 

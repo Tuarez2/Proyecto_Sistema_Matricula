@@ -12,7 +12,30 @@ export const ESTUDIANTES_ROUTES: Routes = [
     loadComponent: () =>
       import('./pages/listar-estudiantes/listar-estudiantes.component')
         .then((modulo) => modulo.ListarEstudiantesComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [
+        CODIGOS_ROL.ADMIN,
+        CODIGOS_ROL.GESTOR_MATRICULA,
+        CODIGOS_ROL.DOCENTE,
+      ],
+    },
     title: 'Estudiantes',
+  },
+  {
+    path: ':id',
+    loadComponent: () =>
+      import('./pages/ver-estudiante/ver-estudiante.component')
+        .then((modulo) => modulo.VerEstudianteComponent),
+    canActivate: [guardRoles],
+    data: {
+      [CLAVE_ROLES_PERMITIDOS]: [
+        CODIGOS_ROL.ADMIN,
+        CODIGOS_ROL.GESTOR_MATRICULA,
+        CODIGOS_ROL.DOCENTE,
+      ],
+    },
+    title: 'Detalle de estudiante',
   },
   {
     path: 'crear',

@@ -1,3 +1,4 @@
+import { signal, Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Route } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -10,6 +11,7 @@ import { guardRoles } from '../../core/guards/roles.guard';
 import type {
   CredencialesInicioSesion,
   RespuestaInicioSesion,
+  UsuarioAutenticado,
 } from '../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
 import { InicioSesionComponent } from './inicio-sesion/inicio-sesion.component';
@@ -17,6 +19,7 @@ import { rutasAutenticacion } from './autenticacion.routes';
 
 interface AutenticacionServiceMock {
   estaAutenticado: ReturnType<typeof vi.fn<() => boolean>>;
+  usuarioActual: Signal<UsuarioAutenticado | null>;
   iniciarSesion: ReturnType<
     typeof vi.fn<(credenciales: CredencialesInicioSesion) => Observable<RespuestaInicioSesion>>
   >;
@@ -60,6 +63,7 @@ describe('rutasAutenticacion', () => {
   it('un usuario no autenticado puede activar la ruta', async () => {
     const autenticacionService: AutenticacionServiceMock = {
       estaAutenticado: vi.fn(() => false),
+      usuarioActual: signal<UsuarioAutenticado | null>(null).asReadonly(),
       iniciarSesion: vi.fn(),
     };
 
@@ -83,6 +87,8 @@ describe('rutasAutenticacion', () => {
   it('un usuario autenticado es redirigido a raiz', async () => {
     const autenticacionService: AutenticacionServiceMock = {
       estaAutenticado: vi.fn(() => true),
+      usuarioActual: signal<UsuarioAutenticado | null>(crearUsuarioAdmin())
+        .asReadonly(),
       iniciarSesion: vi.fn(),
     };
 
@@ -112,4 +118,22 @@ function obtenerRutaInicioSesion(): Route {
   }
 
   return ruta;
+}
+
+function crearUsuarioAdmin(): UsuarioAutenticado {
+  return {
+    id: 1,
+    nombres: 'Persona',
+    apellidos: 'Prueba',
+    correo: 'persona.prueba@universidad.edu',
+    estado: 'activo',
+    debe_cambiar_password: false,
+    estudiante_id: null,
+    docente_id: null,
+    rol: {
+      id: 1,
+      codigo: 'ADMIN',
+      nombre: 'Administrador',
+    },
+  };
 }

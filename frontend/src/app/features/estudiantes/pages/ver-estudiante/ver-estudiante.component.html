@@ -4,7 +4,13 @@
       <h1 id="titulo-ver-estudiante">Detalle del estudiante</h1>
       <p class="page-subtitle">Información personal e historial de matrículas.</p>
     </div>
-    <a routerLink="/estudiantes" class="btn btn-neutral">Volver a estudiantes</a>
+    <div class="page-actions">
+      @if (puedeGestionarMatriculas()) {
+        <a routerLink="/matriculas/nueva" class="btn btn-primary">Nueva matrícula</a>
+        <a routerLink="/matriculas/renovar" class="btn btn-neutral">Renovar matrícula</a>
+      }
+      <a routerLink="/estudiantes" class="btn btn-neutral">Volver a estudiantes</a>
+    </div>
   </header>
 
   @if (cargando()) {
@@ -142,7 +148,7 @@
                           </a>
                           @if (puedeGestionarMatriculas()) {
                             <a
-                              [routerLink]="['/matriculas', matricula.id, 'imprimir']"
+                              [routerLink]="['/matriculas/imprimir', matricula.id]"
                               class="btn btn-sm btn-neutral"
                             >
                               Comprobante
