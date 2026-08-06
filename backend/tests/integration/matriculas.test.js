@@ -347,6 +347,32 @@ describe('Autorización y aislamiento de datos', () => {
     expect(conDatosPersonales?.estudiante?.correo).toBeTruthy();
   });
 
+  it('incluye en el resumen cursos con datos del docente completos', async () => {
+    const periodoResumen = await crearPeriodoPrueba(`${sufijo}.resumen`);
+    const cursoResumen = await Curso.create({
+      periodo_id: periodoResumen.id,
+      asignatura_id: escenario.asignatura.id,
+      docente_id: escenario.docente.id,
+      paralelo: 'RS',
+      aula: 'Aula resumen',
+      horario: 'Horario resumen',
+      cupo_maximo: 2,
+      estado: COURSE_STATUS.OPEN
+    });
+    await crearMatriculaDirecta(escenario.estudiantes[6].id, cursoResumen.id);
+
+    const resumen = await request(app)
+      .get('/api/v1/matriculas/resumen')
+      .set('Authorization', `Bearer ${tokenAdministrador}`);
+    const cursos = [...resumen.body.data.cursos_con_pocos_cupos, ...resumen.body.data.cursos_llenos];
+    const cursoEscenario = cursos.find((curso) => curso.id === cursoResumen.id);
+
+    expect(resumen.status).toBe(200);
+    expect(cursoEscenario).toBeTruthy();
+    expect(cursoEscenario.docente.correo).toBeTruthy();
+    expect(cursoEscenario.docente.identificacion).toBeTruthy();
+  });
+
   it('permite al estudiante ver solo sus propias matrículas sin datos personales', async () => {
     const cursoPropio = await Curso.create({
       periodo_id: escenario.periodo.id,
@@ -456,7 +482,9 @@ describe('Listado, filtros y paginación', () => {
 
   it('ordena por fecha_matricula descendente y luego id descendente', async () => {
     const respuesta = await listado(`?curso_id=${cursoListado.id}&limit=100`);
-    const idsEsperados = [...matriculasListado].reverse().map((matricula) => matricula.id);
+    const idsEsperados = [...matriculasListado]
+      .sort((a, b) => b.fecha_matricula - a.fecha_matricula || b.id - a.id)
+      .map((matricula) => matricula.id);
 
     expect(respuesta.status).toBe(200);
     expect(respuesta.body.data.map((registro) => registro.id)).toEqual(idsEsperados);

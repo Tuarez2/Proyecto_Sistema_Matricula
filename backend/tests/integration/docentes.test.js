@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../src/app.js';
 import { ROLE_CODES } from '../../src/constants/domain.constants.js';
 import { Docente } from '../../src/models/index.js';
-import { obtenerTokenAdministrador, obtenerTokenUsuarioComun } from '../helpers/autenticacion.js';
+import { obtenerTokenAdministrador, obtenerTokenUsuarioComun, obtenerTokenUsuarioPrueba } from '../helpers/autenticacion.js';
 import { limpiarDatosPrueba } from '../helpers/baseDatos.js';
 import { generarSufijoPrueba } from '../helpers/datosPrueba.js';
 
@@ -306,9 +306,16 @@ describe('Docentes', () => {
     expect(respuesta.status).toBe(401);
   });
 
-  it('permite el acceso a los roles autenticados', async () => {
+  it('permite el acceso a los roles autorizados y niega al estudiante', async () => {
     const estudiante = await obtenerTokenUsuarioComun(`${sufijo}.estudiante`);
-    const docente = await obtenerTokenUsuarioComun(`${sufijo}.docente`, { codigoRol: ROLE_CODES.TEACHER });
+    const docente = await obtenerTokenUsuarioPrueba({
+      sufijo: `${sufijo}.docente`,
+      codigoRol: ROLE_CODES.TEACHER
+    });
+    const gestor = await obtenerTokenUsuarioPrueba({
+      sufijo: `${sufijo}.gestor`,
+      codigoRol: ROLE_CODES.ENROLLMENT_MANAGER
+    });
 
     const respuestaEstudiante = await request(app)
       .get('/api/v1/docentes')
@@ -316,8 +323,12 @@ describe('Docentes', () => {
     const respuestaDocente = await request(app)
       .get('/api/v1/docentes')
       .set('Authorization', `Bearer ${docente.token}`);
+    const respuestaGestor = await request(app)
+      .get('/api/v1/docentes')
+      .set('Authorization', `Bearer ${gestor.token}`);
 
-    expect(respuestaEstudiante.status).toBe(200);
+    expect(respuestaEstudiante.status).toBe(403);
     expect(respuestaDocente.status).toBe(200);
+    expect(respuestaGestor.status).toBe(200);
   });
 });

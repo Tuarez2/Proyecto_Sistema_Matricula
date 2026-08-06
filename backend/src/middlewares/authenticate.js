@@ -60,6 +60,8 @@ const authenticate = async (req, res, next) => {
       apellidos: usuario.apellidos,
       estado: usuario.estado,
       sessionId: sesion.id,
+      estudiante_id: usuario.estudiante_id ?? null,
+      docente_id: usuario.docente_id ?? null,
       rol: {
         id: usuario.rol.id,
         codigo: usuario.rol.codigo,

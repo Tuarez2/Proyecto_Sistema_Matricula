@@ -15,7 +15,7 @@ export const obtenerEstudiantes = manejadorAsync(async (req, res) => {
 });
 
 export const obtenerEstudiantePorId = manejadorAsync(async (req, res) => {
-  const estudiante = await estudianteService.obtenerEstudiantePorId(req.params.id);
+  const estudiante = await estudianteService.obtenerEstudiantePorId(req.params.id, req.user);
 
   res.status(200).json({
     success: true,

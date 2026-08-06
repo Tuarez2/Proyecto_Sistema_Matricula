@@ -744,11 +744,11 @@ export const obtenerResumenMatriculas = async () => {
 
         return disponibles > 0 && disponibles <= CURSOS_POCOS_CUPOS_UMBRAL;
       })
-      .map((curso) => sanitizarCurso(curso, cantidadPorCurso.get(curso.id) ?? 0));
+      .map((curso) => sanitizarCurso(curso, false));
 
     cursosLlenos = cursos
       .filter((curso) => (curso.cupo_maximo - (cantidadPorCurso.get(curso.id) ?? 0)) <= 0)
-      .map((curso) => sanitizarCurso(curso, cantidadPorCurso.get(curso.id) ?? 0));
+      .map((curso) => sanitizarCurso(curso, false));
 
     const registrosEstudiantes = await Matricula.findAll({
       attributes: [[sequelize.fn('DISTINCT', sequelize.col('estudiante_id')), 'estudiante_id']],

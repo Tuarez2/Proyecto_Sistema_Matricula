@@ -23,10 +23,12 @@ import {
 const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 const rolesGestionEstudiantes = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER);
+const rolesConsultaEstudiantes = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER, ROLE_CODES.TEACHER);
+const rolesConsultaDetalleEstudiante = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER, ROLE_CODES.TEACHER, ROLE_CODES.STUDENT);
 
 router.use(authenticate);
-router.get('/', validarListadoEstudiantes, validarSolicitud, obtenerEstudiantes);
-router.get('/:id', validarIdParam, validarSolicitud, obtenerEstudiantePorId);
+router.get('/', rolesConsultaEstudiantes, validarListadoEstudiantes, validarSolicitud, obtenerEstudiantes);
+router.get('/:id', rolesConsultaDetalleEstudiante, validarIdParam, validarSolicitud, obtenerEstudiantePorId);
 router.get('/:id/cursos-disponibles', rolesGestionEstudiantes, validarIdParam, validarCursosDisponiblesEstudiante, validarSolicitud, obtenerCursosDisponibles);
 router.post('/', rolesGestionEstudiantes, validarCreacionEstudiante, validarSolicitud, crearEstudiante);
 router.put('/:id', rolesGestionEstudiantes, validarIdParam, validarActualizacionEstudiante, validarSolicitud, actualizarEstudiante);

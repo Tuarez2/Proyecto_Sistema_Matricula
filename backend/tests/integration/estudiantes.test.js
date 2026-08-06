@@ -2,9 +2,9 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import app from '../../src/app.js';
-import { ACADEMIC_STATUS } from '../../src/constants/domain.constants.js';
+import { ACADEMIC_STATUS, ROLE_CODES } from '../../src/constants/domain.constants.js';
 import { Estudiante } from '../../src/models/index.js';
-import { obtenerTokenAdministrador } from '../helpers/autenticacion.js';
+import { obtenerTokenAdministrador, obtenerTokenUsuarioPrueba } from '../helpers/autenticacion.js';
 import { limpiarDatosPrueba } from '../helpers/baseDatos.js';
 import { crearCarreraPrueba, generarSufijoPrueba } from '../helpers/datosPrueba.js';
 
@@ -374,5 +374,77 @@ describe('Estudiantes', () => {
     const respuesta = await request(app).get('/api/v1/estudiantes');
 
     expect(respuesta.status).toBe(401);
+  });
+
+  it('permite al docente consultar el listado y el detalle', async () => {
+    const docente = await obtenerTokenUsuarioPrueba({
+      sufijo: `${sufijo}.docente`,
+      codigoRol: ROLE_CODES.TEACHER
+    });
+    const estudiante = estudiantes[0];
+
+    const listado = await request(app)
+      .get('/api/v1/estudiantes')
+      .set('Authorization', `Bearer ${docente.token}`);
+    const detalle = await request(app)
+      .get(`/api/v1/estudiantes/${estudiante.id}`)
+      .set('Authorization', `Bearer ${docente.token}`);
+
+    expect(listado.status).toBe(200);
+    expect(detalle.status).toBe(200);
+    expect(detalle.body.data.id).toBe(estudiante.id);
+  });
+
+  it('permite al gestor consultar el listado y el detalle', async () => {
+    const gestor = await obtenerTokenUsuarioPrueba({
+      sufijo: `${sufijo}.gestor`,
+      codigoRol: ROLE_CODES.ENROLLMENT_MANAGER
+    });
+    const estudiante = estudiantes[1];
+
+    const listado = await request(app)
+      .get('/api/v1/estudiantes')
+      .set('Authorization', `Bearer ${gestor.token}`);
+    const detalle = await request(app)
+      .get(`/api/v1/estudiantes/${estudiante.id}`)
+      .set('Authorization', `Bearer ${gestor.token}`);
+
+    expect(listado.status).toBe(200);
+    expect(detalle.status).toBe(200);
+  });
+
+  it('niega el listado a un estudiante', async () => {
+    const estudianteUsuario = await obtenerTokenUsuarioPrueba({
+      sufijo: `${sufijo}.estudiante`,
+      codigoRol: ROLE_CODES.STUDENT
+    });
+
+    const respuesta = await request(app)
+      .get('/api/v1/estudiantes')
+      .set('Authorization', `Bearer ${estudianteUsuario.token}`);
+
+    expect(respuesta.status).toBe(403);
+  });
+
+  it('permite a un estudiante ver unicamente su propio detalle', async () => {
+    const estudianteVinculado = estudiantes[2];
+    const estudianteUsuario = await obtenerTokenUsuarioPrueba({
+      sufijo: `${sufijo}.propio`,
+      codigoRol: ROLE_CODES.STUDENT,
+      estudiante_id: estudianteVinculado.id
+    });
+    const otroEstudiante = estudiantes[3];
+
+    const propio = await request(app)
+      .get(`/api/v1/estudiantes/${estudianteVinculado.id}`)
+      .set('Authorization', `Bearer ${estudianteUsuario.token}`);
+    const ajeno = await request(app)
+      .get(`/api/v1/estudiantes/${otroEstudiante.id}`)
+      .set('Authorization', `Bearer ${estudianteUsuario.token}`);
+
+    expect(propio.status).toBe(200);
+    expect(propio.body.data.id).toBe(estudianteVinculado.id);
+    expect(propio.body.data).not.toHaveProperty('cursosMatriculados');
+    expect(ajeno.status).toBe(404);
   });
 });

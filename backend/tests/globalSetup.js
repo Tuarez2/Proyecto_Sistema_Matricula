@@ -33,6 +33,7 @@ export default async () => {
     multipleStatements: false
   });
 
+  await conexion.query(`DROP DATABASE IF EXISTS ${escaparIdentificador(baseDatosPruebas)}`);
   await conexion.query(`CREATE DATABASE IF NOT EXISTS ${escaparIdentificador(baseDatosPruebas)}`);
   await conexion.end();
 

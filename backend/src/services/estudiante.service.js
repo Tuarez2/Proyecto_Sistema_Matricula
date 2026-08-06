@@ -4,7 +4,8 @@ import {
   ACADEMIC_PERIOD_STATUS,
   ACADEMIC_STATUS,
   COURSE_STATUS,
-  ESTADOS_MATRICULA_OCUPAN_CUPO
+  ESTADOS_MATRICULA_OCUPAN_CUPO,
+  ROLE_CODES
 } from '../constants/domain.constants.js';
 import {
   Asignatura,
@@ -55,7 +56,7 @@ const fechaValida = (valor) => {
 };
 
 const inclusionesListado = [{ association: 'carrera' }];
-const inclusionesDetalle = [{ association: 'carrera' }, { association: 'cursosMatriculados' }];
+const inclusionesDetalle = [{ association: 'carrera' }];
 const atributosEstudiante = ['id', 'carrera_id', 'numero_matricula', 'identificacion', 'nombres', 'apellidos', 'correo', 'telefono', 'fecha_nacimiento', 'estado_academico', 'nivel_academico_actual', 'created_at', 'updated_at'];
 const atributosCarrera = ['id', 'codigo', 'nombre', 'duracion_semestres', 'facultad_id', 'activo'];
 
@@ -169,14 +170,18 @@ export const listarEstudiantes = async (filtros = {}) => {
   };
 };
 
-export const obtenerEstudiantePorId = async (id) => {
+export const obtenerEstudiantePorId = async (id, usuario) => {
   const estudiante = await Estudiante.findByPk(id, { include: inclusionesDetalle });
 
   if (!estudiante) {
     throw new ApiError(404, 'Estudiante no encontrado.', 'ESTUDIANTE_NOT_FOUND');
   }
 
-  return estudiante;
+  if (usuario?.rol?.codigo === ROLE_CODES.STUDENT && Number(id) !== Number(usuario.estudiante_id)) {
+    throw new ApiError(404, 'Estudiante no encontrado.', 'ESTUDIANTE_NOT_FOUND');
+  }
+
+  return sanitizarEstudiante(estudiante);
 };
 
 export const crearEstudiante = async (datos) => {
