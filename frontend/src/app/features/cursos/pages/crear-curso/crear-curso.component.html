@@ -1,147 +1,162 @@
-<section aria-labelledby="titulo-crear-curso">
-  <h1 id="titulo-crear-curso">Crear curso</h1>
+<section class="page" aria-labelledby="titulo-crear-curso">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-crear-curso">Crear curso</h1>
+      <p class="page-subtitle">Registra un nuevo curso.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/cursos" class="btn btn-neutral">Volver al listado</a>
+    </div>
+  </header>
 
   @if (cargandoCatalogos()) {
-    <p role="status" aria-live="polite">Cargando opciones disponibles...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Cargando opciones disponibles...
+    </div>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
-  <form [formGroup]="formularioCurso" (ngSubmit)="guardarCurso()" novalidate>
-    <div>
-      <label for="periodo_id">Período académico</label>
-      <select id="periodo_id" formControlName="periodo_id">
-        <option value="">Seleccione</option>
-        @for (periodo of periodos(); track periodo.id) {
-          <option [value]="periodo.id">{{ periodo.nombre }}</option>
+  <form class="form-card" [formGroup]="formularioCurso" (ngSubmit)="guardarCurso()" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="periodo_id">Período académico</label>
+        <select id="periodo_id" formControlName="periodo_id">
+          <option value="">Seleccione</option>
+          @for (periodo of periodos(); track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.nombre }}</option>
+          }
+        </select>
+        @if (
+          formularioCurso.controls.periodo_id.touched &&
+          formularioCurso.controls.periodo_id.hasError('required')
+        ) {
+          <p class="error-field" role="alert">Seleccione un período académico.</p>
         }
-      </select>
-      @if (
-        formularioCurso.controls.periodo_id.touched &&
-        formularioCurso.controls.periodo_id.hasError('required')
-      ) {
-        <p role="alert">Seleccione un período académico.</p>
-      }
-    </div>
+      </div>
 
-    <div>
-      <label for="asignatura_id">Asignatura</label>
-      <select id="asignatura_id" formControlName="asignatura_id">
-        <option value="">Seleccione</option>
-        @for (asignatura of asignaturas(); track asignatura.id) {
-          <option [value]="asignatura.id">
-            {{ asignatura.codigo }} - {{ asignatura.nombre }}
-          </option>
+      <div class="form-field">
+        <label for="asignatura_id">Asignatura</label>
+        <select id="asignatura_id" formControlName="asignatura_id">
+          <option value="">Seleccione</option>
+          @for (asignatura of asignaturas(); track asignatura.id) {
+            <option [value]="asignatura.id">
+              {{ asignatura.codigo }} - {{ asignatura.nombre }}
+            </option>
+          }
+        </select>
+        @if (
+          formularioCurso.controls.asignatura_id.touched &&
+          formularioCurso.controls.asignatura_id.hasError('required')
+        ) {
+          <p class="error-field" role="alert">Seleccione una asignatura.</p>
         }
-      </select>
-      @if (
-        formularioCurso.controls.asignatura_id.touched &&
-        formularioCurso.controls.asignatura_id.hasError('required')
-      ) {
-        <p role="alert">Seleccione una asignatura.</p>
-      }
-    </div>
+      </div>
 
-    <div>
-      <label for="docente_id">Docente</label>
-      <select id="docente_id" formControlName="docente_id">
-        <option value="">Seleccione</option>
-        @for (docente of docentes(); track docente.id) {
-          <option [value]="docente.id">{{ obtenerNombreDocente(docente) }}</option>
+      <div class="form-field">
+        <label for="docente_id">Docente</label>
+        <select id="docente_id" formControlName="docente_id">
+          <option value="">Seleccione</option>
+          @for (docente of docentes(); track docente.id) {
+            <option [value]="docente.id">{{ obtenerNombreDocente(docente) }}</option>
+          }
+        </select>
+        @if (
+          formularioCurso.controls.docente_id.touched &&
+          formularioCurso.controls.docente_id.hasError('required')
+        ) {
+          <p class="error-field" role="alert">Seleccione un docente.</p>
         }
-      </select>
-      @if (
-        formularioCurso.controls.docente_id.touched &&
-        formularioCurso.controls.docente_id.hasError('required')
-      ) {
-        <p role="alert">Seleccione un docente.</p>
-      }
+      </div>
+
+      <div class="form-field">
+        <label for="paralelo">Paralelo</label>
+        <input id="paralelo" formControlName="paralelo" maxlength="10" />
+        @if (
+          formularioCurso.controls.paralelo.touched &&
+          formularioCurso.controls.paralelo.hasError('required')
+        ) {
+          <p class="error-field" role="alert">El paralelo es obligatorio.</p>
+        }
+        @if (
+          formularioCurso.controls.paralelo.touched &&
+          formularioCurso.controls.paralelo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El paralelo no puede superar 10 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="aula">Aula</label>
+        <input id="aula" formControlName="aula" maxlength="50" />
+        @if (
+          formularioCurso.controls.aula.touched &&
+          formularioCurso.controls.aula.hasError('required')
+        ) {
+          <p class="error-field" role="alert">El aula es obligatoria.</p>
+        }
+        @if (
+          formularioCurso.controls.aula.touched &&
+          formularioCurso.controls.aula.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El aula no puede superar 50 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="horario">Horario</label>
+        <input id="horario" formControlName="horario" maxlength="150" />
+        @if (
+          formularioCurso.controls.horario.touched &&
+          formularioCurso.controls.horario.hasError('required')
+        ) {
+          <p class="error-field" role="alert">El horario es obligatorio.</p>
+        }
+        @if (
+          formularioCurso.controls.horario.touched &&
+          formularioCurso.controls.horario.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El horario no puede superar 150 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="cupo">Cupo máximo</label>
+        <input
+          id="cupo"
+          type="number"
+          min="1"
+          formControlName="cupo"
+        />
+        @if (
+          formularioCurso.controls.cupo.touched &&
+          formularioCurso.controls.cupo.hasError('required')
+        ) {
+          <p class="error-field" role="alert">El cupo máximo es obligatorio.</p>
+        }
+        @if (
+          formularioCurso.controls.cupo.touched &&
+          formularioCurso.controls.cupo.hasError('min')
+        ) {
+          <p class="error-field" role="alert">El cupo máximo debe ser al menos 1.</p>
+        }
+      </div>
     </div>
 
-    <div>
-      <label for="paralelo">Paralelo</label>
-      <input id="paralelo" formControlName="paralelo" maxlength="10" />
-      @if (
-        formularioCurso.controls.paralelo.touched &&
-        formularioCurso.controls.paralelo.hasError('required')
-      ) {
-        <p role="alert">El paralelo es obligatorio.</p>
-      }
-      @if (
-        formularioCurso.controls.paralelo.touched &&
-        formularioCurso.controls.paralelo.hasError('maxlength')
-      ) {
-        <p role="alert">El paralelo no puede superar 10 caracteres.</p>
-      }
+    <div class="form-actions">
+      <button type="submit" [disabled]="enviando() || cargandoCatalogos()">
+        Crear curso
+      </button>
+      <button type="button" [disabled]="enviando()" (click)="cancelar()">
+        Cancelar
+      </button>
     </div>
-
-    <div>
-      <label for="aula">Aula</label>
-      <input id="aula" formControlName="aula" maxlength="50" />
-      @if (
-        formularioCurso.controls.aula.touched &&
-        formularioCurso.controls.aula.hasError('required')
-      ) {
-        <p role="alert">El aula es obligatoria.</p>
-      }
-      @if (
-        formularioCurso.controls.aula.touched &&
-        formularioCurso.controls.aula.hasError('maxlength')
-      ) {
-        <p role="alert">El aula no puede superar 50 caracteres.</p>
-      }
-    </div>
-
-    <div>
-      <label for="horario">Horario</label>
-      <input id="horario" formControlName="horario" maxlength="150" />
-      @if (
-        formularioCurso.controls.horario.touched &&
-        formularioCurso.controls.horario.hasError('required')
-      ) {
-        <p role="alert">El horario es obligatorio.</p>
-      }
-      @if (
-        formularioCurso.controls.horario.touched &&
-        formularioCurso.controls.horario.hasError('maxlength')
-      ) {
-        <p role="alert">El horario no puede superar 150 caracteres.</p>
-      }
-    </div>
-
-    <div>
-      <label for="cupo">Cupo máximo</label>
-      <input
-        id="cupo"
-        type="number"
-        min="1"
-        formControlName="cupo"
-      />
-      @if (
-        formularioCurso.controls.cupo.touched &&
-        formularioCurso.controls.cupo.hasError('required')
-      ) {
-        <p role="alert">El cupo máximo es obligatorio.</p>
-      }
-      @if (
-        formularioCurso.controls.cupo.touched &&
-        formularioCurso.controls.cupo.hasError('min')
-      ) {
-        <p role="alert">El cupo máximo debe ser al menos 1.</p>
-      }
-    </div>
-
-    <button type="submit" [disabled]="enviando() || cargandoCatalogos()">
-      Crear curso
-    </button>
-    <button type="button" [disabled]="enviando()" (click)="cancelar()">
-      Cancelar
-    </button>
   </form>
 </section>

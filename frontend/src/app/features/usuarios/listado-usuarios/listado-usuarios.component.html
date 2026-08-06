@@ -1,127 +1,146 @@
-<section aria-labelledby="titulo-usuarios">
-  <h1 id="titulo-usuarios">Usuarios</h1>
-  <a routerLink="/usuarios/nuevo">Crear usuario</a>
+<section class="page" aria-labelledby="titulo-usuarios">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-usuarios">Usuarios</h1>
+      <p class="page-subtitle">Administra los usuarios del sistema.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/usuarios/nuevo" class="btn btn-primary">Crear usuario</a>
+    </div>
+  </header>
 
   <form
+    class="form-card"
     [formGroup]="formularioFiltros"
     (ngSubmit)="buscarUsuarios()"
     novalidate
   >
-    <div>
-      <label for="correo">Correo</label>
-      <input
-        id="correo"
-        type="search"
-        formControlName="correo"
-        maxlength="150"
-      />
-      @if (
-        formularioFiltros.controls.correo.touched &&
-        formularioFiltros.controls.correo.hasError('maxlength')
-      ) {
-        <p role="alert">El correo no puede superar 150 caracteres.</p>
-      }
-    </div>
-
-    <div>
-      <label for="estado">Estado</label>
-      <select id="estado" formControlName="estado">
-        <option value="">Todos los estados</option>
-        <option [value]="ESTADOS_USUARIO.ACTIVO">Activo</option>
-        <option [value]="ESTADOS_USUARIO.BLOQUEADO">Bloqueado</option>
-        <option [value]="ESTADOS_USUARIO.INACTIVO">Inactivo</option>
-      </select>
-    </div>
-
-    <div>
-      <label for="codigoRol">Rol</label>
-      <select
-        id="codigoRol"
-        formControlName="codigoRol"
-        [disabled]="cargandoRoles()"
-      >
-        <option value="">Todos los roles</option>
-        @for (rol of roles(); track rol.id) {
-          <option [value]="rol.codigo">{{ rol.nombre }}</option>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="correo">Correo</label>
+        <input
+          id="correo"
+          type="search"
+          formControlName="correo"
+          maxlength="150"
+        />
+        @if (
+          formularioFiltros.controls.correo.touched &&
+          formularioFiltros.controls.correo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El correo no puede superar 150 caracteres.</p>
         }
-      </select>
+      </div>
+
+      <div class="form-field">
+        <label for="estado">Estado</label>
+        <select id="estado" formControlName="estado">
+          <option value="">Todos los estados</option>
+          <option [value]="ESTADOS_USUARIO.ACTIVO">Activo</option>
+          <option [value]="ESTADOS_USUARIO.BLOQUEADO">Bloqueado</option>
+          <option [value]="ESTADOS_USUARIO.INACTIVO">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="codigoRol">Rol</label>
+        <select
+          id="codigoRol"
+          formControlName="codigoRol"
+          [disabled]="cargandoRoles()"
+        >
+          <option value="">Todos los roles</option>
+          @for (rol of roles(); track rol.id) {
+            <option [value]="rol.codigo">{{ rol.nombre }}</option>
+          }
+        </select>
+      </div>
     </div>
 
-    <button type="submit" [disabled]="cargandoUsuarios()">Buscar</button>
-    <button
-      type="button"
-      [disabled]="cargandoUsuarios()"
-      (click)="limpiarFiltros()"
-    >
-      Limpiar filtros
-    </button>
+    <div class="form-actions">
+      <button type="submit" [disabled]="cargandoUsuarios()">Buscar</button>
+      <button
+        type="button"
+        [disabled]="cargandoUsuarios()"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar filtros
+      </button>
+    </div>
   </form>
 
   @if (cargandoUsuarios()) {
-    <p role="status" aria-live="polite">Consultando usuarios...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando usuarios...
+    </div>
   }
 
   @if (mensajeErrorRoles()) {
-    <p role="alert">{{ mensajeErrorRoles() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeErrorRoles() }}</p>
   }
 
   @if (mensajeErrorUsuarios()) {
-    <p role="alert">{{ mensajeErrorUsuarios() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeErrorUsuarios() }}</p>
   }
 
   @if (!cargandoUsuarios() && !mensajeErrorUsuarios() && usuarios().length === 0) {
-    <p>No se encontraron usuarios.</p>
+    <div class="empty-state">
+      <p>No se encontraron usuarios.</p>
+    </div>
   }
 
   @if (usuarios().length > 0) {
-    <table>
-      <caption>Listado de usuarios</caption>
-      <thead>
-        <tr>
-          <th scope="col">Identificador</th>
-          <th scope="col">Nombre completo</th>
-          <th scope="col">Correo</th>
-          <th scope="col">Rol</th>
-          <th scope="col">Estado</th>
-          <th scope="col">Cambio de contraseña pendiente</th>
-          <th scope="col">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (usuario of usuarios(); track usuario.id) {
+    <div class="table-wrap">
+      <table>
+        <caption>Listado de usuarios</caption>
+        <thead>
           <tr>
-            <td>{{ usuario.id }}</td>
-            <td>{{ obtenerNombreCompleto(usuario) }}</td>
-            <td>{{ usuario.correo }}</td>
-            <td>{{ usuario.rol?.nombre || 'Sin rol' }}</td>
-            <td>{{ usuario.estado }}</td>
-            <td>
-              @if (usuario.debe_cambiar_password) {
-                Sí
-              } @else {
-                No
-              }
-            </td>
-            <td>
-              <a [routerLink]="['/usuarios', usuario.id, 'editar']">
-                Editar
-              </a>
-              <a [routerLink]="['/usuarios', usuario.id, 'estado']">
-                Cambiar estado
-              </a>
-              <a [routerLink]="['/usuarios', usuario.id, 'contrasena']">
-                Cambiar contraseña
-              </a>
-            </td>
+            <th scope="col">Identificador</th>
+            <th scope="col">Nombre completo</th>
+            <th scope="col">Correo</th>
+            <th scope="col">Rol</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Cambio de contraseña pendiente</th>
+            <th scope="col">Acciones</th>
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (usuario of usuarios(); track usuario.id) {
+            <tr>
+              <td>{{ usuario.id }}</td>
+              <td>{{ obtenerNombreCompleto(usuario) }}</td>
+              <td>{{ usuario.correo }}</td>
+              <td>{{ usuario.rol?.nombre || 'Sin rol' }}</td>
+              <td>{{ usuario.estado }}</td>
+              <td>
+                @if (usuario.debe_cambiar_password) {
+                  Sí
+                } @else {
+                  No
+                }
+              </td>
+              <td>
+                <div class="row-actions">
+                  <a [routerLink]="['/usuarios', usuario.id, 'editar']" class="btn btn-sm btn-neutral">
+                    Editar
+                  </a>
+                  <a [routerLink]="['/usuarios', usuario.id, 'estado']" class="btn btn-sm btn-neutral">
+                    Cambiar estado
+                  </a>
+                  <a [routerLink]="['/usuarios', usuario.id, 'contrasena']" class="btn btn-sm btn-neutral">
+                    Cambiar contraseña
+                  </a>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 
-  <nav aria-label="Paginación de usuarios">
-    <p>Página {{ totalPaginas() === 0 ? 0 : paginaActual() }} de {{ totalPaginas() }}</p>
-    <p>Total de usuarios: {{ totalUsuarios() }}</p>
+  <nav aria-label="Paginación de usuarios" class="pagination">
     <button
       type="button"
       [disabled]="!puedeIrPaginaAnterior() || cargandoUsuarios()"
@@ -129,6 +148,10 @@
     >
       Anterior
     </button>
+    <span class="pagination__status">
+      Página {{ totalPaginas() === 0 ? 0 : paginaActual() }} de {{ totalPaginas() }}
+      · Total de usuarios: {{ totalUsuarios() }}
+    </span>
     <button
       type="button"
       [disabled]="!puedeIrPaginaSiguiente() || cargandoUsuarios()"

@@ -1,107 +1,127 @@
-<section aria-labelledby="titulo-facultades">
-  <h1 id="titulo-facultades">Facultades</h1>
-
-  @if (esAdministrador()) {
-    <a routerLink="/facultades/crear">Crear facultad</a>
-  }
-
-  <form [formGroup]="filtros" (ngSubmit)="buscarFacultades()" novalidate>
+<section class="page" aria-labelledby="titulo-facultades">
+  <header class="page-header">
     <div>
-      <label for="codigo">Código</label>
-      <input id="codigo" formControlName="codigo" maxlength="20" />
-      @if (
-        filtros.controls.codigo.touched &&
-        filtros.controls.codigo.hasError('maxlength')
-      ) {
-        <p role="alert">El código no puede superar 20 caracteres.</p>
-      }
+      <h1 id="titulo-facultades">Facultades</h1>
+      <p class="page-subtitle">Consulta y administra las facultades.</p>
+    </div>
+    @if (esAdministrador()) {
+      <div class="page-actions">
+        <a routerLink="/facultades/crear" class="btn btn-primary">Crear facultad</a>
+      </div>
+    }
+  </header>
+
+  <form class="form-card" [formGroup]="filtros" (ngSubmit)="buscarFacultades()" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" maxlength="20" />
+        @if (
+          filtros.controls.codigo.touched &&
+          filtros.controls.codigo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El código no puede superar 20 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" formControlName="nombre" maxlength="120" />
+        @if (
+          filtros.controls.nombre.touched &&
+          filtros.controls.nombre.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El nombre no puede superar 120 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="activo">Estado</label>
+        <select id="activo" formControlName="activo">
+          <option value="">Todos</option>
+          <option value="true">Activas</option>
+          <option value="false">Inactivas</option>
+        </select>
+      </div>
     </div>
 
-    <div>
-      <label for="nombre">Nombre</label>
-      <input id="nombre" formControlName="nombre" maxlength="120" />
-      @if (
-        filtros.controls.nombre.touched &&
-        filtros.controls.nombre.hasError('maxlength')
-      ) {
-        <p role="alert">El nombre no puede superar 120 caracteres.</p>
-      }
+    <div class="form-actions">
+      <button type="submit" [disabled]="cargando()">Buscar</button>
+      <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
     </div>
-
-    <div>
-      <label for="activo">Estado</label>
-      <select id="activo" formControlName="activo">
-        <option value="">Todos</option>
-        <option value="true">Activas</option>
-        <option value="false">Inactivas</option>
-      </select>
-    </div>
-
-    <button type="submit" [disabled]="cargando()">Buscar</button>
-    <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
-      Limpiar filtros
-    </button>
   </form>
 
   @if (cargando()) {
-    <p role="status" aria-live="polite">Consultando facultades...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando facultades...
+    </div>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (!cargando() && !mensajeError() && facultades().length === 0) {
-    <p>No se encontraron facultades.</p>
+    <div class="empty-state">
+      <p>No se encontraron facultades.</p>
+    </div>
   }
 
   @if (facultades().length > 0) {
-    <table>
-      <caption>Listado de facultades</caption>
-      <thead>
-        <tr>
-          <th scope="col">Código</th>
-          <th scope="col">Nombre</th>
-          <th scope="col">Estado</th>
-          <th scope="col">Fecha de creación</th>
-          <th scope="col">Detalle</th>
-          @if (esAdministrador()) {
-            <th scope="col">Acciones</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (facultad of facultades(); track facultad.id) {
+    <div class="table-wrap">
+      <table>
+        <caption>Listado de facultades</caption>
+        <thead>
           <tr>
-            <td>{{ facultad.codigo }}</td>
-            <td>{{ facultad.nombre }}</td>
-            <td>{{ obtenerEtiquetaEstado(facultad) }}</td>
-            <td>{{ facultad.created_at ? (facultad.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}</td>
-            <td>
-              <a [routerLink]="['/facultades', facultad.id]">Ver</a>
-            </td>
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Fecha de creación</th>
+            <th scope="col">Detalle</th>
             @if (esAdministrador()) {
-              <td>
-                <a [routerLink]="['/facultades/editar', facultad.id]">
-                  Editar
-                </a>
-                <button
-                  type="button"
-                  [disabled]="facultadProcesando() !== null"
-                  (click)="cambiarEstado(facultad)"
-                >
-                  {{ facultad.activo ? 'Desactivar' : 'Activar' }}
-                </button>
-              </td>
+              <th scope="col">Acciones</th>
             }
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (facultad of facultades(); track facultad.id) {
+            <tr>
+              <td>{{ facultad.codigo }}</td>
+              <td>{{ facultad.nombre }}</td>
+              <td>{{ obtenerEtiquetaEstado(facultad) }}</td>
+              <td>{{ facultad.created_at ? (facultad.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}</td>
+              <td>
+                <a class="btn btn-sm btn-neutral" [routerLink]="['/facultades', facultad.id]">Ver</a>
+              </td>
+              @if (esAdministrador()) {
+                <td>
+                  <div class="row-actions">
+                    <a class="btn btn-sm btn-neutral" [routerLink]="['/facultades/editar', facultad.id]">
+                      Editar
+                    </a>
+                    <button
+                      class="btn btn-sm btn-neutral"
+                      type="button"
+                      [disabled]="facultadProcesando() !== null"
+                      (click)="cambiarEstado(facultad)"
+                    >
+                      {{ facultad.activo ? 'Desactivar' : 'Activar' }}
+                    </button>
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 
   <app-pagination

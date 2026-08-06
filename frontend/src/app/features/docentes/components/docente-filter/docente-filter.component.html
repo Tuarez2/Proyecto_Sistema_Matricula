@@ -1,109 +1,114 @@
 <form
+  class="form-card"
   [formGroup]="formularioFiltros"
   (ngSubmit)="aplicarFiltros()"
   novalidate
 >
-  <div>
-    <label for="identificacionDocente">Identificación</label>
-    <input
-      id="identificacionDocente"
-      type="search"
-      formControlName="identificacion"
-      maxlength="20"
-      placeholder="Identificación del docente"
-      [attr.aria-invalid]="formularioFiltros.controls.identificacion.invalid"
-    />
-    @if (
-      formularioFiltros.controls.identificacion.touched &&
-      formularioFiltros.controls.identificacion.hasError('maxlength')
-    ) {
-      <p role="alert">La identificación no puede superar 20 caracteres.</p>
-    }
+  <div class="form-grid">
+    <div class="form-field">
+      <label for="identificacionDocente">Identificación</label>
+      <input
+        id="identificacionDocente"
+        type="search"
+        formControlName="identificacion"
+        maxlength="20"
+        placeholder="Identificación del docente"
+        [attr.aria-invalid]="formularioFiltros.controls.identificacion.invalid"
+      />
+      @if (
+        formularioFiltros.controls.identificacion.touched &&
+        formularioFiltros.controls.identificacion.hasError('maxlength')
+      ) {
+        <p class="error-field" role="alert">La identificación no puede superar 20 caracteres.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="nombresDocente">Nombres</label>
+      <input
+        id="nombresDocente"
+        type="search"
+        formControlName="nombres"
+        maxlength="100"
+        placeholder="Nombres del docente"
+        [attr.aria-invalid]="formularioFiltros.controls.nombres.invalid"
+      />
+      @if (
+        formularioFiltros.controls.nombres.touched &&
+        formularioFiltros.controls.nombres.hasError('maxlength')
+      ) {
+        <p class="error-field" role="alert">Los nombres no pueden superar 100 caracteres.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="apellidosDocente">Apellidos</label>
+      <input
+        id="apellidosDocente"
+        type="search"
+        formControlName="apellidos"
+        maxlength="100"
+        placeholder="Apellidos del docente"
+        [attr.aria-invalid]="formularioFiltros.controls.apellidos.invalid"
+      />
+      @if (
+        formularioFiltros.controls.apellidos.touched &&
+        formularioFiltros.controls.apellidos.hasError('maxlength')
+      ) {
+        <p class="error-field" role="alert">Los apellidos no pueden superar 100 caracteres.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="correoDocente">Correo</label>
+      <input
+        id="correoDocente"
+        type="search"
+        formControlName="correo"
+        maxlength="150"
+        placeholder="Correo del docente"
+        [attr.aria-invalid]="formularioFiltros.controls.correo.invalid"
+      />
+      @if (
+        formularioFiltros.controls.correo.touched &&
+        formularioFiltros.controls.correo.hasError('maxlength')
+      ) {
+        <p class="error-field" role="alert">El correo no puede superar 150 caracteres.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="especialidadDocente">Especialidad</label>
+      <input
+        id="especialidadDocente"
+        type="search"
+        formControlName="especialidad"
+        maxlength="150"
+        placeholder="Especialidad del docente"
+        [attr.aria-invalid]="formularioFiltros.controls.especialidad.invalid"
+      />
+      @if (
+        formularioFiltros.controls.especialidad.touched &&
+        formularioFiltros.controls.especialidad.hasError('maxlength')
+      ) {
+        <p class="error-field" role="alert">La especialidad no puede superar 150 caracteres.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="activoDocente">Estado</label>
+      <select id="activoDocente" formControlName="activo">
+        <option value="">Todos los estados</option>
+        <option value="true">Activo</option>
+        <option value="false">Inactivo</option>
+      </select>
+    </div>
   </div>
 
-  <div>
-    <label for="nombresDocente">Nombres</label>
-    <input
-      id="nombresDocente"
-      type="search"
-      formControlName="nombres"
-      maxlength="100"
-      placeholder="Nombres del docente"
-      [attr.aria-invalid]="formularioFiltros.controls.nombres.invalid"
-    />
-    @if (
-      formularioFiltros.controls.nombres.touched &&
-      formularioFiltros.controls.nombres.hasError('maxlength')
-    ) {
-      <p role="alert">Los nombres no pueden superar 100 caracteres.</p>
-    }
+  <div class="form-actions">
+    <button type="submit" [disabled]="cargando">Buscar</button>
+    <button type="button" [disabled]="cargando" (click)="limpiarFiltros()">
+      Limpiar filtros
+    </button>
   </div>
-
-  <div>
-    <label for="apellidosDocente">Apellidos</label>
-    <input
-      id="apellidosDocente"
-      type="search"
-      formControlName="apellidos"
-      maxlength="100"
-      placeholder="Apellidos del docente"
-      [attr.aria-invalid]="formularioFiltros.controls.apellidos.invalid"
-    />
-    @if (
-      formularioFiltros.controls.apellidos.touched &&
-      formularioFiltros.controls.apellidos.hasError('maxlength')
-    ) {
-      <p role="alert">Los apellidos no pueden superar 100 caracteres.</p>
-    }
-  </div>
-
-  <div>
-    <label for="correoDocente">Correo</label>
-    <input
-      id="correoDocente"
-      type="search"
-      formControlName="correo"
-      maxlength="150"
-      placeholder="Correo del docente"
-      [attr.aria-invalid]="formularioFiltros.controls.correo.invalid"
-    />
-    @if (
-      formularioFiltros.controls.correo.touched &&
-      formularioFiltros.controls.correo.hasError('maxlength')
-    ) {
-      <p role="alert">El correo no puede superar 150 caracteres.</p>
-    }
-  </div>
-
-  <div>
-    <label for="especialidadDocente">Especialidad</label>
-    <input
-      id="especialidadDocente"
-      type="search"
-      formControlName="especialidad"
-      maxlength="150"
-      placeholder="Especialidad del docente"
-      [attr.aria-invalid]="formularioFiltros.controls.especialidad.invalid"
-    />
-    @if (
-      formularioFiltros.controls.especialidad.touched &&
-      formularioFiltros.controls.especialidad.hasError('maxlength')
-    ) {
-      <p role="alert">La especialidad no puede superar 150 caracteres.</p>
-    }
-  </div>
-
-  <div>
-    <label for="activoDocente">Estado</label>
-    <select id="activoDocente" formControlName="activo">
-      <option value="">Todos los estados</option>
-      <option value="true">Activo</option>
-      <option value="false">Inactivo</option>
-    </select>
-  </div>
-
-  <button type="submit" [disabled]="cargando">Buscar</button>
-  <button type="button" [disabled]="cargando" (click)="limpiarFiltros()">
-    Limpiar filtros
-  </button>
 </form>

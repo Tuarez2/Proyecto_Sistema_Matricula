@@ -1,133 +1,153 @@
-<section aria-labelledby="titulo-cursos">
-  <h1 id="titulo-cursos">Cursos</h1>
-
-  @if (esAdministrador()) {
-    <a routerLink="/cursos/crear">Crear curso</a>
-  }
-
-  <form [formGroup]="filtros" (ngSubmit)="buscar()" novalidate>
+<section class="page" aria-labelledby="titulo-cursos">
+  <header class="page-header">
     <div>
-      <label for="periodo_id">Período</label>
-      <select id="periodo_id" formControlName="periodo_id">
-        <option value="">Todos</option>
-        @for (periodo of periodos(); track periodo.id) {
-          <option [value]="periodo.id">{{ periodo.nombre }}</option>
-        }
-      </select>
+      <h1 id="titulo-cursos">Cursos</h1>
+      <p class="page-subtitle">Consulta y administra los cursos.</p>
+    </div>
+    @if (esAdministrador()) {
+      <div class="page-actions">
+        <a routerLink="/cursos/crear" class="btn btn-primary">Crear curso</a>
+      </div>
+    }
+  </header>
+
+  <form class="form-card" [formGroup]="filtros" (ngSubmit)="buscar()" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="periodo_id">Período</label>
+        <select id="periodo_id" formControlName="periodo_id">
+          <option value="">Todos</option>
+          @for (periodo of periodos(); track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="asignatura_id">Asignatura</label>
+        <select id="asignatura_id" formControlName="asignatura_id">
+          <option value="">Todas</option>
+          @for (asignatura of asignaturas(); track asignatura.id) {
+            <option [value]="asignatura.id">
+              {{ asignatura.codigo }} - {{ asignatura.nombre }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="docente_id">Docente</label>
+        <select id="docente_id" formControlName="docente_id">
+          <option value="">Todos</option>
+          @for (docente of docentes(); track docente.id) {
+            <option [value]="docente.id">
+              {{ docente.nombres }} {{ docente.apellidos }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="estado">Estado</label>
+        <select id="estado" formControlName="estado">
+          <option value="">Todos</option>
+          <option value="abierto">Abierto</option>
+          <option value="cerrado">Cerrado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="paralelo">Paralelo</label>
+        <input id="paralelo" formControlName="paralelo" maxlength="10" />
+      </div>
     </div>
 
-    <div>
-      <label for="asignatura_id">Asignatura</label>
-      <select id="asignatura_id" formControlName="asignatura_id">
-        <option value="">Todas</option>
-        @for (asignatura of asignaturas(); track asignatura.id) {
-          <option [value]="asignatura.id">
-            {{ asignatura.codigo }} - {{ asignatura.nombre }}
-          </option>
-        }
-      </select>
+    <div class="form-actions">
+      <button type="submit" [disabled]="cargando()">Buscar</button>
+      <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
     </div>
-
-    <div>
-      <label for="docente_id">Docente</label>
-      <select id="docente_id" formControlName="docente_id">
-        <option value="">Todos</option>
-        @for (docente of docentes(); track docente.id) {
-          <option [value]="docente.id">
-            {{ docente.nombres }} {{ docente.apellidos }}
-          </option>
-        }
-      </select>
-    </div>
-
-    <div>
-      <label for="estado">Estado</label>
-      <select id="estado" formControlName="estado">
-        <option value="">Todos</option>
-        <option value="abierto">Abierto</option>
-        <option value="cerrado">Cerrado</option>
-        <option value="cancelado">Cancelado</option>
-      </select>
-    </div>
-
-    <div>
-      <label for="paralelo">Paralelo</label>
-      <input id="paralelo" formControlName="paralelo" maxlength="10" />
-    </div>
-
-    <button type="submit" [disabled]="cargando()">Buscar</button>
-    <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
-      Limpiar filtros
-    </button>
   </form>
 
   @if (cargando()) {
-    <p role="status" aria-live="polite">Consultando cursos...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando cursos...
+    </div>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (!cargando() && !mensajeError() && cursos().length === 0) {
-    <p>No se encontraron cursos.</p>
+    <div class="empty-state">
+      <p>No se encontraron cursos.</p>
+    </div>
   }
 
   @if (cursos().length > 0) {
-    <table>
-      <caption>Listado de cursos</caption>
-      <thead>
-        <tr>
-          <th scope="col">Curso</th>
-          <th scope="col">Docente</th>
-          <th scope="col">Período</th>
-          <th scope="col">Aula</th>
-          <th scope="col">Horario</th>
-          <th scope="col">Cupo máximo</th>
-          <th scope="col">Disponibles</th>
-          <th scope="col">Estado</th>
-          <th scope="col">Detalle</th>
-          @if (esAdministrador()) {
-            <th scope="col">Acciones</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (curso of cursos(); track curso.id) {
+    <div class="table-wrap">
+      <table>
+        <caption>Listado de cursos</caption>
+        <thead>
           <tr>
-            <td>{{ obtenerNombreAsignatura(curso) }} ({{ curso.paralelo }})</td>
-            <td>{{ obtenerNombreDocente(curso) }}</td>
-            <td>{{ obtenerNombrePeriodo(curso) }}</td>
-            <td>{{ curso.aula }}</td>
-            <td>{{ curso.horario }}</td>
-            <td>{{ curso.cupo_maximo }}</td>
-            <td>{{ curso.cupos_disponibles ?? '—' }}</td>
-            <td>{{ obtenerEtiquetaEstado(curso) }}</td>
-            <td>
-              <a [routerLink]="['/cursos', curso.id]">Ver</a>
-            </td>
+            <th scope="col">Curso</th>
+            <th scope="col">Docente</th>
+            <th scope="col">Período</th>
+            <th scope="col">Aula</th>
+            <th scope="col">Horario</th>
+            <th scope="col">Cupo máximo</th>
+            <th scope="col">Disponibles</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Detalle</th>
             @if (esAdministrador()) {
-              <td>
-                <a [routerLink]="['/cursos/editar', curso.id]">Editar</a>
-                @if (curso.estado !== 'cancelado') {
-                  <button
-                    type="button"
-                    [disabled]="cursoProcesando() !== null"
-                    (click)="cancelarCurso(curso)"
-                  >
-                    Cancelar
-                  </button>
-                }
-              </td>
+              <th scope="col">Acciones</th>
             }
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (curso of cursos(); track curso.id) {
+            <tr>
+              <td>{{ obtenerNombreAsignatura(curso) }} ({{ curso.paralelo }})</td>
+              <td>{{ obtenerNombreDocente(curso) }}</td>
+              <td>{{ obtenerNombrePeriodo(curso) }}</td>
+              <td>{{ curso.aula }}</td>
+              <td>{{ curso.horario }}</td>
+              <td>{{ curso.cupo_maximo }}</td>
+              <td>{{ curso.cupos_disponibles ?? '—' }}</td>
+              <td>{{ obtenerEtiquetaEstado(curso) }}</td>
+              <td>
+                <a class="btn btn-sm btn-neutral" [routerLink]="['/cursos', curso.id]">Ver</a>
+              </td>
+              @if (esAdministrador()) {
+                <td>
+                  <div class="row-actions">
+                    <a class="btn btn-sm btn-neutral" [routerLink]="['/cursos/editar', curso.id]">Editar</a>
+                    @if (curso.estado !== 'cancelado') {
+                      <button
+                        class="btn btn-sm btn-neutral"
+                        type="button"
+                        [disabled]="cursoProcesando() !== null"
+                        (click)="cancelarCurso(curso)"
+                      >
+                        Cancelar
+                      </button>
+                    }
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 
   <app-pagination

@@ -1,9 +1,15 @@
-<section aria-labelledby="titulo-docentes">
-  <h1 id="titulo-docentes">Docentes</h1>
-
-  @if (esAdministrador()) {
-    <a routerLink="/docentes/crear">Crear docente</a>
-  }
+<section class="page" aria-labelledby="titulo-docentes">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-docentes">Docentes</h1>
+      <p class="page-subtitle">Consulta y administra los docentes.</p>
+    </div>
+    @if (esAdministrador()) {
+      <div class="page-actions">
+        <a routerLink="/docentes/crear" class="btn btn-primary">Crear docente</a>
+      </div>
+    }
+  </header>
 
   <app-docente-filter
     [cargando]="cargandoDocentes()"
@@ -11,19 +17,24 @@
   />
 
   @if (cargandoDocentes()) {
-    <p role="status" aria-live="polite">Consultando docentes...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando docentes...
+    </div>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (!cargandoDocentes() && !mensajeError() && docentes().length === 0) {
-    <p>No se encontraron docentes.</p>
+    <div class="empty-state">
+      <p>No se encontraron docentes.</p>
+    </div>
   }
 
   @if (docentes().length > 0) {

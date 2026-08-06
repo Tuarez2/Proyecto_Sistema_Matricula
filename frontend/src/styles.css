@@ -565,6 +565,24 @@ form {
   grid-column: 1 / -1;
 }
 
+.checkbox-field {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--espacio-2);
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  min-height: 2.5rem;
+}
+
+.checkbox-field input[type='checkbox'] {
+  width: auto;
+  height: 1.125rem;
+  accent-color: var(--color-primary);
+  margin: 0;
+}
+
 .form-hint {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
@@ -707,6 +725,23 @@ tbody tr {
   margin: 0;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
+}
+
+.detail-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  margin: 0;
+}
+
+.detail-line + .detail-line {
+  margin-top: var(--espacio-2);
+}
+
+.detail-line strong {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
 }
 
 /* ==========================================================================

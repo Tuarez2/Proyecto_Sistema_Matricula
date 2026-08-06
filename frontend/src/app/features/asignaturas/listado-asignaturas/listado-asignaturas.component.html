@@ -1,135 +1,155 @@
-<section aria-labelledby="titulo-asignaturas">
-  <h1 id="titulo-asignaturas">Asignaturas</h1>
-
-  @if (esAdministrador()) {
-    <a routerLink="/asignaturas/crear">Crear asignatura</a>
-  }
-
-  <form [formGroup]="filtros" (ngSubmit)="buscarAsignaturas()" novalidate>
+<section class="page" aria-labelledby="titulo-asignaturas">
+  <header class="page-header">
     <div>
-      <label for="codigo">Código</label>
-      <input id="codigo" formControlName="codigo" maxlength="20" />
-      @if (
-        filtros.controls.codigo.touched &&
-        filtros.controls.codigo.hasError('maxlength')
-      ) {
-        <p role="alert">El código no puede superar 20 caracteres.</p>
-      }
+      <h1 id="titulo-asignaturas">Asignaturas</h1>
+      <p class="page-subtitle">Consulta y administra las asignaturas.</p>
+    </div>
+    @if (esAdministrador()) {
+      <div class="page-actions">
+        <a routerLink="/asignaturas/crear" class="btn btn-primary">Crear asignatura</a>
+      </div>
+    }
+  </header>
+
+  <form class="form-card" [formGroup]="filtros" (ngSubmit)="buscarAsignaturas()" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" maxlength="20" />
+        @if (
+          filtros.controls.codigo.touched &&
+          filtros.controls.codigo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El código no puede superar 20 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" formControlName="nombre" maxlength="150" />
+        @if (
+          filtros.controls.nombre.touched &&
+          filtros.controls.nombre.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El nombre no puede superar 150 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="creditos">Créditos</label>
+        <input id="creditos" formControlName="creditos" type="number" min="1" max="100" />
+        @if (
+          filtros.controls.creditos.touched &&
+          filtros.controls.creditos.invalid
+        ) {
+          <p class="error-field" role="alert">Los créditos deben ser un entero positivo.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nivel_academico">Nivel académico</label>
+        <input id="nivel_academico" formControlName="nivel_academico" type="number" min="1" max="100" />
+        @if (
+          filtros.controls.nivel_academico.touched &&
+          filtros.controls.nivel_academico.invalid
+        ) {
+          <p class="error-field" role="alert">El nivel académico debe ser un entero positivo.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="activo">Estado</label>
+        <select id="activo" formControlName="activo">
+          <option value="">Todas</option>
+          <option value="true">Activas</option>
+          <option value="false">Inactivas</option>
+        </select>
+      </div>
     </div>
 
-    <div>
-      <label for="nombre">Nombre</label>
-      <input id="nombre" formControlName="nombre" maxlength="150" />
-      @if (
-        filtros.controls.nombre.touched &&
-        filtros.controls.nombre.hasError('maxlength')
-      ) {
-        <p role="alert">El nombre no puede superar 150 caracteres.</p>
-      }
+    <div class="form-actions">
+      <button type="submit" [disabled]="cargando()">Buscar</button>
+      <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
     </div>
-
-    <div>
-      <label for="creditos">Créditos</label>
-      <input id="creditos" formControlName="creditos" type="number" min="1" max="100" />
-      @if (
-        filtros.controls.creditos.touched &&
-        filtros.controls.creditos.invalid
-      ) {
-        <p role="alert">Los créditos deben ser un entero positivo.</p>
-      }
-    </div>
-
-    <div>
-      <label for="nivel_academico">Nivel académico</label>
-      <input id="nivel_academico" formControlName="nivel_academico" type="number" min="1" max="100" />
-      @if (
-        filtros.controls.nivel_academico.touched &&
-        filtros.controls.nivel_academico.invalid
-      ) {
-        <p role="alert">El nivel académico debe ser un entero positivo.</p>
-      }
-    </div>
-
-    <div>
-      <label for="activo">Estado</label>
-      <select id="activo" formControlName="activo">
-        <option value="">Todas</option>
-        <option value="true">Activas</option>
-        <option value="false">Inactivas</option>
-      </select>
-    </div>
-
-    <button type="submit" [disabled]="cargando()">Buscar</button>
-    <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
-      Limpiar filtros
-    </button>
   </form>
 
   @if (cargando()) {
-    <p role="status" aria-live="polite">Consultando asignaturas...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando asignaturas...
+    </div>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (!cargando() && !mensajeError() && asignaturas().length === 0) {
-    <p>No se encontraron asignaturas.</p>
+    <div class="empty-state">
+      <p>No se encontraron asignaturas.</p>
+    </div>
   }
 
   @if (asignaturas().length > 0) {
-    <table>
-      <caption>Listado de asignaturas</caption>
-      <thead>
-        <tr>
-          <th scope="col">Código</th>
-          <th scope="col">Nombre</th>
-          <th scope="col">Créditos</th>
-          <th scope="col">Nivel académico</th>
-          <th scope="col">Estado</th>
-          <th scope="col">Fecha de creación</th>
-          <th scope="col">Detalle</th>
-          @if (esAdministrador()) {
-            <th scope="col">Acciones</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (asignatura of asignaturas(); track asignatura.id) {
+    <div class="table-wrap">
+      <table>
+        <caption>Listado de asignaturas</caption>
+        <thead>
           <tr>
-            <td>{{ asignatura.codigo }}</td>
-            <td>{{ asignatura.nombre }}</td>
-            <td>{{ asignatura.creditos }}</td>
-            <td>{{ asignatura.nivel_academico }}</td>
-            <td>{{ obtenerEtiquetaEstado(asignatura) }}</td>
-            <td>
-              {{ asignatura.created_at ? (asignatura.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
-            </td>
-            <td>
-              <a [routerLink]="['/asignaturas', asignatura.id]">Ver</a>
-            </td>
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Créditos</th>
+            <th scope="col">Nivel académico</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Fecha de creación</th>
+            <th scope="col">Detalle</th>
             @if (esAdministrador()) {
-              <td>
-                <a [routerLink]="['/asignaturas/editar', asignatura.id]">Editar</a>
-                @if (asignatura.activo) {
-                  <button
-                    type="button"
-                    [disabled]="asignaturaProcesando() !== null"
-                    (click)="inactivarAsignatura(asignatura)"
-                  >
-                    Inactivar
-                  </button>
-                }
-              </td>
+              <th scope="col">Acciones</th>
             }
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (asignatura of asignaturas(); track asignatura.id) {
+            <tr>
+              <td>{{ asignatura.codigo }}</td>
+              <td>{{ asignatura.nombre }}</td>
+              <td>{{ asignatura.creditos }}</td>
+              <td>{{ asignatura.nivel_academico }}</td>
+              <td>{{ obtenerEtiquetaEstado(asignatura) }}</td>
+              <td>
+                {{ asignatura.created_at ? (asignatura.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
+              </td>
+              <td>
+                <a class="btn btn-sm btn-neutral" [routerLink]="['/asignaturas', asignatura.id]">Ver</a>
+              </td>
+              @if (esAdministrador()) {
+                <td>
+                  <div class="row-actions">
+                    <a class="btn btn-sm btn-neutral" [routerLink]="['/asignaturas/editar', asignatura.id]">Editar</a>
+                    @if (asignatura.activo) {
+                      <button
+                        class="btn btn-sm btn-neutral"
+                        type="button"
+                        [disabled]="asignaturaProcesando() !== null"
+                        (click)="inactivarAsignatura(asignatura)"
+                      >
+                        Inactivar
+                      </button>
+                    }
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 
   <app-pagination

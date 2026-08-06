@@ -1,84 +1,95 @@
-<section aria-labelledby="titulo-crear-asignatura">
-  <h1 id="titulo-crear-asignatura">Crear asignatura</h1>
+<section class="page" aria-labelledby="titulo-crear-asignatura">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-crear-asignatura">Crear asignatura</h1>
+      <p class="page-subtitle">Registra una nueva asignatura.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/asignaturas" class="btn btn-neutral">Volver al listado</a>
+    </div>
+  </header>
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   <form
+    class="form-card"
     [formGroup]="formularioAsignatura"
     (ngSubmit)="guardarAsignatura()"
     novalidate
   >
-    <div>
-      <label for="codigo">Código</label>
-      <input id="codigo" formControlName="codigo" maxlength="20" required />
-      @if (
-        formularioAsignatura.controls.codigo.touched &&
-        formularioAsignatura.controls.codigo.invalid
-      ) {
-        <p role="alert">
-          El código es obligatorio y no puede superar 20 caracteres.
-        </p>
-      }
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" maxlength="20" required />
+        @if (
+          formularioAsignatura.controls.codigo.touched &&
+          formularioAsignatura.controls.codigo.invalid
+        ) {
+          <p class="error-field" role="alert">
+            El código es obligatorio y no puede superar 20 caracteres.
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" formControlName="nombre" maxlength="150" required />
+        @if (
+          formularioAsignatura.controls.nombre.touched &&
+          formularioAsignatura.controls.nombre.invalid
+        ) {
+          <p class="error-field" role="alert">
+            El nombre es obligatorio y no puede superar 150 caracteres.
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="creditos">Créditos</label>
+        <input
+          id="creditos"
+          type="number"
+          formControlName="creditos"
+          min="1"
+          required
+        />
+        @if (
+          formularioAsignatura.controls.creditos.touched &&
+          formularioAsignatura.controls.creditos.invalid
+        ) {
+          <p class="error-field" role="alert">Los créditos deben ser positivos.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nivel_academico">Nivel académico</label>
+        <input
+          id="nivel_academico"
+          type="number"
+          formControlName="nivel_academico"
+          min="1"
+          required
+        />
+        @if (
+          formularioAsignatura.controls.nivel_academico.touched &&
+          formularioAsignatura.controls.nivel_academico.invalid
+        ) {
+          <p class="error-field" role="alert">El nivel académico debe ser positivo.</p>
+        }
+      </div>
     </div>
 
-    <div>
-      <label for="nombre">Nombre</label>
-      <input id="nombre" formControlName="nombre" maxlength="150" required />
-      @if (
-        formularioAsignatura.controls.nombre.touched &&
-        formularioAsignatura.controls.nombre.invalid
-      ) {
-        <p role="alert">
-          El nombre es obligatorio y no puede superar 150 caracteres.
-        </p>
-      }
+    <div class="form-actions">
+      <button type="submit" [disabled]="enviando()">Guardar</button>
+      <button type="button" [disabled]="enviando()" (click)="cancelar()">
+        Cancelar
+      </button>
     </div>
-
-    <div>
-      <label for="creditos">Créditos</label>
-      <input
-        id="creditos"
-        type="number"
-        formControlName="creditos"
-        min="1"
-        required
-      />
-      @if (
-        formularioAsignatura.controls.creditos.touched &&
-        formularioAsignatura.controls.creditos.invalid
-      ) {
-        <p role="alert">Los créditos deben ser positivos.</p>
-      }
-    </div>
-
-    <div>
-      <label for="nivel_academico">Nivel académico</label>
-      <input
-        id="nivel_academico"
-        type="number"
-        formControlName="nivel_academico"
-        min="1"
-        required
-      />
-      @if (
-        formularioAsignatura.controls.nivel_academico.touched &&
-        formularioAsignatura.controls.nivel_academico.invalid
-      ) {
-        <p role="alert">El nivel académico debe ser positivo.</p>
-      }
-    </div>
-
-    <button type="submit" [disabled]="enviando()">Guardar</button>
-    <button type="button" [disabled]="enviando()" (click)="cancelar()">
-      Cancelar
-    </button>
   </form>
-
-  <a routerLink="/asignaturas">Volver al listado</a>
 </section>

@@ -1,48 +1,41 @@
-<section aria-labelledby="titulo-detalle-curso">
-  <h1 id="titulo-detalle-curso">Detalle de curso</h1>
+<section class="page" aria-labelledby="titulo-detalle-curso">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-detalle-curso">Detalle de curso</h1>
+      <p class="page-subtitle">Información del curso.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/cursos" class="btn btn-neutral">Volver a cursos</a>
+      @if (esAdministrador()) {
+        @if (curso(); as cursoActual) {
+          <a [routerLink]="['/cursos/editar', cursoActual.id]" class="btn btn-primary">Editar curso</a>
+        }
+      }
+    </div>
+  </header>
 
   @if (cargando()) {
-    <p role="status" aria-live="polite">Consultando curso...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando curso...
+    </div>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (curso()) {
-    <dl>
-      <dt>Curso</dt>
-      <dd>{{ obtenerNombreAsignatura() }} ({{ curso()?.paralelo }})</dd>
-
-      <dt>Docente</dt>
-      <dd>{{ obtenerNombreDocente() }}</dd>
-
-      <dt>Período académico</dt>
-      <dd>{{ obtenerNombrePeriodo() }}</dd>
-
-      <dt>Aula</dt>
-      <dd>{{ curso()?.aula }}</dd>
-
-      <dt>Horario</dt>
-      <dd>{{ curso()?.horario }}</dd>
-
-      <dt>Cupo máximo</dt>
-      <dd>{{ curso()?.cupo_maximo }}</dd>
-
-      <dt>Matriculados</dt>
-      <dd>{{ curso()?.cantidad_matriculados ?? '—' }}</dd>
-
-      <dt>Cupos disponibles</dt>
-      <dd>{{ curso()?.cupos_disponibles ?? '—' }}</dd>
-
-      <dt>Estado</dt>
-      <dd>{{ obtenerEtiquetaEstado() }}</dd>
-    </dl>
-
-    <a routerLink="/cursos">Volver a cursos</a>
-
-    @if (esAdministrador()) {
-      <a [routerLink]="['/cursos/editar', curso()?.id]">Editar curso</a>
-    }
+    <div class="detail-card">
+      <p class="detail-line"><strong>Curso:</strong> {{ obtenerNombreAsignatura() }} ({{ curso()?.paralelo }})</p>
+      <p class="detail-line"><strong>Docente:</strong> {{ obtenerNombreDocente() }}</p>
+      <p class="detail-line"><strong>Período académico:</strong> {{ obtenerNombrePeriodo() }}</p>
+      <p class="detail-line"><strong>Aula:</strong> {{ curso()?.aula }}</p>
+      <p class="detail-line"><strong>Horario:</strong> {{ curso()?.horario }}</p>
+      <p class="detail-line"><strong>Cupo máximo:</strong> {{ curso()?.cupo_maximo }}</p>
+      <p class="detail-line"><strong>Matriculados:</strong> {{ curso()?.cantidad_matriculados ?? '—' }}</p>
+      <p class="detail-line"><strong>Cupos disponibles:</strong> {{ curso()?.cupos_disponibles ?? '—' }}</p>
+      <p class="detail-line"><strong>Estado:</strong> {{ obtenerEtiquetaEstado() }}</p>
+    </div>
   }
 </section>

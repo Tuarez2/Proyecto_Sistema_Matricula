@@ -1,56 +1,62 @@
-<table>
-  <caption>Listado de docentes</caption>
-  <thead>
-    <tr>
-      <th scope="col">Identificación</th>
-      <th scope="col">Nombre completo</th>
-      <th scope="col">Correo</th>
-      <th scope="col">Teléfono</th>
-      <th scope="col">Especialidad</th>
-      <th scope="col">Estado</th>
-      @if (esAdministrador) {
-        <th scope="col">Acciones</th>
-      }
-    </tr>
-  </thead>
-  <tbody>
-    @for (docente of docentes; track docente.id) {
+<div class="table-wrap">
+  <table>
+    <caption>Listado de docentes</caption>
+    <thead>
       <tr>
-        <td>{{ docente.identificacion }}</td>
-        <td>{{ obtenerNombreCompleto(docente) }}</td>
-        <td>{{ docente.correo }}</td>
-        <td>{{ docente.telefono ?? 'Sin teléfono' }}</td>
-        <td>{{ docente.especialidad }}</td>
-        <td>{{ obtenerEtiquetaEstado(docente) }}</td>
+        <th scope="col">Identificación</th>
+        <th scope="col">Nombre completo</th>
+        <th scope="col">Correo</th>
+        <th scope="col">Teléfono</th>
+        <th scope="col">Especialidad</th>
+        <th scope="col">Estado</th>
         @if (esAdministrador) {
-          <td>
-            <button
-              type="button"
-              [disabled]="idDocenteProcesando !== null"
-              (click)="editarDocente.emit(docente)"
-            >
-              Editar
-            </button>
-            <button
-              type="button"
-              [disabled]="idDocenteProcesando !== null"
-              (click)="cambiarEstadoDocente.emit(docente)"
-            >
-              @if (docente.activo) {
-                Inactivar
-              } @else {
-                Activar
-              }
-            </button>
-          </td>
+          <th scope="col">Acciones</th>
         }
       </tr>
-    } @empty {
-      <tr>
-        <td [attr.colspan]="esAdministrador ? 7 : 6">
-          No se encontraron docentes.
-        </td>
-      </tr>
-    }
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      @for (docente of docentes; track docente.id) {
+        <tr>
+          <td>{{ docente.identificacion }}</td>
+          <td>{{ obtenerNombreCompleto(docente) }}</td>
+          <td>{{ docente.correo }}</td>
+          <td>{{ docente.telefono ?? 'Sin teléfono' }}</td>
+          <td>{{ docente.especialidad }}</td>
+          <td>{{ obtenerEtiquetaEstado(docente) }}</td>
+          @if (esAdministrador) {
+            <td>
+              <div class="row-actions">
+                <button
+                  class="btn btn-sm btn-neutral"
+                  type="button"
+                  [disabled]="idDocenteProcesando !== null"
+                  (click)="editarDocente.emit(docente)"
+                >
+                  Editar
+                </button>
+                <button
+                  class="btn btn-sm btn-neutral"
+                  type="button"
+                  [disabled]="idDocenteProcesando !== null"
+                  (click)="cambiarEstadoDocente.emit(docente)"
+                >
+                  @if (docente.activo) {
+                    Inactivar
+                  } @else {
+                    Activar
+                  }
+                </button>
+              </div>
+            </td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td [attr.colspan]="esAdministrador ? 7 : 6">
+            No se encontraron docentes.
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

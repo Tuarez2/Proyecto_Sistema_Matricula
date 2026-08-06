@@ -1,130 +1,150 @@
-<section aria-labelledby="titulo-carreras">
-  <h1 id="titulo-carreras">Carreras</h1>
-
-  @if (esAdministrador()) {
-    <a routerLink="/carreras/crear">Crear carrera</a>
-  }
-
-  <form [formGroup]="filtros" (ngSubmit)="buscarCarreras()" novalidate>
+<section class="page" aria-labelledby="titulo-carreras">
+  <header class="page-header">
     <div>
-      <label for="codigo">Código</label>
-      <input id="codigo" formControlName="codigo" maxlength="20" />
-      @if (
-        filtros.controls.codigo.touched &&
-        filtros.controls.codigo.hasError('maxlength')
-      ) {
-        <p role="alert">El código no puede superar 20 caracteres.</p>
-      }
+      <h1 id="titulo-carreras">Carreras</h1>
+      <p class="page-subtitle">Consulta y administra las carreras.</p>
     </div>
+    @if (esAdministrador()) {
+      <div class="page-actions">
+        <a routerLink="/carreras/crear" class="btn btn-primary">Crear carrera</a>
+      </div>
+    }
+  </header>
 
-    <div>
-      <label for="nombre">Nombre</label>
-      <input id="nombre" formControlName="nombre" maxlength="150" />
-      @if (
-        filtros.controls.nombre.touched &&
-        filtros.controls.nombre.hasError('maxlength')
-      ) {
-        <p role="alert">El nombre no puede superar 150 caracteres.</p>
-      }
-    </div>
-
-    <div>
-      <label for="facultad_id">Facultad</label>
-      <select
-        id="facultad_id"
-        formControlName="facultad_id"
-        [attr.disabled]="cargandoFacultades() ? '' : null"
-      >
-        <option value="">Todas las facultades</option>
-        @for (facultad of facultades(); track facultad.id) {
-          <option [value]="facultad.id">
-            {{ facultad.codigo }} - {{ facultad.nombre }}
-            {{ facultad.activo ? '' : '(inactiva)' }}
-          </option>
+  <form class="form-card" [formGroup]="filtros" (ngSubmit)="buscarCarreras()" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" maxlength="20" />
+        @if (
+          filtros.controls.codigo.touched &&
+          filtros.controls.codigo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El código no puede superar 20 caracteres.</p>
         }
-      </select>
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" formControlName="nombre" maxlength="150" />
+        @if (
+          filtros.controls.nombre.touched &&
+          filtros.controls.nombre.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El nombre no puede superar 150 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="facultad_id">Facultad</label>
+        <select
+          id="facultad_id"
+          formControlName="facultad_id"
+          [attr.disabled]="cargandoFacultades() ? '' : null"
+        >
+          <option value="">Todas las facultades</option>
+          @for (facultad of facultades(); track facultad.id) {
+            <option [value]="facultad.id">
+              {{ facultad.codigo }} - {{ facultad.nombre }}
+              {{ facultad.activo ? '' : '(inactiva)' }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="activo">Estado</label>
+        <select id="activo" formControlName="activo">
+          <option value="">Todos</option>
+          <option value="true">Activas</option>
+          <option value="false">Inactivas</option>
+        </select>
+      </div>
     </div>
 
-    <div>
-      <label for="activo">Estado</label>
-      <select id="activo" formControlName="activo">
-        <option value="">Todos</option>
-        <option value="true">Activas</option>
-        <option value="false">Inactivas</option>
-      </select>
+    <div class="form-actions">
+      <button type="submit" [disabled]="cargando()">Buscar</button>
+      <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
     </div>
-
-    <button type="submit" [disabled]="cargando()">Buscar</button>
-    <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
-      Limpiar filtros
-    </button>
   </form>
 
   @if (cargando()) {
-    <p role="status" aria-live="polite">Consultando carreras...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando carreras...
+    </div>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (!cargando() && !mensajeError() && carreras().length === 0) {
-    <p>No se encontraron carreras.</p>
+    <div class="empty-state">
+      <p>No se encontraron carreras.</p>
+    </div>
   }
 
   @if (carreras().length > 0) {
-    <table>
-      <caption>Listado de carreras</caption>
-      <thead>
-        <tr>
-          <th scope="col">Código</th>
-          <th scope="col">Nombre</th>
-          <th scope="col">Facultad</th>
-          <th scope="col">Semestres</th>
-          <th scope="col">Estado</th>
-          <th scope="col">Fecha de creación</th>
-          <th scope="col">Detalle</th>
-          @if (esAdministrador()) {
-            <th scope="col">Acciones</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (carrera of carreras(); track carrera.id) {
+    <div class="table-wrap">
+      <table>
+        <caption>Listado de carreras</caption>
+        <thead>
           <tr>
-            <td>{{ carrera.codigo }}</td>
-            <td>{{ carrera.nombre }}</td>
-            <td>{{ obtenerNombreFacultad(carrera) }}</td>
-            <td>{{ carrera.duracion_semestres }}</td>
-            <td>{{ obtenerEtiquetaEstado(carrera) }}</td>
-            <td>
-              {{ carrera.created_at ? (carrera.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
-            </td>
-            <td>
-              <a [routerLink]="['/carreras', carrera.id]">Ver</a>
-            </td>
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Facultad</th>
+            <th scope="col">Semestres</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Fecha de creación</th>
+            <th scope="col">Detalle</th>
             @if (esAdministrador()) {
-              <td>
-                <a [routerLink]="['/carreras/editar', carrera.id]">Editar</a>
-                @if (carrera.activo) {
-                  <button
-                    type="button"
-                    [disabled]="carreraProcesando() !== null"
-                    (click)="inactivarCarrera(carrera)"
-                  >
-                    Inactivar
-                  </button>
-                }
-              </td>
+              <th scope="col">Acciones</th>
             }
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (carrera of carreras(); track carrera.id) {
+            <tr>
+              <td>{{ carrera.codigo }}</td>
+              <td>{{ carrera.nombre }}</td>
+              <td>{{ obtenerNombreFacultad(carrera) }}</td>
+              <td>{{ carrera.duracion_semestres }}</td>
+              <td>{{ obtenerEtiquetaEstado(carrera) }}</td>
+              <td>
+                {{ carrera.created_at ? (carrera.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
+              </td>
+              <td>
+                <a class="btn btn-sm btn-neutral" [routerLink]="['/carreras', carrera.id]">Ver</a>
+              </td>
+              @if (esAdministrador()) {
+                <td>
+                  <div class="row-actions">
+                    <a class="btn btn-sm btn-neutral" [routerLink]="['/carreras/editar', carrera.id]">Editar</a>
+                    @if (carrera.activo) {
+                      <button
+                        class="btn btn-sm btn-neutral"
+                        type="button"
+                        [disabled]="carreraProcesando() !== null"
+                        (click)="inactivarCarrera(carrera)"
+                      >
+                        Inactivar
+                      </button>
+                    }
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 
   <app-pagination

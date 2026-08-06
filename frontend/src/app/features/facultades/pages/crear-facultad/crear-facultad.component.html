@@ -1,76 +1,86 @@
-<section aria-labelledby="titulo-crear-facultad">
-  <h1 id="titulo-crear-facultad">Crear facultad</h1>
-
-  <a routerLink="/facultades">Volver a facultades</a>
+<section class="page" aria-labelledby="titulo-crear-facultad">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-crear-facultad">Crear facultad</h1>
+      <p class="page-subtitle">Registra una nueva facultad.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/facultades" class="btn btn-neutral">Volver a facultades</a>
+    </div>
+  </header>
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
-  <form [formGroup]="formularioFacultad" (ngSubmit)="guardarFacultad()" novalidate>
-    <div>
-      <label for="codigo">Código</label>
-      <input
-        id="codigo"
-        formControlName="codigo"
-        maxlength="20"
-        [disabled]="enviando()"
-      />
-      @if (
-        formularioFacultad.controls.codigo.touched &&
-        formularioFacultad.controls.codigo.hasError('required')
-      ) {
-        <p role="alert">El código es obligatorio.</p>
-      }
-      @if (
-        formularioFacultad.controls.codigo.touched &&
-        formularioFacultad.controls.codigo.hasError('maxlength')
-      ) {
-        <p role="alert">El código no puede superar 20 caracteres.</p>
-      }
-    </div>
-
-    <div>
-      <label for="nombre">Nombre</label>
-      <input
-        id="nombre"
-        formControlName="nombre"
-        maxlength="120"
-        [disabled]="enviando()"
-      />
-      @if (
-        formularioFacultad.controls.nombre.touched &&
-        formularioFacultad.controls.nombre.hasError('required')
-      ) {
-        <p role="alert">El nombre es obligatorio.</p>
-      }
-      @if (
-        formularioFacultad.controls.nombre.touched &&
-        formularioFacultad.controls.nombre.hasError('maxlength')
-      ) {
-        <p role="alert">El nombre no puede superar 120 caracteres.</p>
-      }
-    </div>
-
-    <div>
-      <label for="activo">
+  <form class="form-card" [formGroup]="formularioFacultad" (ngSubmit)="guardarFacultad()" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
         <input
-          id="activo"
-          type="checkbox"
-          formControlName="activo"
+          id="codigo"
+          formControlName="codigo"
+          maxlength="20"
           [disabled]="enviando()"
         />
-        Crear como activa
-      </label>
+        @if (
+          formularioFacultad.controls.codigo.touched &&
+          formularioFacultad.controls.codigo.hasError('required')
+        ) {
+          <p class="error-field" role="alert">El código es obligatorio.</p>
+        }
+        @if (
+          formularioFacultad.controls.codigo.touched &&
+          formularioFacultad.controls.codigo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El código no puede superar 20 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input
+          id="nombre"
+          formControlName="nombre"
+          maxlength="120"
+          [disabled]="enviando()"
+        />
+        @if (
+          formularioFacultad.controls.nombre.touched &&
+          formularioFacultad.controls.nombre.hasError('required')
+        ) {
+          <p class="error-field" role="alert">El nombre es obligatorio.</p>
+        }
+        @if (
+          formularioFacultad.controls.nombre.touched &&
+          formularioFacultad.controls.nombre.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El nombre no puede superar 120 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="activo" class="checkbox-field">
+          <input
+            id="activo"
+            type="checkbox"
+            formControlName="activo"
+            [disabled]="enviando()"
+          />
+          Crear como activa
+        </label>
+      </div>
     </div>
 
-    <button type="submit" [disabled]="enviando()">Guardar facultad</button>
-    <button type="button" [disabled]="enviando()" (click)="cancelar()">
-      Cancelar
-    </button>
+    <div class="form-actions">
+      <button type="submit" [disabled]="enviando()">Guardar facultad</button>
+      <button type="button" [disabled]="enviando()" (click)="cancelar()">
+        Cancelar
+      </button>
+    </div>
   </form>
 </section>

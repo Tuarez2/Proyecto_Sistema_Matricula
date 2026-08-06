@@ -20,7 +20,6 @@ import { DocentesService } from '../../services/docentes.service';
   standalone: true,
   imports: [DocenteFormComponent],
   templateUrl: './crear-docente.component.html',
-  styleUrl: './crear-docente.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CrearDocenteComponent {
