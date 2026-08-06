@@ -1,15 +1,33 @@
 <section class="pagina-inicio">
-  <h1>Sistema de Matrícula Universitaria</h1>
-  <p>Acceso rápido a los módulos principales del sistema.</p>
+  <header class="saludo-inicio">
+    <h1>Hola, {{ nombreUsuario() }}</h1>
+    @if (nombreRolUsuario(); as rol) {
+      <p class="rol-inicio">{{ rol }}</p>
+    }
+    <p class="descripcion-inicio">Acceso rápido a los módulos principales del sistema.</p>
+  </header>
 
   <div class="modulos-inicio" aria-label="Módulos del sistema">
-    <a routerLink="/periodos-academicos">Periodos académicos</a>
-    <a routerLink="/facultades">Facultades</a>
-    <a routerLink="/carreras">Carreras</a>
-    <a routerLink="/asignaturas">Asignaturas</a>
-    <a routerLink="/malla-curricular">Malla curricular</a>
-    <a routerLink="/cursos">Cursos</a>
-    <a routerLink="/estudiantes">Estudiantes</a>
-    <a routerLink="/docentes">Docentes</a>
+    @for (modulo of modulosVisibles(); track modulo.ruta) {
+      <a [routerLink]="modulo.ruta" class="modulo-acceso">
+        <svg
+          class="modulo-acceso__icono"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path [attr.d]="modulo.icono" />
+        </svg>
+        <div class="modulo-acceso__contenido">
+          <span class="modulo-acceso__titulo">{{ modulo.titulo }}</span>
+          <span class="modulo-acceso__descripcion">{{ modulo.descripcion }}</span>
+        </div>
+      </a>
+    }
   </div>
 </section>

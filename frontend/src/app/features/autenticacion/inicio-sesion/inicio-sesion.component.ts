@@ -18,6 +18,7 @@ import { AutenticacionService } from '../../../core/services/autenticacion.servi
   selector: 'app-inicio-sesion',
   imports: [ReactiveFormsModule],
   templateUrl: './inicio-sesion.component.html',
+  styleUrl: './inicio-sesion.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InicioSesionComponent {

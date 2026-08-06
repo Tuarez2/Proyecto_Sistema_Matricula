@@ -518,7 +518,7 @@ describe('LayoutPrincipalComponent', () => {
   }
 
   function obtenerBotonCierre(): HTMLButtonElement | null {
-    return obtenerElemento<HTMLButtonElement>('button');
+    return obtenerElemento<HTMLButtonElement>('.btn-cerrar-sesion');
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {

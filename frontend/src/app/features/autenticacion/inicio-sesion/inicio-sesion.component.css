@@ -1,0 +1,101 @@
+.pagina-iniciar-sesion {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 2rem 1.25rem;
+  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-active));
+}
+
+.tarjeta-iniciar-sesion {
+  width: min(100%, 26rem);
+  padding: 2rem 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.marca-iniciar-sesion {
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.marca-iniciar-sesion__sigla {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.tarjeta-iniciar-sesion h1 {
+  margin: 0 0 0.5rem;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.subtitulo-iniciar-sesion {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.formulario-iniciar-sesion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.campo-iniciar-sesion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.campo-iniciar-sesion label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.errores-campo p {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.alerta-iniciar-sesion {
+  margin: 0;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  padding: 0.75rem;
+  font-size: var(--font-size-sm);
+}
+
+.boton-iniciar-sesion {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.boton-iniciar-sesion:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.boton-iniciar-sesion:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}

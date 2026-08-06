@@ -1,30 +1,31 @@
 <header class="encabezado-principal">
   <div class="contenedor barra-superior">
-    <p class="marca">Sistema de Matrícula Universitaria</p>
+    <button
+      type="button"
+      class="boton-menu"
+      aria-label="Abrir menú de navegación"
+      aria-expanded="{{ menuMovilAbierto() }}"
+      (click)="abrirMenuMovil()"
+    >
+      <span class="boton-menu__linea" aria-hidden="true"></span>
+      <span class="boton-menu__linea" aria-hidden="true"></span>
+      <span class="boton-menu__linea" aria-hidden="true"></span>
+    </button>
 
-    <nav class="navegacion-principal" aria-label="Navegación principal">
-      <a routerLink="/" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
-      <a routerLink="/periodos-academicos" routerLinkActive="activo">Periodos académicos</a>
-      <a routerLink="/facultades" routerLinkActive="activo">Facultades</a>
-      <a routerLink="/carreras" routerLinkActive="activo">Carreras</a>
-      <a routerLink="/asignaturas" routerLinkActive="activo">Asignaturas</a>
-      <a routerLink="/malla-curricular" routerLinkActive="activo">Malla</a>
-      <a routerLink="/cursos" routerLinkActive="activo">Cursos</a>
-      <a routerLink="/estudiantes" routerLinkActive="activo">Estudiantes</a>
-      <a routerLink="/docentes" routerLinkActive="activo">Docentes</a>
-      @if (esAdministrador()) {
-        <a routerLink="/usuarios" routerLinkActive="activo">Usuarios</a>
-      }
-    </nav>
+    <p class="marca">
+      <span class="marca__sigla" aria-hidden="true">SM</span>
+      <span class="marca__nombre">Sistema de Matrícula Universitaria</span>
+    </p>
 
     <section class="sesion-actual" aria-label="Sesión actual">
-      <div>
+      <div class="sesion-actual__datos">
         <p class="nombre-usuario">{{ nombreCompletoUsuario() }}</p>
         <p class="rol-usuario">{{ nombreRolUsuario() }}</p>
       </div>
 
       <button
         type="button"
+        class="btn-cerrar-sesion"
         [disabled]="cerrandoSesion()"
         (click)="cerrarSesion()"
       >
@@ -38,6 +39,49 @@
   </div>
 </header>
 
-<main class="contenido-principal contenedor">
-  <router-outlet />
-</main>
+<div class="cuerpo-aplicacion">
+  <div
+    class="capa-base"
+    [class.capa-base--abierta]="menuMovilAbierto()"
+    (click)="cerrarMenuMovil()"
+    [attr.aria-hidden]="!menuMovilAbierto()"
+  ></div>
+
+  <aside
+    class="panel-navegacion"
+    [class.panel-navegacion--abierto]="menuMovilAbierto()"
+    id="navegacion-panel"
+    aria-label="Menú de aplicación"
+  >
+    <nav class="navegacion-principal" aria-label="Navegación principal">
+      @for (item of itemsNavegacionVisibles(); track item.ruta) {
+        <a
+          [routerLink]="item.ruta"
+          routerLinkActive="activo"
+          [routerLinkActiveOptions]="{ exact: item.ruta === '/' }"
+          (click)="cerrarMenuMovil()"
+          class="enlace-navegacion"
+        >
+          <svg
+            class="enlace-navegacion__icono"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path [attr.d]="item.icono" />
+          </svg>
+          <span>{{ item.etiqueta }}</span>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <main class="contenido-principal contenedor">
+    <router-outlet />
+  </main>
+</div>
