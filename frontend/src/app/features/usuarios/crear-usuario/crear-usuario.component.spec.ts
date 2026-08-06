@@ -683,11 +683,11 @@ describe('CrearUsuarioComponent', () => {
     expect(componente.mensajeError()).not.toContain('token');
   });
 
-  it('existe h1 Crear usuario', () => {
+  it('existe h1 Nuevo usuario', () => {
     iniciarConRoles();
     fixture.detectChanges();
 
-    expect(obtenerElemento('h1')?.textContent).toContain('Crear usuario');
+    expect(obtenerElemento('h1')?.textContent).toContain('Nuevo usuario');
   });
 
   it('existe formulario reactivo', () => {

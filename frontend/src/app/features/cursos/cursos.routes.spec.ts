@@ -26,7 +26,7 @@ describe('rutasCursos', () => {
     expect(rutaCrear?.data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
       CODIGOS_ROL.ADMIN,
     ]);
-    expect(rutaCrear?.title).toBe('Crear curso');
+    expect(rutaCrear?.title).toBe('Nuevo curso');
   });
 
   it('protege la edición para ADMIN', () => {

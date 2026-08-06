@@ -6,7 +6,7 @@
     </div>
     @if (esAdministrador()) {
       <div class="page-actions">
-        <a routerLink="/carreras/crear" class="btn btn-primary">Crear carrera</a>
+        <a routerLink="/carreras/crear" class="btn btn-primary">Nueva carrera</a>
       </div>
     }
   </header>
@@ -87,7 +87,14 @@
 
   @if (!cargando() && !mensajeError() && carreras().length === 0) {
     <div class="empty-state">
-      <p>No se encontraron carreras.</p>
+      <span class="empty-icon" aria-hidden="true">🎓</span>
+      <h2>No se encontraron carreras</h2>
+      <p>No hay carreras registradas que coincidan con la búsqueda.</p>
+      @if (esAdministrador()) {
+        <div class="empty-actions">
+          <a routerLink="/carreras/crear" class="btn btn-primary">Nueva carrera</a>
+        </div>
+      }
     </div>
   }
 
@@ -116,10 +123,12 @@
               <td>{{ carrera.nombre }}</td>
               <td>{{ obtenerNombreFacultad(carrera) }}</td>
               <td>{{ carrera.duracion_semestres }}</td>
-              <td>{{ obtenerEtiquetaEstado(carrera) }}</td>
               <td>
-                {{ carrera.created_at ? (carrera.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
+                <span class="estado-badge {{ obtenerClaseEstado(carrera) }}">
+                  {{ obtenerEtiquetaEstado(carrera) }}
+                </span>
               </td>
+              <td>{{ carrera.created_at | fecha }}</td>
               <td>
                 <a class="btn btn-sm btn-neutral" [routerLink]="['/carreras', carrera.id]">Ver</a>
               </td>

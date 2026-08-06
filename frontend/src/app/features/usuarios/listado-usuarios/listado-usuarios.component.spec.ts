@@ -494,18 +494,18 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerElemento('h1')?.textContent).toContain('Usuarios');
   });
 
-  it('existe enlace Crear usuario', () => {
+  it('existe enlace Nuevo usuario', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo usuario')).toBeTruthy();
   });
 
-  it('el enlace Crear usuario apunta a usuarios nuevo', () => {
+  it('el enlace Nuevo usuario apunta a usuarios nuevo', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear usuario')?.getAttribute('href')).toBe(
+    expect(obtenerEnlace('Nuevo usuario')?.getAttribute('href')).toBe(
       '/usuarios/nuevo',
     );
   });
@@ -676,13 +676,13 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerBoton('Eliminar')).toBeNull();
   });
 
-  it('el enlace Crear usuario se mantiene visible sin resultados', () => {
+  it('el enlace Nuevo usuario se mantiene visible sin resultados', () => {
     iniciarComponente();
     completarRoles();
     completarUsuarios(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo usuario')).toBeTruthy();
   });
 
   it('los enlaces usan el identificador correcto con varios usuarios', () => {
@@ -734,11 +734,11 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerElemento('th[scope="col"]')).toBeTruthy();
   });
 
-  it('el enlace Crear usuario se mantiene visible durante la carga', () => {
+  it('el enlace Nuevo usuario se mantiene visible durante la carga', () => {
     iniciarComponente();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo usuario')).toBeTruthy();
   });
 
   it('el enlace de estado existe para usuarios activos', () => {
@@ -808,7 +808,60 @@ describe('ListadoUsuariosComponent', () => {
     fixture.detectChanges();
 
     expect(obtenerTexto()).toContain('Página 1 de 1');
-    expect(obtenerTexto()).toContain('Total de usuarios: 1');
+    expect(obtenerTexto()).toContain('1 resultado');
+  });
+
+  it('muestra badge de estado Activo', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'activo' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.estado-badge--success')?.textContent).toContain('Activo');
+  });
+
+  it('muestra badge de estado Bloqueado', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'bloqueado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.estado-badge--danger')?.textContent).toContain('Bloqueado');
+  });
+
+  it('muestra badge de estado Inactivo', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'inactivo' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.estado-badge--neutral')?.textContent).toContain('Inactivo');
+  });
+
+  it('cambiarPagina consulta la pagina indicada', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 3 }));
+    usuariosService.listarUsuarios.mockClear();
+
+    componente.cambiarPagina(2);
+
+    expect(obtenerUltimosFiltros()?.pagina).toBe(2);
+  });
+
+  it('cambiarPagina no consulta si la pagina no cambia', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 3 }));
+    usuariosService.listarUsuarios.mockClear();
+
+    componente.cambiarPagina(1);
+
+    expect(usuariosService.listarUsuarios).not.toHaveBeenCalled();
+  });
+
+  it('muestra el conteo de resultados', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario()], total: 1 }));
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('Se encontraron');
+    expect(obtenerTexto()).toContain('1 usuario');
   });
 
   function iniciarComponente(): void {

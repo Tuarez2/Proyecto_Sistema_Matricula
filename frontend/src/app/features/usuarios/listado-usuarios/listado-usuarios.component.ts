@@ -13,6 +13,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import type { Rol } from '../models/rol.model';
 import {
   ESTADOS_USUARIO,
@@ -28,6 +29,7 @@ import { UsuariosService } from '../services/usuarios.service';
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    PaginationComponent,
   ],
   templateUrl: './listado-usuarios.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -123,6 +125,43 @@ export class ListadoUsuariosComponent implements OnInit {
 
     this.estadoPaginaActual.update((paginaActual) => paginaActual + 1);
     this.cargarUsuarios();
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (this.cargandoUsuarios() || pagina === this.paginaActual()) {
+      return;
+    }
+
+    this.estadoPaginaActual.set(pagina);
+    this.cargarUsuarios();
+  }
+
+  obtenerEtiquetaEstado(estado: EstadoUsuario): string {
+    if (estado === ESTADOS_USUARIO.ACTIVO) {
+      return 'Activo';
+    }
+
+    if (estado === ESTADOS_USUARIO.BLOQUEADO) {
+      return 'Bloqueado';
+    }
+
+    if (estado === ESTADOS_USUARIO.INACTIVO) {
+      return 'Inactivo';
+    }
+
+    return 'Estado desconocido';
+  }
+
+  obtenerClaseEstado(estado: EstadoUsuario): string {
+    if (estado === ESTADOS_USUARIO.ACTIVO) {
+      return 'estado-badge--success';
+    }
+
+    if (estado === ESTADOS_USUARIO.BLOQUEADO) {
+      return 'estado-badge--danger';
+    }
+
+    return 'estado-badge--neutral';
   }
 
   obtenerNombreCompleto(usuario: Usuario): string {

@@ -1,7 +1,7 @@
 <section class="page" aria-labelledby="titulo-crear-curso">
   <header class="page-header">
     <div>
-      <h1 id="titulo-crear-curso">Crear curso</h1>
+      <h1 id="titulo-crear-curso">Nuevo curso</h1>
       <p class="page-subtitle">Registra un nuevo curso.</p>
     </div>
     <div class="page-actions">
@@ -152,7 +152,11 @@
 
     <div class="form-actions">
       <button type="submit" [disabled]="enviando() || cargandoCatalogos()">
-        Crear curso
+        @if (enviando()) {
+          Guardando...
+        } @else {
+          Guardar
+        }
       </button>
       <button type="button" [disabled]="enviando()" (click)="cancelar()">
         Cancelar

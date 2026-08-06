@@ -64,8 +64,21 @@ describe('DocenteTableComponent', () => {
     expect(obtenerTexto()).toContain('No se encontraron docentes.');
   });
 
+  it('aplica clase de badge segun el estado', () => {
+    expect(obtenerElemento('.estado-badge--success')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--neutral')).toBeTruthy();
+  });
+
+  it('muestra telefono no registrado cuando es nulo', () => {
+    expect(obtenerTexto()).toContain('No registrado');
+  });
+
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
+  }
+
+  function obtenerElemento(selector: string): HTMLElement | null {
+    return fixture.nativeElement.querySelector(selector) as HTMLElement | null;
   }
 
   function obtenerBoton(texto: string): HTMLButtonElement | null {

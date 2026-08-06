@@ -16,7 +16,7 @@ export const rutasUsuarios: Routes = [
     data: {
       [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
     },
-    title: 'Crear usuario',
+    title: 'Nuevo usuario',
   },
   {
     path: ':id/editar',

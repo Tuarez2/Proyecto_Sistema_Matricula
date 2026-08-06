@@ -27,9 +27,9 @@
       <p class="detail-line"><strong>Identificador:</strong> {{ periodo()?.id }}</p>
       <p class="detail-line"><strong>Código:</strong> {{ periodo()?.codigo }}</p>
       <p class="detail-line"><strong>Nombre:</strong> {{ periodo()?.nombre }}</p>
-      <p class="detail-line"><strong>Fecha de inicio:</strong> {{ periodo()?.fecha_inicio }}</p>
-      <p class="detail-line"><strong>Fecha de fin:</strong> {{ periodo()?.fecha_fin }}</p>
-      <p class="detail-line"><strong>Estado actual:</strong> {{ obtenerEtiquetaEstado(periodo()!.estado) }}</p>
+      <p class="detail-line"><strong>Fecha de inicio:</strong> {{ periodo()?.fecha_inicio | fecha }}</p>
+      <p class="detail-line"><strong>Fecha de fin:</strong> {{ periodo()?.fecha_fin | fecha }}</p>
+      <p class="detail-line"><strong>Estado actual:</strong> <span class="estado-badge {{ obtenerClaseEstado(periodo()!.estado) }}">{{ obtenerEtiquetaEstado(periodo()!.estado) }}</span></p>
     </div>
 
     <p class="form-hint">

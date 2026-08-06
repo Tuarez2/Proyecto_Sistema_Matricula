@@ -13,13 +13,14 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
+import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
 import type { Facultad } from '../../models/facultad.model';
 import { FacultadesService } from '../../services/facultades.service';
 
 @Component({
   selector: 'app-ver-facultad',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FechaPipe],
   templateUrl: './ver-facultad.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -48,6 +49,10 @@ export class VerFacultadComponent implements OnInit {
 
   obtenerEtiquetaEstado(facultad: Facultad): string {
     return facultad.activo ? 'Activa' : 'Inactiva';
+  }
+
+  obtenerClaseEstado(facultad: Facultad): string {
+    return facultad.activo ? 'estado-badge--success' : 'estado-badge--neutral';
   }
 
   private cargarFacultad(idFacultad: number): void {

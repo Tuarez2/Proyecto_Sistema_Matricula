@@ -23,6 +23,7 @@ import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type {
   Asignatura,
   FiltrosAsignaturas,
@@ -47,6 +48,7 @@ const LIMITE_POR_PAGINA = 10;
     ReactiveFormsModule,
     RouterLink,
     PaginationComponent,
+    FechaPipe,
   ],
   templateUrl: './listado-asignaturas.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -181,6 +183,10 @@ export class ListadoAsignaturasComponent implements OnInit {
 
   obtenerEtiquetaEstado(asignatura: Asignatura): string {
     return asignatura.activo ? 'Activa' : 'Inactiva';
+  }
+
+  obtenerClaseEstado(asignatura: Asignatura): string {
+    return asignatura.activo ? 'estado-badge--success' : 'estado-badge--neutral';
   }
 
   private cargarAsignaturas(): void {

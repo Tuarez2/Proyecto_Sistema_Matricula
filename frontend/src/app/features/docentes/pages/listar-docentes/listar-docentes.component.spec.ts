@@ -304,7 +304,7 @@ describe('ListarDocentesComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron docentes.');
+    expect(obtenerTexto()).toContain('No se encontraron docentes');
   });
 
   it('muestra error de API al cargar docentes', () => {
@@ -335,7 +335,7 @@ describe('ListarDocentesComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear docente')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo docente')).toBeTruthy();
     expect(obtenerBoton('Editar')).toBeTruthy();
     expect(obtenerBoton('Inactivar')).toBeTruthy();
   });

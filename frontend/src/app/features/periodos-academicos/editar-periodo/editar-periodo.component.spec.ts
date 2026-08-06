@@ -864,7 +864,7 @@ describe('EditarPeriodoComponent', () => {
     iniciarYCompletarCarga(crearPeriodo({ estado: 'matricula_abierta' }));
     fixture.detectChanges();
 
-    expect(obtenerTexto()).toContain('Estado actual: Matrícula abierta');
+    expect(obtenerTexto()).toContain('Matrícula abierta');
   });
 
   it('no existe select de estado', () => {

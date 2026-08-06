@@ -262,7 +262,7 @@ describe('ListadoAsignaturasComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron asignaturas.');
+    expect(obtenerTexto()).toContain('No se encontraron asignaturas');
   });
 
   it('muestra error de API al cargar asignaturas', () => {
@@ -293,7 +293,7 @@ describe('ListadoAsignaturasComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear asignatura')).toBeTruthy();
+    expect(obtenerEnlace('Nueva asignatura')).toBeTruthy();
     expect(obtenerEnlace('Editar')).toBeTruthy();
     expect(obtenerBoton('Inactivar')).toBeTruthy();
   });
@@ -303,7 +303,7 @@ describe('ListadoAsignaturasComponent', () => {
 
     crearComponente();
 
-    expect(obtenerEnlace('Crear asignatura')).toBeNull();
+    expect(obtenerEnlace('Nueva asignatura')).toBeNull();
     expect(obtenerEnlace('Editar')).toBeNull();
     expect(obtenerBoton('Inactivar')).toBeNull();
   });

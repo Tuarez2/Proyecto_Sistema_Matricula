@@ -31,8 +31,8 @@
       <p class="detail-line"><strong>Nombre:</strong> {{ asignaturaActual.nombre }}</p>
       <p class="detail-line"><strong>Créditos:</strong> {{ asignaturaActual.creditos }}</p>
       <p class="detail-line"><strong>Nivel académico:</strong> {{ asignaturaActual.nivel_academico }}</p>
-      <p class="detail-line"><strong>Estado:</strong> {{ obtenerEtiquetaEstado(asignaturaActual) }}</p>
-      <p class="detail-line"><strong>Fecha de creación:</strong> {{ asignaturaActual.created_at ? (asignaturaActual.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}</p>
+      <p class="detail-line"><strong>Estado:</strong> <span class="estado-badge {{ obtenerClaseEstado(asignaturaActual) }}">{{ obtenerEtiquetaEstado(asignaturaActual) }}</span></p>
+      <p class="detail-line"><strong>Fecha de creación:</strong> {{ asignaturaActual.created_at | fecha }}</p>
     </div>
 
     <section aria-labelledby="titulo-carreras-asociadas">
@@ -55,7 +55,11 @@
               @for (carrera of asignaturaActual.carreras ?? []; track carrera.id) {
                 <tr>
                   <td>{{ obtenerNombreCarrera(carrera) }}</td>
-                  <td>{{ carrera.activo ? 'Activa' : 'Inactiva' }}</td>
+                  <td>
+                    <span class="estado-badge {{ carrera.activo ? 'estado-badge--success' : 'estado-badge--neutral' }}">
+                      {{ carrera.activo ? 'Activa' : 'Inactiva' }}
+                    </span>
+                  </td>
                 </tr>
               }
             </tbody>

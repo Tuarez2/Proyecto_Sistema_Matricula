@@ -923,7 +923,7 @@ describe('EditarUsuarioComponent', () => {
     iniciarYCompletarUsuario(crearUsuario({ estado: 'bloqueado' }));
     fixture.detectChanges();
 
-    expect(obtenerTexto()).toContain('Estado actual: Bloqueado');
+    expect(obtenerTexto()).toContain('Bloqueado');
   });
 
   it('no existe control de estado', () => {

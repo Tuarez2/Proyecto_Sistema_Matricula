@@ -235,6 +235,18 @@ export class ListadoCursosComponent implements OnInit {
     return curso.estado;
   }
 
+  obtenerClaseEstado(curso: Curso): string {
+    if (curso.estado === ESTADOS_CURSO.ABIERTO) {
+      return 'estado-badge--success';
+    }
+
+    if (curso.estado === ESTADOS_CURSO.CERRADO) {
+      return 'estado-badge--neutral';
+    }
+
+    return 'estado-badge--danger';
+  }
+
   private cargarCatalogos(): void {
     this.periodosServicio
       .listarPeriodos({ limite: 100 })

@@ -6,7 +6,7 @@
     </div>
     @if (esAdministrador()) {
       <div class="page-actions">
-        <a routerLink="/facultades/crear" class="btn btn-primary">Crear facultad</a>
+        <a routerLink="/facultades/crear" class="btn btn-primary">Nueva facultad</a>
       </div>
     }
   </header>
@@ -70,7 +70,14 @@
 
   @if (!cargando() && !mensajeError() && facultades().length === 0) {
     <div class="empty-state">
-      <p>No se encontraron facultades.</p>
+      <span class="empty-icon" aria-hidden="true">🏛️</span>
+      <h2>No se encontraron facultades</h2>
+      <p>No hay facultades registradas que coincidan con la búsqueda.</p>
+      @if (esAdministrador()) {
+        <div class="empty-actions">
+          <a routerLink="/facultades/crear" class="btn btn-primary">Nueva facultad</a>
+        </div>
+      }
     </div>
   }
 
@@ -95,8 +102,12 @@
             <tr>
               <td>{{ facultad.codigo }}</td>
               <td>{{ facultad.nombre }}</td>
-              <td>{{ obtenerEtiquetaEstado(facultad) }}</td>
-              <td>{{ facultad.created_at ? (facultad.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}</td>
+              <td>
+                <span class="estado-badge {{ obtenerClaseEstado(facultad) }}">
+                  {{ obtenerEtiquetaEstado(facultad) }}
+                </span>
+              </td>
+              <td>{{ facultad.created_at | fecha }}</td>
               <td>
                 <a class="btn btn-sm btn-neutral" [routerLink]="['/facultades', facultad.id]">Ver</a>
               </td>

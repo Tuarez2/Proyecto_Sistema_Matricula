@@ -35,7 +35,7 @@
       <p class="detail-line"><strong>Cupo máximo:</strong> {{ curso()?.cupo_maximo }}</p>
       <p class="detail-line"><strong>Matriculados:</strong> {{ curso()?.cantidad_matriculados ?? '—' }}</p>
       <p class="detail-line"><strong>Cupos disponibles:</strong> {{ curso()?.cupos_disponibles ?? '—' }}</p>
-      <p class="detail-line"><strong>Estado:</strong> {{ obtenerEtiquetaEstado() }}</p>
+      <p class="detail-line"><strong>Estado:</strong> <span class="estado-badge {{ obtenerClaseEstado() }}">{{ obtenerEtiquetaEstado() }}</span></p>
     </div>
   }
 </section>

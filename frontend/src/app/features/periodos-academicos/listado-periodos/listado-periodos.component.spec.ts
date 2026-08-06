@@ -310,6 +310,29 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerTexto()).toContain('Cerrado');
   });
 
+  it('aplica clase de badge segun el estado', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearPeriodo({ id: 1, estado: 'matricula_abierta' }),
+        crearPeriodo({ id: 2, estado: 'cerrado' }),
+      ],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.estado-badge--success')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--neutral')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--warning')).toBeNull();
+  });
+
+  it('reemplaza fechas crudas por formato humano', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    const texto = obtenerTexto();
+    expect(texto).not.toContain('2026-01-05');
+    expect(texto).not.toContain('2025-12-01');
+  });
+
   it('muestra etiqueta Planificado', () => {
     expect(componente.obtenerEtiquetaEstado('planificado')).toBe('Planificado');
   });
@@ -331,7 +354,7 @@ describe('ListadoPeriodosComponent', () => {
     iniciarYCompletar(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
     fixture.detectChanges();
 
-    expect(obtenerTexto()).toContain('No se encontraron periodos académicos.');
+    expect(obtenerTexto()).toContain('No se encontraron periodos académicos');
   });
 
   it('anterior deshabilitado en pagina 1', () => {
@@ -509,20 +532,20 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerTexto()).not.toContain('Acciones');
   });
 
-  it('ADMIN ve Crear periodo', () => {
+  it('ADMIN ve Nuevo periodo', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
-  it('el enlace Crear periodo apunta a periodos academicos nuevo', () => {
+  it('el enlace Nuevo periodo apunta a periodos academicos nuevo', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')?.getAttribute('href')).toBe(
+    expect(obtenerEnlace('Nuevo periodo')?.getAttribute('href')).toBe(
       '/periodos-academicos/nuevo',
     );
   });
@@ -531,64 +554,64 @@ describe('ListadoPeriodosComponent', () => {
     'GESTOR_MATRICULA',
     'ESTUDIANTE',
     'DOCENTE',
-  ])('%s no ve Crear periodo', (codigoRol) => {
+  ])('%s no ve Nuevo periodo', (codigoRol) => {
     usuarioActual.set(crearUsuarioConRol(codigoRol));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
   });
 
-  it('usuario sin rol no ve Crear periodo', () => {
+  it('usuario sin rol no ve Nuevo periodo', () => {
     usuarioActual.set(crearUsuario({ rol: null }));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
   });
 
-  it('sin usuario no ve Crear periodo', () => {
+  it('sin usuario no ve Nuevo periodo', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
   });
 
-  it('Crear periodo aparece si la sesion cambia a ADMIN', () => {
+  it('Nuevo periodo aparece si la sesion cambia a ADMIN', () => {
     iniciarYCompletar();
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
 
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
-  it('Crear periodo desaparece si la sesion cambia a otro rol', () => {
+  it('Nuevo periodo desaparece si la sesion cambia a otro rol', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
 
     usuarioActual.set(crearUsuarioConRol('DOCENTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
   });
 
-  it('Crear periodo continua visible sin resultados para ADMIN', () => {
+  it('Nuevo periodo continua visible sin resultados para ADMIN', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
-  it('Crear periodo continua visible durante carga para ADMIN', () => {
+  it('Nuevo periodo continua visible durante carga para ADMIN', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarComponente();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
   it('ADMIN ve columna Acciones', () => {
@@ -706,12 +729,12 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerEnlace('Editar')).toBeNull();
   });
 
-  it('Crear periodo continua visible para ADMIN con Acciones', () => {
+  it('Nuevo periodo continua visible para ADMIN con Acciones', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
     expect(obtenerTexto()).toContain('Acciones');
   });
 
@@ -851,12 +874,12 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerEnlace('Editar')).toBeTruthy();
   });
 
-  it('Crear periodo continua existiendo para ADMIN', () => {
+  it('Nuevo periodo continua existiendo para ADMIN', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
   it('no existe boton Eliminar', () => {

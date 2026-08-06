@@ -27,7 +27,7 @@ export const rutasAsignaturas: Routes = [
     data: {
       [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
     },
-    title: 'Crear asignatura',
+    title: 'Nueva asignatura',
   },
   {
     path: 'editar/:id',

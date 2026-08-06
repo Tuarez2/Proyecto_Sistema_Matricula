@@ -21,7 +21,7 @@
   @if (periodoOriginal()) {
     <div class="detail-card">
       <p class="detail-line"><strong>Identificador:</strong> {{ periodoOriginal()?.id }}</p>
-      <p class="detail-line"><strong>Estado actual:</strong> {{ obtenerEtiquetaEstado(periodoOriginal()!.estado) }}</p>
+      <p class="detail-line"><strong>Estado actual:</strong> <span class="estado-badge {{ obtenerClaseEstado(periodoOriginal()!.estado) }}">{{ obtenerEtiquetaEstado(periodoOriginal()!.estado) }}</span></p>
     </div>
 
     <p class="form-hint">

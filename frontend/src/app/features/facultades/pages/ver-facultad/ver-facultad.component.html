@@ -24,8 +24,8 @@
     <div class="detail-card">
       <p class="detail-line"><strong>Código:</strong> {{ facultad()!.codigo }}</p>
       <p class="detail-line"><strong>Nombre:</strong> {{ facultad()!.nombre }}</p>
-      <p class="detail-line"><strong>Estado:</strong> {{ obtenerEtiquetaEstado(facultad()!) }}</p>
-      <p class="detail-line"><strong>Fecha de creación:</strong> {{ facultad()!.created_at ? (facultad()!.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}</p>
+      <p class="detail-line"><strong>Estado:</strong> <span class="estado-badge {{ obtenerClaseEstado(facultad()!) }}">{{ obtenerEtiquetaEstado(facultad()!) }}</span></p>
+      <p class="detail-line"><strong>Fecha de creación:</strong> {{ facultad()!.created_at | fecha }}</p>
     </div>
 
     <section aria-labelledby="titulo-carreras-facultad">
@@ -52,7 +52,11 @@
                   <td>{{ carrera.codigo }}</td>
                   <td>{{ carrera.nombre }}</td>
                   <td>{{ carrera.duracion_semestres }}</td>
-                  <td>{{ carrera.activo ? 'Activa' : 'Inactiva' }}</td>
+                  <td>
+                    <span class="estado-badge {{ carrera.activo ? 'estado-badge--success' : 'estado-badge--neutral' }}">
+                      {{ carrera.activo ? 'Activa' : 'Inactiva' }}
+                    </span>
+                  </td>
                 </tr>
               }
             </tbody>

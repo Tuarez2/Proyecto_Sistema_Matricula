@@ -27,7 +27,7 @@ export const rutasCarreras: Routes = [
     data: {
       [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
     },
-    title: 'Crear carrera',
+    title: 'Nueva carrera',
   },
   {
     path: 'editar/:id',

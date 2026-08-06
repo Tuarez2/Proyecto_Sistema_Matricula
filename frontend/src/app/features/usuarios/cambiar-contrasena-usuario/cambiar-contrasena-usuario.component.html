@@ -32,7 +32,7 @@
       <p class="detail-line"><strong>Usuario:</strong> {{ obtenerNombreCompleto(usuarioConsultado) }}</p>
       <p class="detail-line"><strong>Correo:</strong> {{ usuarioConsultado.correo }}</p>
       <p class="detail-line"><strong>Rol:</strong> {{ usuarioConsultado.rol?.nombre || 'Sin rol' }}</p>
-      <p class="detail-line"><strong>Estado actual:</strong> {{ obtenerEtiquetaEstado(usuarioConsultado.estado) }}</p>
+      <p class="detail-line"><strong>Estado actual:</strong> <span class="estado-badge {{ obtenerClaseEstado(usuarioConsultado.estado) }}">{{ obtenerEtiquetaEstado(usuarioConsultado.estado) }}</span></p>
     </div>
 
     <p class="alert alert--warning" role="status" aria-live="polite">

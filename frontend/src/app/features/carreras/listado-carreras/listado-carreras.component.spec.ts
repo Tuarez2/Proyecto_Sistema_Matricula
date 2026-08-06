@@ -266,7 +266,7 @@ describe('ListadoCarrerasComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron carreras.');
+    expect(obtenerTexto()).toContain('No se encontraron carreras');
   });
 
   it('muestra error de API al cargar carreras', () => {
@@ -307,7 +307,7 @@ describe('ListadoCarrerasComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear carrera')).toBeTruthy();
+    expect(obtenerEnlace('Nueva carrera')).toBeTruthy();
     expect(obtenerEnlace('Editar')).toBeTruthy();
     expect(obtenerBoton('Inactivar')).toBeTruthy();
   });
@@ -317,7 +317,7 @@ describe('ListadoCarrerasComponent', () => {
 
     crearComponente();
 
-    expect(obtenerEnlace('Crear carrera')).toBeNull();
+    expect(obtenerEnlace('Nueva carrera')).toBeNull();
     expect(obtenerEnlace('Editar')).toBeNull();
     expect(obtenerBoton('Inactivar')).toBeNull();
   });

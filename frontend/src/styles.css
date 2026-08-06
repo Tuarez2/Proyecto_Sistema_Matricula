@@ -961,6 +961,24 @@ tbody tr {
 }
 
 /* ==========================================================================
+   Barra de resultados (conteo de registros encontrados)
+   ========================================================================== */
+
+.result-count {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin: 0 0 var(--espacio-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.result-count strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* ==========================================================================
    Tarjetas KPI (dashboard y portales)
    ========================================================================== */
 

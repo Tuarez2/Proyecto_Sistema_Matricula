@@ -6,7 +6,7 @@
     </div>
     @if (esAdministrador()) {
       <div class="page-actions">
-        <a routerLink="/docentes/crear" class="btn btn-primary">Crear docente</a>
+        <a routerLink="/docentes/crear" class="btn btn-primary">Nuevo docente</a>
       </div>
     }
   </header>
@@ -33,7 +33,14 @@
 
   @if (!cargandoDocentes() && !mensajeError() && docentes().length === 0) {
     <div class="empty-state">
-      <p>No se encontraron docentes.</p>
+      <span class="empty-icon" aria-hidden="true">👤</span>
+      <h2>No se encontraron docentes</h2>
+      <p>No hay docentes registrados que coincidan con la búsqueda.</p>
+      @if (esAdministrador()) {
+        <div class="empty-actions">
+          <a routerLink="/docentes/crear" class="btn btn-primary">Nuevo docente</a>
+        </div>
+      }
     </div>
   }
 

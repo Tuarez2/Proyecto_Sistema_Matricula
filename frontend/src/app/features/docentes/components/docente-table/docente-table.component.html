@@ -20,9 +20,13 @@
           <td>{{ docente.identificacion }}</td>
           <td>{{ obtenerNombreCompleto(docente) }}</td>
           <td>{{ docente.correo }}</td>
-          <td>{{ docente.telefono ?? 'Sin teléfono' }}</td>
+          <td>{{ docente.telefono ?? 'No registrado' }}</td>
           <td>{{ docente.especialidad }}</td>
-          <td>{{ obtenerEtiquetaEstado(docente) }}</td>
+          <td>
+            <span class="estado-badge {{ obtenerClaseEstado(docente) }}">
+              {{ obtenerEtiquetaEstado(docente) }}
+            </span>
+          </td>
           @if (esAdministrador) {
             <td>
               <div class="row-actions">

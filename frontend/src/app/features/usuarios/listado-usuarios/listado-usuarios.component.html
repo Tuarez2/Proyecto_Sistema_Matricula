@@ -2,10 +2,10 @@
   <header class="page-header">
     <div>
       <h1 id="titulo-usuarios">Usuarios</h1>
-      <p class="page-subtitle">Administra los usuarios del sistema.</p>
+      <p class="page-subtitle">Administra las cuentas y permisos de acceso al sistema.</p>
     </div>
     <div class="page-actions">
-      <a routerLink="/usuarios/nuevo" class="btn btn-primary">Crear usuario</a>
+      <a routerLink="/usuarios/nuevo" class="btn btn-primary">Nuevo usuario</a>
     </div>
   </header>
 
@@ -58,9 +58,12 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" [disabled]="cargandoUsuarios()">Buscar</button>
+      <button type="submit" class="btn btn-primary" [disabled]="cargandoUsuarios()">
+        Buscar
+      </button>
       <button
         type="button"
+        class="btn btn-neutral"
         [disabled]="cargandoUsuarios()"
         (click)="limpiarFiltros()"
       >
@@ -86,11 +89,21 @@
 
   @if (!cargandoUsuarios() && !mensajeErrorUsuarios() && usuarios().length === 0) {
     <div class="empty-state">
-      <p>No se encontraron usuarios.</p>
+      <span class="empty-icon" aria-hidden="true">👥</span>
+      <h2>No se encontraron usuarios.</h2>
+      <p>Ajusta los filtros de búsqueda o registra un nuevo usuario.</p>
+      <div class="empty-actions">
+        <a routerLink="/usuarios/nuevo" class="btn btn-primary">Nuevo usuario</a>
+      </div>
     </div>
   }
 
   @if (usuarios().length > 0) {
+    <p class="result-count" role="status">
+      Se encontraron <strong>{{ totalUsuarios() }}</strong>
+      {{ totalUsuarios() === 1 ? 'usuario' : 'usuarios' }}
+    </p>
+
     <div class="table-wrap">
       <table>
         <caption>Listado de usuarios</caption>
@@ -101,7 +114,7 @@
             <th scope="col">Correo</th>
             <th scope="col">Rol</th>
             <th scope="col">Estado</th>
-            <th scope="col">Cambio de contraseña pendiente</th>
+            <th scope="col">Contraseña pendiente</th>
             <th scope="col">Acciones</th>
           </tr>
         </thead>
@@ -112,12 +125,16 @@
               <td>{{ obtenerNombreCompleto(usuario) }}</td>
               <td>{{ usuario.correo }}</td>
               <td>{{ usuario.rol?.nombre || 'Sin rol' }}</td>
-              <td>{{ usuario.estado }}</td>
+              <td>
+                <span class="estado-badge {{ obtenerClaseEstado(usuario.estado) }}">
+                  {{ obtenerEtiquetaEstado(usuario.estado) }}
+                </span>
+              </td>
               <td>
                 @if (usuario.debe_cambiar_password) {
-                  Sí
+                  <span class="estado-badge estado-badge--warning">Sí</span>
                 } @else {
-                  No
+                  <span class="estado-badge estado-badge--neutral">No</span>
                 }
               </td>
               <td>
@@ -140,24 +157,11 @@
     </div>
   }
 
-  <nav aria-label="Paginación de usuarios" class="pagination">
-    <button
-      type="button"
-      [disabled]="!puedeIrPaginaAnterior() || cargandoUsuarios()"
-      (click)="paginaAnterior()"
-    >
-      Anterior
-    </button>
-    <span class="pagination__status">
-      Página {{ totalPaginas() === 0 ? 0 : paginaActual() }} de {{ totalPaginas() }}
-      · Total de usuarios: {{ totalUsuarios() }}
-    </span>
-    <button
-      type="button"
-      [disabled]="!puedeIrPaginaSiguiente() || cargandoUsuarios()"
-      (click)="paginaSiguiente()"
-    >
-      Siguiente
-    </button>
-  </nav>
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalUsuarios()"
+    [deshabilitado]="cargandoUsuarios()"
+    (pageChange)="cambiarPagina($event)"
+  />
 </section>

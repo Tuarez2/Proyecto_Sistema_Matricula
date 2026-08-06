@@ -33,7 +33,7 @@ export const rutasCursos: Routes = [
     data: {
       [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
     },
-    title: 'Crear curso',
+    title: 'Nuevo curso',
   },
   {
     path: 'editar/:id',

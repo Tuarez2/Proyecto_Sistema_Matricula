@@ -7,7 +7,7 @@
     @if (esAdministrador()) {
       <div class="page-actions">
         <a routerLink="/periodos-academicos/nuevo" class="btn btn-primary">
-          Crear periodo
+          Nuevo periodo
         </a>
       </div>
     }
@@ -157,7 +157,16 @@
 
   @if (!cargandoPeriodos() && !mensajeError() && periodos().length === 0) {
     <div class="empty-state">
-      <p>No se encontraron periodos académicos.</p>
+      <span class="empty-icon" aria-hidden="true">📅</span>
+      <h2>No se encontraron periodos académicos</h2>
+      <p>No hay periodos académicos que coincidan con la búsqueda.</p>
+      @if (esAdministrador()) {
+        <div class="empty-actions">
+          <a routerLink="/periodos-academicos/nuevo" class="btn btn-primary">
+            Nuevo periodo
+          </a>
+        </div>
+      }
     </div>
   }
 
@@ -183,11 +192,15 @@
               <tr>
                 <td>{{ periodo.codigo }}</td>
                 <td>{{ periodo.nombre }}</td>
-                <td>{{ periodo.fecha_inicio }}</td>
-                <td>{{ periodo.fecha_fin }}</td>
-                <td>{{ periodo.fecha_inicio_matricula }}</td>
-                <td>{{ periodo.fecha_fin_matricula }}</td>
-                <td>{{ obtenerEtiquetaEstado(periodo.estado) }}</td>
+                <td>{{ periodo.fecha_inicio | fecha }}</td>
+                <td>{{ periodo.fecha_fin | fecha }}</td>
+                <td>{{ periodo.fecha_inicio_matricula | fecha }}</td>
+                <td>{{ periodo.fecha_fin_matricula | fecha }}</td>
+                <td>
+                  <span class="estado-badge {{ obtenerClaseEstado(periodo.estado) }}">
+                    {{ obtenerEtiquetaEstado(periodo.estado) }}
+                  </span>
+                </td>
                 <td>
                   <div class="row-actions">
                     <a
@@ -237,11 +250,15 @@
               <tr>
                 <td>{{ periodo.codigo }}</td>
                 <td>{{ periodo.nombre }}</td>
-                <td>{{ periodo.fecha_inicio }}</td>
-                <td>{{ periodo.fecha_fin }}</td>
-                <td>{{ periodo.fecha_inicio_matricula }}</td>
-                <td>{{ periodo.fecha_fin_matricula }}</td>
-                <td>{{ obtenerEtiquetaEstado(periodo.estado) }}</td>
+                <td>{{ periodo.fecha_inicio | fecha }}</td>
+                <td>{{ periodo.fecha_fin | fecha }}</td>
+                <td>{{ periodo.fecha_inicio_matricula | fecha }}</td>
+                <td>{{ periodo.fecha_fin_matricula | fecha }}</td>
+                <td>
+                  <span class="estado-badge {{ obtenerClaseEstado(periodo.estado) }}">
+                    {{ obtenerEtiquetaEstado(periodo.estado) }}
+                  </span>
+                </td>
               </tr>
             }
           </tbody>
@@ -250,26 +267,11 @@
     </div>
   }
 
-  <nav class="pagination" aria-label="Paginación de periodos académicos">
-    <button
-      type="button"
-      class="pagination__button"
-      [disabled]="!puedeIrPaginaAnterior() || cargandoPeriodos()"
-      (click)="paginaAnterior()"
-    >
-      Anterior
-    </button>
-    <span class="pagination__status">
-      Página {{ totalPaginas() === 0 ? 0 : paginaActual() }} de {{ totalPaginas() }}
-      · Total de periodos: {{ totalPeriodos() }}
-    </span>
-    <button
-      type="button"
-      class="pagination__button"
-      [disabled]="!puedeIrPaginaSiguiente() || cargandoPeriodos()"
-      (click)="paginaSiguiente()"
-    >
-      Siguiente
-    </button>
-  </nav>
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalPeriodos()"
+    [deshabilitado]="cargandoPeriodos()"
+    (pageChange)="cambiarPagina($event)"
+  />
 </section>

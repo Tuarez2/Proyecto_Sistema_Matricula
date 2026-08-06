@@ -32,4 +32,8 @@ export class DocenteTableComponent {
   obtenerEtiquetaEstado(docente: Docente): string {
     return docente.activo ? 'Activo' : 'Inactivo';
   }
+
+  obtenerClaseEstado(docente: Docente): string {
+    return docente.activo ? 'estado-badge--success' : 'estado-badge--neutral';
+  }
 }

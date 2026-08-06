@@ -24,6 +24,7 @@ import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import { FacultadesService } from '../../facultades/services/facultades.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type { Facultad } from '../../facultades/models/facultad.model';
 import type { Carrera, FiltrosCarreras } from '../models/carrera.model';
 import { CarrerasService } from '../services/carreras.service';
@@ -40,7 +41,7 @@ const LIMITE_POR_PAGINA = 10;
 @Component({
   selector: 'app-listado-carreras',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe],
   templateUrl: './listado-carreras.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -230,6 +231,10 @@ export class ListadoCarrerasComponent implements OnInit {
 
   obtenerEtiquetaEstado(carrera: Carrera): string {
     return carrera.activo ? 'Activa' : 'Inactiva';
+  }
+
+  obtenerClaseEstado(carrera: Carrera): string {
+    return carrera.activo ? 'estado-badge--success' : 'estado-badge--neutral';
   }
 
   obtenerNombreFacultad(carrera: Carrera): string {

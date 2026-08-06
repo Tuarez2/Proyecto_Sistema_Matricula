@@ -6,7 +6,7 @@
     </div>
     @if (esAdministrador()) {
       <div class="page-actions">
-        <a routerLink="/cursos/crear" class="btn btn-primary">Crear curso</a>
+        <a routerLink="/cursos/crear" class="btn btn-primary">Nuevo curso</a>
       </div>
     }
   </header>
@@ -88,7 +88,14 @@
 
   @if (!cargando() && !mensajeError() && cursos().length === 0) {
     <div class="empty-state">
-      <p>No se encontraron cursos.</p>
+      <span class="empty-icon" aria-hidden="true">🏫</span>
+      <h2>No se encontraron cursos</h2>
+      <p>No hay cursos registrados que coincidan con la búsqueda.</p>
+      @if (esAdministrador()) {
+        <div class="empty-actions">
+          <a routerLink="/cursos/crear" class="btn btn-primary">Nuevo curso</a>
+        </div>
+      }
     </div>
   }
 
@@ -122,7 +129,11 @@
               <td>{{ curso.horario }}</td>
               <td>{{ curso.cupo_maximo }}</td>
               <td>{{ curso.cupos_disponibles ?? '—' }}</td>
-              <td>{{ obtenerEtiquetaEstado(curso) }}</td>
+              <td>
+                <span class="estado-badge {{ obtenerClaseEstado(curso) }}">
+                  {{ obtenerEtiquetaEstado(curso) }}
+                </span>
+              </td>
               <td>
                 <a class="btn btn-sm btn-neutral" [routerLink]="['/cursos', curso.id]">Ver</a>
               </td>

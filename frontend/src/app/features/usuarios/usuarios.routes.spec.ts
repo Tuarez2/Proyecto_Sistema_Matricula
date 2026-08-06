@@ -76,8 +76,8 @@ describe('rutasUsuarios', () => {
     expect(componente).toBe(CrearUsuarioComponent);
   });
 
-  it('la ruta nuevo tiene titulo Crear usuario', () => {
-    expect(obtenerRutaNuevo().title).toBe('Crear usuario');
+  it('la ruta nuevo tiene titulo Nuevo usuario', () => {
+    expect(obtenerRutaNuevo().title).toBe('Nuevo usuario');
   });
 
   it('la ruta nuevo utiliza guardRoles', () => {

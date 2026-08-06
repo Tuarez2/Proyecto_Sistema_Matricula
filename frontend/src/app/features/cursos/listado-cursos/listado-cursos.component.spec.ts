@@ -178,6 +178,24 @@ describe('ListadoCursosComponent', () => {
     expect(obtenerTexto()).toContain('Sin período');
   });
 
+  it('aplica clase de badge segun el estado del curso', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([
+          crearCurso({ id: 1, estado: 'abierto' }),
+          crearCurso({ id: 2, estado: 'cerrado' }),
+          crearCurso({ id: 3, estado: 'cancelado' }),
+        ]),
+      ),
+    );
+
+    crearComponente();
+
+    expect(obtenerElemento('.estado-badge--success')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--neutral')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--danger')).toBeTruthy();
+  });
+
   it('muestra estado vacío cuando no hay resultados', () => {
     cursosService.listar.mockReturnValueOnce(
       respuestaObservable(crearRespuestaCursos([])),
@@ -185,7 +203,7 @@ describe('ListadoCursosComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron cursos.');
+    expect(obtenerTexto()).toContain('No se encontraron cursos');
   });
 
   it('muestra error de red al cargar cursos', () => {
@@ -303,7 +321,7 @@ describe('ListadoCursosComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear curso')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo curso')).toBeTruthy();
     expect(obtenerEnlace('Editar')).toBeTruthy();
     expect(obtenerBoton('Cancelar')).toBeTruthy();
   });
@@ -313,7 +331,7 @@ describe('ListadoCursosComponent', () => {
 
     crearComponente();
 
-    expect(obtenerEnlace('Crear curso')).toBeNull();
+    expect(obtenerEnlace('Nuevo curso')).toBeNull();
     expect(obtenerEnlace('Editar')).toBeNull();
     expect(obtenerBoton('Cancelar')).toBeNull();
   });
@@ -408,6 +426,10 @@ describe('ListadoCursosComponent', () => {
 
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
+  }
+
+  function obtenerElemento(selector: string): HTMLElement | null {
+    return fixture.nativeElement.querySelector(selector) as HTMLElement | null;
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {

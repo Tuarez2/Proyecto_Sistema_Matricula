@@ -17,6 +17,7 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import {
   ESTADOS_PERIODO_ACADEMICO,
   TRANSICIONES_PERIODO_ACADEMICO,
@@ -31,6 +32,7 @@ import { PeriodosAcademicosService } from '../services/periodos-academicos.servi
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    FechaPipe,
   ],
   templateUrl: './cambiar-estado-periodo.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -190,6 +192,22 @@ export class CambiarEstadoPeriodoComponent implements OnInit {
     }
 
     return 'Estado desconocido';
+  }
+
+  obtenerClaseEstado(estado: EstadoPeriodoAcademico): string {
+    if (estado === ESTADOS_PERIODO_ACADEMICO.CERRADO) {
+      return 'estado-badge--neutral';
+    }
+
+    if (estado === ESTADOS_PERIODO_ACADEMICO.EN_CURSO) {
+      return 'estado-badge--info';
+    }
+
+    if (estado === ESTADOS_PERIODO_ACADEMICO.MATRICULA_ABIERTA) {
+      return 'estado-badge--success';
+    }
+
+    return 'estado-badge--warning';
   }
 
   obtenerDescripcionEfecto(): string | null {

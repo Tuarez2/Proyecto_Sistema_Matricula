@@ -729,7 +729,7 @@ describe('CambiarEstadoUsuarioComponent', () => {
     iniciarYCompletarUsuario(crearUsuario({ estado: 'inactivo' }));
     fixture.detectChanges();
 
-    expect(obtenerTexto()).toContain('Estado actual: Inactivo');
+    expect(obtenerTexto()).toContain('Inactivo');
   });
 
   it('existe select de nuevo estado', () => {

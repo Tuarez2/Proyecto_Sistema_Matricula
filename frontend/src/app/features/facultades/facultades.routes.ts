@@ -27,7 +27,7 @@ export const rutasFacultades: Routes = [
     data: {
       [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
     },
-    title: 'Crear facultad',
+    title: 'Nueva facultad',
   },
   {
     path: 'editar/:id',

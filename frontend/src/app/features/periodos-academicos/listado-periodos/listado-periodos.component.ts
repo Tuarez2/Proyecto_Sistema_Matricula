@@ -22,6 +22,8 @@ import { finalize } from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import {
   ESTADOS_PERIODO_ACADEMICO,
   TRANSICIONES_PERIODO_ACADEMICO,
@@ -36,6 +38,8 @@ import { PeriodosAcademicosService } from '../services/periodos-academicos.servi
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    PaginationComponent,
+    FechaPipe,
   ],
   templateUrl: './listado-periodos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -142,6 +146,15 @@ export class ListadoPeriodosComponent implements OnInit {
     this.cargarPeriodos();
   }
 
+  cambiarPagina(pagina: number): void {
+    if (this.cargandoPeriodos() || pagina === this.paginaActual()) {
+      return;
+    }
+
+    this.estadoPaginaActual.set(pagina);
+    this.cargarPeriodos();
+  }
+
   cargarPeriodos(): void {
     if (this.cargandoPeriodos()) {
       return;
@@ -186,6 +199,22 @@ export class ListadoPeriodosComponent implements OnInit {
     }
 
     return 'Estado desconocido';
+  }
+
+  obtenerClaseEstado(estado: EstadoPeriodoAcademico): string {
+    if (estado === ESTADOS_PERIODO_ACADEMICO.CERRADO) {
+      return 'estado-badge--neutral';
+    }
+
+    if (estado === ESTADOS_PERIODO_ACADEMICO.EN_CURSO) {
+      return 'estado-badge--info';
+    }
+
+    if (estado === ESTADOS_PERIODO_ACADEMICO.MATRICULA_ABIERTA) {
+      return 'estado-badge--success';
+    }
+
+    return 'estado-badge--warning';
   }
 
   tieneTransicionesDisponibles(estado: EstadoPeriodoAcademico): boolean {

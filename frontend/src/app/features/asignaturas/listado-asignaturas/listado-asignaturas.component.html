@@ -6,7 +6,7 @@
     </div>
     @if (esAdministrador()) {
       <div class="page-actions">
-        <a routerLink="/asignaturas/crear" class="btn btn-primary">Crear asignatura</a>
+        <a routerLink="/asignaturas/crear" class="btn btn-primary">Nueva asignatura</a>
       </div>
     }
   </header>
@@ -92,7 +92,14 @@
 
   @if (!cargando() && !mensajeError() && asignaturas().length === 0) {
     <div class="empty-state">
-      <p>No se encontraron asignaturas.</p>
+      <span class="empty-icon" aria-hidden="true">📚</span>
+      <h2>No se encontraron asignaturas</h2>
+      <p>No hay asignaturas registradas que coincidan con la búsqueda.</p>
+      @if (esAdministrador()) {
+        <div class="empty-actions">
+          <a routerLink="/asignaturas/crear" class="btn btn-primary">Nueva asignatura</a>
+        </div>
+      }
     </div>
   }
 
@@ -121,10 +128,12 @@
               <td>{{ asignatura.nombre }}</td>
               <td>{{ asignatura.creditos }}</td>
               <td>{{ asignatura.nivel_academico }}</td>
-              <td>{{ obtenerEtiquetaEstado(asignatura) }}</td>
               <td>
-                {{ asignatura.created_at ? (asignatura.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
+                <span class="estado-badge {{ obtenerClaseEstado(asignatura) }}">
+                  {{ obtenerEtiquetaEstado(asignatura) }}
+                </span>
               </td>
+              <td>{{ asignatura.created_at | fecha }}</td>
               <td>
                 <a class="btn btn-sm btn-neutral" [routerLink]="['/asignaturas', asignatura.id]">Ver</a>
               </td>

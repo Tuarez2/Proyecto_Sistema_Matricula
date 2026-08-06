@@ -31,8 +31,8 @@
       <p class="detail-line"><strong>Nombre:</strong> {{ carreraActual.nombre }}</p>
       <p class="detail-line"><strong>Facultad:</strong> {{ obtenerNombreFacultad(carreraActual.facultad) }}</p>
       <p class="detail-line"><strong>Duración:</strong> {{ carreraActual.duracion_semestres }} semestres</p>
-      <p class="detail-line"><strong>Estado:</strong> {{ obtenerEtiquetaEstado(carreraActual) }}</p>
-      <p class="detail-line"><strong>Fecha de creación:</strong> {{ carreraActual.created_at ? (carreraActual.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}</p>
+      <p class="detail-line"><strong>Estado:</strong> <span class="estado-badge {{ obtenerClaseEstado(carreraActual) }}">{{ obtenerEtiquetaEstado(carreraActual) }}</span></p>
+      <p class="detail-line"><strong>Fecha de creación:</strong> {{ carreraActual.created_at | fecha }}</p>
     </div>
 
     <section aria-labelledby="titulo-asignaturas-asociadas">
@@ -59,7 +59,11 @@
                   <td>{{ asignatura.codigo }}</td>
                   <td>{{ asignatura.nombre }}</td>
                   <td>{{ asignatura.creditos ?? 'Sin créditos' }}</td>
-                  <td>{{ asignatura.activo ? 'Activa' : 'Inactiva' }}</td>
+                  <td>
+                    <span class="estado-badge {{ asignatura.activo ? 'estado-badge--success' : 'estado-badge--neutral' }}">
+                      {{ asignatura.activo ? 'Activa' : 'Inactiva' }}
+                    </span>
+                  </td>
                 </tr>
               }
             </tbody>

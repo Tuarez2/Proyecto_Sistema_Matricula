@@ -91,7 +91,7 @@ describe('ListadoFacultadesComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron facultades.');
+    expect(obtenerTexto()).toContain('No se encontraron facultades');
   });
 
   it('muestra error de API', () => {
@@ -166,7 +166,7 @@ describe('ListadoFacultadesComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear facultad')).toBeTruthy();
+    expect(obtenerEnlace('Nueva facultad')).toBeTruthy();
     expect(obtenerEnlace('Editar')).toBeTruthy();
     expect(obtenerBoton('Desactivar')).toBeTruthy();
   });
@@ -176,7 +176,7 @@ describe('ListadoFacultadesComponent', () => {
 
     crearComponente();
 
-    expect(obtenerEnlace('Crear facultad')).toBeNull();
+    expect(obtenerEnlace('Nueva facultad')).toBeNull();
     expect(obtenerEnlace('Editar')).toBeNull();
     expect(obtenerBoton('Desactivar')).toBeNull();
   });

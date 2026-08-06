@@ -23,6 +23,7 @@ import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type { Facultad, FiltrosFacultades } from '../models/facultad.model';
 import { FacultadesService } from '../services/facultades.service';
 
@@ -37,7 +38,7 @@ const LIMITE_POR_PAGINA = 10;
 @Component({
   selector: 'app-listado-facultades',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe],
   templateUrl: './listado-facultades.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -192,6 +193,10 @@ export class ListadoFacultadesComponent implements OnInit {
 
   obtenerEtiquetaEstado(facultad: Facultad): string {
     return facultad.activo ? 'Activa' : 'Inactiva';
+  }
+
+  obtenerClaseEstado(facultad: Facultad): string {
+    return facultad.activo ? 'estado-badge--success' : 'estado-badge--neutral';
   }
 
   private obtenerFiltrosActuales(): FiltrosFacultades {

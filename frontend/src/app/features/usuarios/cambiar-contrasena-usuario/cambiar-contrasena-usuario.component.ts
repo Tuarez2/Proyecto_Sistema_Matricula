@@ -178,6 +178,18 @@ export class CambiarContrasenaUsuarioComponent implements OnInit {
     return 'Inactivo';
   }
 
+  obtenerClaseEstado(estado: EstadoUsuario): string {
+    if (estado === 'activo') {
+      return 'estado-badge--success';
+    }
+
+    if (estado === 'bloqueado') {
+      return 'estado-badge--danger';
+    }
+
+    return 'estado-badge--neutral';
+  }
+
   obtenerNombreCompleto(usuario: Usuario): string {
     const nombreCompleto = [
       usuario.nombres,
