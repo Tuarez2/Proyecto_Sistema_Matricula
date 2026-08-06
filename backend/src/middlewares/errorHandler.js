@@ -50,6 +50,10 @@ const errorHandler = (error, req, res, next) => {
     });
   }
 
+  if (process.env.NODE_ENV !== 'test') {
+    console.error('[error]', error);
+  }
+
   return res.status(500).json({
     success: false,
     message: 'Error interno del servidor.',
