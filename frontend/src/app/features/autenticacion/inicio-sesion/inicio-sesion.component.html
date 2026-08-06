@@ -25,40 +25,6 @@
       Acceda con su correo y contraseña institucionales.
     </p>
 
-    <div class="selector-perfil" role="group" aria-label="Orientación según su perfil">
-      <p class="selector-perfil__etiqueta">¿En qué perfil se identifica?</p>
-      <div class="selector-perfil__opciones">
-        @for (perfil of perfilesOrientacion; track perfil.codigo) {
-          <button
-            type="button"
-            class="selector-perfil__opcion"
-            [class.selector-perfil__opcion--activa]="perfilSeleccionado() === perfil.codigo"
-            [attr.aria-pressed]="perfilSeleccionado() === perfil.codigo"
-            (click)="seleccionarPerfil(perfil.codigo)"
-          >
-            <svg
-              class="selector-perfil__icono"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path [attr.d]="perfil.icono" />
-            </svg>
-            <span>{{ perfil.etiqueta }}</span>
-          </button>
-        }
-      </div>
-      <p class="selector-perfil__nota">
-        El sistema identificará automáticamente su perfil al iniciar sesión.
-        Esta selección es solo una guía visual.
-      </p>
-    </div>
-
     <form
       class="formulario-iniciar-sesion"
       [formGroup]="formularioInicioSesion"

@@ -144,19 +144,6 @@
     id="navegacion-panel"
     aria-label="Menú de aplicación"
   >
-    <div class="panel-navegacion__marca">
-      <img
-        src="assets/logo/isotipo.svg"
-        alt=""
-        class="panel-navegacion__isotipo"
-        width="36"
-        height="36"
-      />
-      <span class="panel-navegacion__nombre">
-        Sistema de Matrícula Universitaria
-      </span>
-    </div>
-
     <button
       type="button"
       class="boton-contraer-sidebar"
@@ -180,7 +167,7 @@
               <a
                 [routerLink]="item.ruta"
                 routerLinkActive="activo"
-                [routerLinkActiveOptions]="{ exact: item.ruta === '/' }"
+                [routerLinkActiveOptions]="{ exact: true }"
                 (click)="cerrarMenuMovil()"
                 class="enlace-navegacion"
                 [attr.aria-label]="item.etiqueta"
@@ -208,7 +195,7 @@
     </nav>
   </aside>
 
-  <main class="contenido-principal contenedor">
+  <main class="contenido-principal">
     <router-outlet />
   </main>
 </div>

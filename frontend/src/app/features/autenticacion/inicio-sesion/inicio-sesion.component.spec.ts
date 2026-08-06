@@ -760,10 +760,9 @@ describe('InicioSesionComponent', () => {
     expect(componente.controlContrasena.value).toBe('clave-ficticia');
   });
 
-  it('el selector de perfil no forma parte del request', () => {
+  it('el formulario envia solo correo y contrasena', () => {
     const solicitud = prepararSolicitudPendiente();
 
-    componente.seleccionarPerfil('ESTUDIANTE');
     completarFormularioValido();
     componente.enviarFormulario();
 
@@ -779,16 +778,10 @@ describe('InicioSesionComponent', () => {
     solicitud.complete();
   });
 
-  it('seleccionar el mismo perfil nuevamente lo deselecciona', () => {
-    componente.seleccionarPerfil('GESTOR');
-    expect(componente.perfilSeleccionado()).toBe('GESTOR');
-
-    componente.seleccionarPerfil('GESTOR');
-    expect(componente.perfilSeleccionado()).toBeNull();
-  });
-
-  it('el selector de perfil incluye la nota de deteccion automatica', () => {
-    expect(obtenerTexto()).toContain(
+  it('el selector de perfil ha sido eliminado de la interfaz', () => {
+    expect(obtenerElementoOpcional('.selector-perfil')).toBeNull();
+    expect(obtenerTexto()).not.toContain('En qué perfil se identifica');
+    expect(obtenerTexto()).not.toContain(
       'El sistema identificará automáticamente su perfil',
     );
   });
@@ -873,6 +866,10 @@ describe('InicioSesionComponent', () => {
     }
 
     return elemento;
+  }
+
+  function obtenerElementoOpcional(selector: string): HTMLElement | null {
+    return fixture.nativeElement.querySelector(selector) as HTMLElement | null;
   }
 
   function obtenerInput(selector: string): HTMLInputElement {

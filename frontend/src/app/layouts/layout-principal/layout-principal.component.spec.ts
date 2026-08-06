@@ -68,6 +68,18 @@ describe('LayoutPrincipalComponent', () => {
     expect(obtenerElemento('nav')).toBeTruthy();
   });
 
+  it('la marca se muestra una sola vez, en el encabezado', () => {
+    expect(fixture.nativeElement.querySelectorAll('.marca').length).toBe(1);
+    expect(obtenerElementoOpcional('.panel-navegacion .marca')).toBeNull();
+    expect(obtenerElementoOpcional('.panel-navegacion__marca')).toBeNull();
+  });
+
+  it('el encabezado conserva el nombre del sistema', () => {
+    expect(obtenerElemento('.marca__nombre')?.textContent).toContain(
+      'Sistema de Matrícula Universitaria',
+    );
+  });
+
   it('el nav tiene aria-label de navegacion principal', () => {
     expect(obtenerElemento('nav')?.getAttribute('aria-label')).toBe(
       'Navegación principal',
@@ -728,6 +740,10 @@ describe('LayoutPrincipalComponent', () => {
   }
 
   function obtenerElemento<T extends Element = Element>(selector: string): T | null {
+    return fixture.nativeElement.querySelector(selector) as T | null;
+  }
+
+  function obtenerElementoOpcional<T extends Element = Element>(selector: string): T | null {
     return fixture.nativeElement.querySelector(selector) as T | null;
   }
 
