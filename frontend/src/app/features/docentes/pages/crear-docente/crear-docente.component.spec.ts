@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { Observable, Subject } from 'rxjs';
 
 import type {
@@ -27,24 +27,22 @@ describe('CrearDocenteComponent', () => {
     docentesService = {
       crearDocente: vi.fn(() => respuestaObservable(crearRespuestaDocente())),
     };
-    navegarPorUrl = vi.fn(() => Promise.resolve(true));
 
     await TestBed.configureTestingModule({
       imports: [CrearDocenteComponent],
       providers: [
+        provideRouter([]),
         {
           provide: DocentesService,
           useValue: docentesService,
         },
-        {
-          provide: Router,
-          useValue: {
-            navigateByUrl: navegarPorUrl,
-          },
-        },
       ],
     }).compileComponents();
 
+    const enrutador = TestBed.inject(Router);
+    navegarPorUrl = vi
+      .spyOn(enrutador, 'navigateByUrl')
+      .mockResolvedValue(true);
     fixture = TestBed.createComponent(CrearDocenteComponent);
     componente = fixture.componentInstance;
     fixture.detectChanges();
