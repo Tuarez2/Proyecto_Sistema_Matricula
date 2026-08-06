@@ -66,20 +66,6 @@ export class LayoutPrincipalComponent {
 
     return nombreCompleto || 'Usuario';
   });
-  readonly inicialesUsuario = computed(() => {
-    const usuario = this.usuarioActual?.() ?? null;
-
-    if (!usuario) {
-      return 'SM';
-    }
-
-    const iniciales = [
-      usuario.nombres.trim().charAt(0),
-      usuario.apellidos.trim().charAt(0),
-    ].join('').toUpperCase();
-
-    return iniciales || 'SM';
-  });
   readonly nombreRolUsuario = computed(() => {
     const rol = this.usuarioActual?.()?.rol;
 

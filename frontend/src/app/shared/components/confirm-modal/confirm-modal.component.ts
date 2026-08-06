@@ -1,29 +1,10 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-confirm-modal',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div *ngIf="isOpen" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5); z-index: 1055;">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">{{ titulo }}</h5>
-            <button type="button" class="btn-close" (click)="onCancel()"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-0">{{ mensaje }}</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancelar</button>
-            <button type="button" class="btn" [ngClass]="btnClass" (click)="onConfirm()">Confirmar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
+  imports: [],
+  templateUrl: './confirm-modal.component.html',
+  styleUrl: './confirm-modal.component.css',
 })
 export class ConfirmModalComponent {
   @Input() isOpen = false;

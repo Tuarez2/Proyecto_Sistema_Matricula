@@ -53,6 +53,11 @@
     id="navegacion-panel"
     aria-label="Menú de aplicación"
   >
+    <div class="panel-navegacion__marca" aria-hidden="true">
+      <span class="panel-navegacion__sigla">SM</span>
+      <span class="panel-navegacion__nombre">Sistema de Matrícula</span>
+    </div>
+
     <nav class="navegacion-principal" aria-label="Navegación principal">
       @for (item of itemsNavegacionVisibles(); track item.ruta) {
         <a

@@ -1,0 +1,41 @@
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        @for (col of columnas; track col.clave) {
+          <th scope="col">{{ col.titulo }}</th>
+        }
+        @if (mostrarAcciones) {
+          <th scope="col" class="tabla__columna-acciones">Acciones</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of datos; track $index) {
+        <tr>
+          @for (col of columnas; track col.clave) {
+            <td>{{ item[col.clave] }}</td>
+          }
+          @if (mostrarAcciones) {
+            <td>
+              <div class="row-actions">
+                <button type="button" class="btn btn-sm btn-neutral" (click)="onEditar(item)">
+                  Editar
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" (click)="onEliminar(item)">
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td [attr.colspan]="columnas.length + (mostrarAcciones ? 1 : 0)" class="tabla__vacia">
+            No hay información disponible para mostrar.
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
