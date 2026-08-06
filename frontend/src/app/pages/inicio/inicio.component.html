@@ -8,6 +8,123 @@
     </div>
   </header>
 
+  @if (esGestorLecturaPersonas() && !cargandoResumen(); as gestor) {
+    @let periodo = periodoActual();
+    @if (periodo) {
+      <section class="banner-periodo-inicio" aria-label="Estado del periodo académico">
+        <div class="banner-periodo-contenido">
+          <span class="banner-periodo-emblema" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+          </span>
+          <div class="banner-periodo-texto">
+            <p class="banner-periodo-titulo">
+              {{ periodo.nombre }} · {{ periodo.codigo }}
+            </p>
+            <p class="banner-periodo-detalle">
+              Estado: <strong>{{ etiquetaEstadoPeriodo() }}</strong>
+              @if (ventanaMatriculaAbierta()) {
+                <span aria-hidden="true"> · </span>
+                Fecha límite de matrícula: <strong>{{ formatearFecha(periodo.fecha_fin_matricula) }}</strong>
+              }
+            </p>
+          </div>
+        </div>
+        @if (ventanaMatriculaAbierta()) {
+          <a class="boton-banner-periodo" routerLink="/matriculas/nueva">
+            Ir a Matricular
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+        }
+      </section>
+    }
+  }
+
+  @if (esGestorLecturaPersonas() && !cargandoResumen()) {
+    <section class="metricas-inicio" aria-label="Métricas del periodo">
+      <article class="tarjeta-metrica">
+        <div class="metrica-encabezado">
+          <span class="icono-metrica" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+            </svg>
+          </span>
+          <span class="etiqueta-metrica">Estudiantes Matriculados</span>
+        </div>
+        <p class="valor-metrica">
+          {{ estudiantesMatriculados().toLocaleString('es-EC') }}
+          @if (cuposTotalesPeriodo() > 0) {
+            <span class="valor-metrica-total">/ {{ cuposTotalesPeriodo().toLocaleString('es-EC') }} cupos</span>
+          }
+        </p>
+        @if (cuposTotalesPeriodo() > 0) {
+          <div
+            class="barra-progreso"
+            role="progressbar"
+            aria-valuenow="{{ porcentajeCuposOcupados() }}"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <span
+              class="barra-progreso-relleno"
+              [style.width.%]="porcentajeCuposOcupados()"
+            ></span>
+          </div>
+          <p class="detalle-metrica">{{ porcentajeCuposOcupados() }}% de cupos ocupados</p>
+        }
+      </article>
+
+      <article class="tarjeta-metrica">
+        <div class="metrica-encabezado">
+          <span class="icono-metrica" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+          </span>
+          <span class="etiqueta-metrica">Periodo Activo</span>
+        </div>
+        <p class="valor-metrica">
+          {{ periodoActual()?.codigo ?? '—' }}
+        </p>
+        <p class="detalle-metrica">{{ etiquetaEstadoPeriodo() }}</p>
+      </article>
+
+      <article class="tarjeta-metrica">
+        <div class="metrica-encabezado">
+          <span class="icono-metrica" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m22 10-10-5-10 5 10 5 10-5Z" />
+              <path d="M6 12.5V17c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" />
+            </svg>
+          </span>
+          <span class="etiqueta-metrica">Carreras Activas</span>
+        </div>
+        <p class="valor-metrica">{{ totalCarrerasActivas() }}</p>
+        <p class="detalle-metrica">Oferta académica vigente</p>
+      </article>
+
+      <article class="tarjeta-metrica">
+        <div class="metrica-encabezado">
+          <span class="icono-metrica" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          </span>
+          <span class="etiqueta-metrica">Solicitudes Pendientes</span>
+        </div>
+        <p class="valor-metrica">{{ totalSolicitudesPendientes() }}</p>
+        <p class="detalle-metrica">Matrículas por aprobar</p>
+      </article>
+    </section>
+  }
+
   <div class="modulos-inicio" aria-label="Módulos del sistema">
     <a class="tarjeta-modulo" routerLink="/periodos-academicos">
       <span class="icono-modulo" aria-hidden="true">
@@ -101,4 +218,70 @@
       </a>
     }
   </div>
+
+  @if (esGestorLecturaPersonas() && !cargandoResumen()) {
+    <section class="paneles-inicio" aria-label="Actividad reciente del sistema">
+      <article class="panel-inicio">
+        <header class="panel-inicio-encabezado">
+          <h2>Últimas matrículas registradas</h2>
+          <a class="enlace-panel-inicio" routerLink="/matriculas">Ver todas</a>
+        </header>
+
+        @if (ultimasMatriculas().length > 0) {
+          <div class="table-contenedor">
+            <table class="tabla-inicio">
+              <thead>
+                <tr>
+                  <th scope="col">Estudiante</th>
+                  <th scope="col">Carrera</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (matricula of ultimasMatriculas(); track matricula.id) {
+                  <tr>
+                    <td>
+                      <span class="celda-estudiante">
+                        {{ obtenerNombreEstudiante(matricula) }}
+                        <span class="celda-detalle">{{ obtenerAsignaturaCurso(matricula) }}</span>
+                      </span>
+                    </td>
+                    <td>{{ obtenerCarreraEstudiante(matricula) }}</td>
+                    <td>{{ formatearFecha(matricula.fecha_matricula) }}</td>
+                    <td>
+                      <span class="estado-matricula" [class.estado-matricula-aprobada]="matricula.estado === ESTADOS_MATRICULA.aprobada">
+                        {{ obtenerEtiquetaEstadoMatricula(matricula.estado) }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="panel-inicio-vacio">Aún no se han registrado matrículas.</p>
+        }
+      </article>
+
+      <aside class="panel-inicio panel-avisos-inicio">
+        <header class="panel-inicio-encabezado">
+          <h2>Avisos del sistema</h2>
+        </header>
+        <ul class="lista-avisos-inicio">
+          @for (aviso of avisosSistema; track aviso.mensaje) {
+            <li class="aviso-inicio">
+              <span class="aviso-inicio-icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4M12 8h.01" />
+                </svg>
+              </span>
+              <p>{{ aviso.mensaje }}</p>
+            </li>
+          }
+        </ul>
+      </aside>
+    </section>
+  }
 </section>

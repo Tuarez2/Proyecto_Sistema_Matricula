@@ -17,9 +17,17 @@
 :host.tema-docente .contenedor-login {
   background: var(--color-verde-superficie);
   border-color: var(--color-verde-borde);
-  box-shadow:
-    0 26px 55px -15px rgba(10, 94, 38, 0.38),
-    0 18px 40px -10px rgba(10, 94, 38, 0.2);
+  box-shadow: 0 26px 55px -15px rgba(10, 94, 38, 0.38), 0 18px 40px -10px rgba(10, 94, 38, 0.2);
+}
+
+:host.tema-estudiante {
+  background: linear-gradient(150deg, #fdf3e2 0%, #fae9cd 45%, #f5dcb4 100%);
+}
+
+:host.tema-estudiante .contenedor-login {
+  background: #fffaf1;
+  border-color: #f1dbb4;
+  box-shadow: 0 26px 55px -15px rgba(158, 105, 24, 0.38), 0 18px 40px -10px rgba(158, 105, 24, 0.2);
 }
 
 :host.tema-docente .subtitulo-entrada {
@@ -28,13 +36,28 @@
   color: var(--color-verde-oscuro);
 }
 
+:host.tema-estudiante .subtitulo-entrada {
+  background: #fcf1dc;
+  border-color: #f1dcb8;
+  color: #a06b1c;
+}
+
 :host.tema-docente .formulario-login input:focus {
   border-color: var(--color-verde);
   box-shadow: 0 0 0 3px var(--color-verde-suave);
 }
 
+:host.tema-estudiante .formulario-login input:focus {
+  border-color: #d98e2b;
+  box-shadow: 0 0 0 3px #fcf1dc;
+}
+
 :host.tema-docente .enlaces-ayuda a {
   color: var(--color-verde);
+}
+
+:host.tema-estudiante .enlaces-ayuda a {
+  color: #c47f1f;
 }
 
 :host.tema-docente .boton-entrar {
@@ -43,6 +66,14 @@
 
 :host.tema-docente .boton-entrar:hover:not(:disabled) {
   background: var(--color-verde-oscuro);
+}
+
+:host.tema-estudiante .boton-entrar {
+  background: #d98e2b;
+}
+
+:host.tema-estudiante .boton-entrar:hover:not(:disabled) {
+  background: #b06f1d;
 }
 
 .pagina-login {
@@ -59,9 +90,7 @@
   background: var(--color-superficie);
   border: 1px solid rgba(31, 63, 130, 0.14);
   border-radius: 1.5rem;
-  box-shadow:
-    0 26px 55px -18px rgba(31, 63, 130, 0.4),
-    0 10px 22px -8px rgba(31, 63, 130, 0.22);
+  box-shadow: 0 26px 55px -18px rgba(31, 63, 130, 0.4), 0 10px 22px -8px rgba(31, 63, 130, 0.22);
   padding: 2.1rem 2.25rem 1.75rem;
   text-align: center;
 }
@@ -77,16 +106,16 @@
   margin: 0 0 0.15rem;
   color: var(--color-texto-claro);
   font-size: 0.72rem;
-  font-weight: 650;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
 }
 
 .titulo-login {
   margin: 0;
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: 1.7rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
   color: var(--color-texto);
 }
 
@@ -106,7 +135,48 @@
   margin: 0.75rem 0 0;
   color: var(--color-texto-suave);
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.55;
+}
+
+.selector-perfil {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin: 1.25rem 0 0.1rem;
+}
+
+.opcion-perfil {
+  padding: 0.62rem 0.4rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-borde);
+  background: var(--color-superficie);
+  color: var(--color-texto-suave);
+  font-size: 0.8rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.opcion-perfil:hover,
+.opcion-perfil.activa {
+  border-color: var(--color-primario-borde);
+}
+
+.opcion-perfil.activa {
+  background: var(--color-primario-suave);
+  color: var(--color-primario-oscuro);
+}
+
+:host.tema-docente .opcion-perfil.activa {
+  background: var(--color-verde-suave);
+  border-color: var(--color-verde-borde);
+  color: var(--color-verde-oscuro);
+}
+
+:host.tema-estudiante .opcion-perfil.activa {
+  background: #fcf1dc;
+  border-color: #f1dcb8;
+  color: #a06b1c;
 }
 
 .formulario-login {
@@ -255,6 +325,27 @@
   color: var(--color-texto-claro);
   font-size: 0.75rem;
   line-height: 1.5;
+}
+
+.volver-inicio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+  color: var(--color-texto-suave);
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.volver-inicio:hover {
+  color: var(--color-texto);
+}
+
+.volver-inicio svg {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 @keyframes opcode-fade-login {

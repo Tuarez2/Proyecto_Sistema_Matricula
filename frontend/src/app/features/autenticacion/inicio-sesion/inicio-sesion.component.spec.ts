@@ -19,6 +19,9 @@ interface AutenticacionServiceMock {
 
 interface RouterMock {
   navigateByUrl: ReturnType<typeof vi.fn<(url: string) => Promise<boolean>>>;
+  navigate: ReturnType<
+    typeof vi.fn<(comandos: unknown[], extras?: unknown) => Promise<boolean>>
+  >;
 }
 
 function crearDatosAutenticacion(): DatosAutenticacion {
@@ -63,6 +66,7 @@ describe('InicioSesionComponent', () => {
     };
     router = {
       navigateByUrl: vi.fn(() => Promise.resolve(true)),
+      navigate: vi.fn(() => Promise.resolve(true)),
     };
     rutaActiva = {
       snapshot: {
@@ -581,6 +585,112 @@ describe('InicioSesionComponent', () => {
 
   it('existe un h1 con el texto Portal de Matrícula', () => {
     expect(obtenerElemento('h1').textContent).toContain('Portal de Matrícula');
+  });
+
+  it('por defecto el perfil seleccionado es administrador', () => {
+    expect(componente.perfilSeleccionado()).toBe('administrador');
+  });
+
+  it('el selector de perfil ofrece los tres accesos', () => {
+    expect(obtenerElemento('.opcion-perfil').textContent).toContain(
+      'Administrador',
+    );
+    expect(obtenerTexto()).toContain('Docente');
+    expect(obtenerTexto()).toContain('Estudiante');
+  });
+
+  it('el chip de administrador comienza activo', () => {
+    expect(obtenerElemento('.opcion-perfil.activa').textContent).toContain(
+      'Administrador',
+    );
+  });
+
+  it('el perfil docente aplica el tema verde', () => {
+    componente.perfilSeleccionado.set('docente');
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).classList).toContain(
+      'tema-docente',
+    );
+  });
+
+  it('el perfil estudiante aplica su tema', () => {
+    componente.perfilSeleccionado.set('estudiante');
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).classList).toContain(
+      'tema-estudiante',
+    );
+  });
+
+  it('el subtitulo cambia segun el perfil activo', () => {
+    componente.perfilSeleccionado.set('estudiante');
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.subtitulo-entrada').textContent).toContain(
+      'Acceso de estudiantes',
+    );
+  });
+
+  it('lee el perfil desde el parametro tipo', () => {
+    rutaActiva.snapshot.queryParamMap = convertToParamMap({ tipo: 'estudiante' });
+
+    const nuevoFixture = TestBed.createComponent(InicioSesionComponent);
+    const nuevoComponente = nuevoFixture.componentInstance;
+
+    expect(nuevoComponente.perfilSeleccionado()).toBe('estudiante');
+
+    nuevoFixture.destroy();
+  });
+
+  it('al elegir docente cambia el perfil y navega con el tipo', () => {
+    componente.seleccionarPerfil('docente');
+
+    expect(componente.perfilSeleccionado()).toBe('docente');
+    expect(router.navigate).toHaveBeenCalledWith(['/iniciar-sesion'], {
+      queryParams: { tipo: 'docente' },
+      replaceUrl: true,
+    });
+  });
+
+  it('al elegir administrador navega sin parametro tipo', () => {
+    componente.perfilSeleccionado.set('docente');
+    componente.seleccionarPerfil('administrador');
+
+    expect(router.navigate).toHaveBeenCalledWith(['/iniciar-sesion'], {
+      queryParams: {},
+      replaceUrl: true,
+    });
+  });
+
+  it('al seleccionar el perfil ya activo no navega', () => {
+    componente.seleccionarPerfil('administrador');
+
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('volver al inicio navega a la raiz', () => {
+    componente.volverAlInicio();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
+  it('existe un enlace para volver al inicio', () => {
+    expect(obtenerElemento('.volver-inicio').textContent).toContain(
+      'Volver al inicio',
+    );
+  });
+
+  it('envia el tipo estudiante en las credenciales al elegir perfil estudiante', () => {
+    componente.perfilSeleccionado.set('estudiante');
+    const solicitud = prepararSolicitudPendiente();
+
+    completarFormularioValido();
+    componente.enviarFormulario();
+
+    expect(obtenerCredencialesEnviadas().tipo).toBe('estudiante');
+
+    solicitud.complete();
   });
 
   it('existe un formulario reactivo', () => {

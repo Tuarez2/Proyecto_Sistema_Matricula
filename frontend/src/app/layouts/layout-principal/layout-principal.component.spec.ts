@@ -24,6 +24,7 @@ describe('LayoutPrincipalComponent', () => {
   let usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
   let autenticacionService: AutenticacionServiceMock;
   let navegarPorUrl: ReturnType<typeof vi.fn>;
+  let navegar: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     usuarioActual = signal<UsuarioAutenticado | null>(crearUsuario());
@@ -48,6 +49,9 @@ describe('LayoutPrincipalComponent', () => {
     const enrutador = TestBed.inject(Router);
     navegarPorUrl = vi
       .spyOn(enrutador, 'navigateByUrl')
+      .mockImplementation(() => Promise.resolve(true));
+    navegar = vi
+      .spyOn(enrutador, 'navigate')
       .mockImplementation(() => Promise.resolve(true));
     fixture = TestBed.createComponent(LayoutPrincipalComponent);
     componente = fixture.componentInstance;
@@ -295,14 +299,28 @@ describe('LayoutPrincipalComponent', () => {
   });
 
   it('el desplegable de cuenta ofrece acceso a Estudiante', () => {
-    expect(obtenerEnlaceCuenta('Estudiante')?.getAttribute('href')).toBe(
-      '/estudiantes',
+    const solicitud = prepararCierrePendiente();
+
+    obtenerEnlaceCuenta('Estudiante')?.click();
+    solicitud.next(crearRespuestaCierre());
+    solicitud.complete();
+
+    expect(navegar).toHaveBeenCalledWith(
+      ['/iniciar-sesion'],
+      { queryParams: { tipo: 'estudiante' } },
     );
   });
 
   it('el desplegable de cuenta ofrece acceso a Docente', () => {
-    expect(obtenerEnlaceCuenta('Docente')?.getAttribute('href')).toBe(
-      '/docentes',
+    const solicitud = prepararCierrePendiente();
+
+    obtenerEnlaceCuenta('Docente')?.click();
+    solicitud.next(crearRespuestaCierre());
+    solicitud.complete();
+
+    expect(navegar).toHaveBeenCalledWith(
+      ['/iniciar-sesion'],
+      { queryParams: { tipo: 'docente' } },
     );
   });
 
@@ -686,7 +704,7 @@ describe('LayoutPrincipalComponent', () => {
   }
 
   function obtenerBotonCierre(): HTMLButtonElement | null {
-    return obtenerElemento<HTMLButtonElement>('.btn-cerrar-sesion');
+    return obtenerElemento<HTMLButtonElement>('.boton-cerrar-sesion');
   }
 
   function obtenerBotonMenu(): HTMLButtonElement | null {

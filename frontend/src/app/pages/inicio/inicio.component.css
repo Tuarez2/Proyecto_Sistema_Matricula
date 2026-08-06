@@ -30,14 +30,12 @@
   font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .bienvenida-inicio h1 {
   margin: 0 0 0.3rem;
   font-size: 1.65rem;
   font-weight: 650;
-  letter-spacing: -0.01em;
 }
 
 .bienvenida-inicio p:last-of-type {
@@ -114,5 +112,269 @@
   .modulos-inicio {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 0.9rem;
+  }
+}
+
+/* Banner de estado del periodo académico */
+.banner-periodo-inicio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-primario-suave);
+  border: 1px solid var(--color-primario-borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.banner-periodo-contenido {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.banner-periodo-emblema {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 0.85rem;
+  background: var(--color-primario);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.banner-periodo-emblema svg,
+.boton-banner-periodo svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.banner-periodo-titulo {
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--color-texto);
+}
+
+.banner-periodo-detalle {
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+}
+
+.boton-banner-periodo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 0.65rem;
+  background: var(--color-primario);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.boton-banner-periodo:hover {
+  background: var(--color-primario-oscuro);
+}
+
+/* Métricas rápidas (KPIs) */
+.metricas-inicio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.1rem;
+  margin-bottom: 1.75rem;
+}
+
+.tarjeta-metrica,
+.panel-inicio {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra-suave);
+}
+
+.tarjeta-metrica {
+  padding: 1.1rem 1.2rem;
+}
+
+.metrica-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.7rem;
+}
+
+.icono-metrica,
+.aviso-inicio-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  background: var(--color-primario-suave);
+  border: 1px solid var(--color-primario-borde);
+  color: var(--color-primario-oscuro);
+  flex-shrink: 0;
+}
+
+.icono-metrica svg,
+.aviso-inicio-icono svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.etiqueta-metrica {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  line-height: 1.3;
+}
+
+.valor-metrica {
+  margin: 0 0 0.35rem;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+.valor-metrica-total {
+  font-size: 0.95rem;
+  font-weight: 550;
+  color: var(--color-texto-suave);
+}
+
+.detalle-metrica {
+  font-size: 0.78rem;
+  color: var(--color-texto-suave);
+}
+
+.barra-progreso {
+  height: 0.55rem;
+  margin-bottom: 0.4rem;
+  background: var(--color-fondo-suave);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.barra-progreso-relleno {
+  display: block;
+  height: 100%;
+  background: var(--color-primario);
+  border-radius: 999px;
+}
+
+/* Paneles de actividad reciente */
+.paneles-inicio {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 1.1rem;
+  margin-top: 1.75rem;
+  align-items: start;
+}
+
+.panel-inicio {
+  padding: 1.2rem;
+}
+
+.panel-inicio-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.panel-inicio-encabezado h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--color-texto);
+}
+
+.enlace-panel-inicio {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-primario);
+  text-decoration: none;
+}
+
+.tabla-inicio td {
+  padding: 0.6rem 0.9rem;
+}
+
+.celda-estudiante {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-weight: 600;
+}
+
+.celda-detalle {
+  font-size: 0.74rem;
+  color: var(--color-texto-suave);
+}
+
+.estado-matricula {
+  display: inline-block;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--color-fondo-suave);
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto-suave);
+  white-space: nowrap;
+}
+
+.estado-matricula-aprobada {
+  background: var(--color-exito-suave);
+  border-color: #b7e4cd;
+  color: var(--color-exito);
+}
+
+.panel-inicio-vacio {
+  margin: 0.5rem 0 0;
+  padding: 1rem;
+  border: 1px dashed var(--color-borde-fuerte);
+  border-radius: 0.6rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+}
+
+.lista-avisos-inicio {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.aviso-inicio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.aviso-inicio:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.aviso-inicio p {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--color-texto);
+}
+
+@media (max-width: 900px) {
+  .paneles-inicio {
+    grid-template-columns: 1fr;
   }
 }

@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -14,11 +15,14 @@ import { finalize } from 'rxjs';
 import type { CredencialesInicioSesion } from '../../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 
+type PerfilAcceso = 'administrador' | 'docente' | 'estudiante';
+
 @Component({
   selector: 'app-inicio-sesion',
   imports: [ReactiveFormsModule],
   host: {
     '[class.tema-docente]': 'esLoginDocente()',
+    '[class.tema-estudiante]': 'esLoginEstudiante()',
   },
   templateUrl: './inicio-sesion.component.html',
   styleUrl: './inicio-sesion.component.css',
@@ -31,9 +35,34 @@ export class InicioSesionComponent {
   private readonly rutaActiva = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly esLoginDocente = signal(
-    this.rutaActiva.snapshot.queryParamMap.get('tipo') === 'docente',
+  readonly perfilSeleccionado = signal<PerfilAcceso>(this.obtenerPerfilInicial());
+  readonly esLoginDocente = computed(
+    () => this.perfilSeleccionado() === 'docente',
   );
+  readonly esLoginEstudiante = computed(
+    () => this.perfilSeleccionado() === 'estudiante',
+  );
+  readonly tituloPerfil = computed(() => {
+    const titulos: Record<PerfilAcceso, string> = {
+      administrador: 'Acceso de administración',
+      docente: 'Acceso de docentes',
+      estudiante: 'Acceso de estudiantes',
+    };
+
+    return titulos[this.perfilSeleccionado()];
+  });
+  readonly descripcionPerfil = computed(() => {
+    const descripciones: Record<PerfilAcceso, string> = {
+      administrador:
+        'Ingrese con su correo institucional y contraseña para administrar el sistema.',
+      docente:
+        'Ingrese con su correo institucional para gestionar la actividad docente.',
+      estudiante:
+        'Ingrese con su correo institucional para realizar su matrícula universitaria.',
+    };
+
+    return descripciones[this.perfilSeleccionado()];
+  });
 
   readonly enviandoFormulario = signal(false);
   readonly mensajeError = signal<string | null>(null);
@@ -48,6 +77,34 @@ export class InicioSesionComponent {
 
   get controlContrasena() {
     return this.formularioInicioSesion.controls.contrasena;
+  }
+
+  seleccionarPerfil(perfil: PerfilAcceso): void {
+    if (perfil === this.perfilSeleccionado()) {
+      return;
+    }
+
+    this.perfilSeleccionado.set(perfil);
+    const queryParams = perfil === 'administrador' ? {} : { tipo: perfil };
+
+    void this.router.navigate(['/iniciar-sesion'], {
+      queryParams,
+      replaceUrl: true,
+    });
+  }
+
+  volverAlInicio(): void {
+    void this.router.navigateByUrl('/');
+  }
+
+  private obtenerPerfilInicial(): PerfilAcceso {
+    const tipo = this.rutaActiva.snapshot.queryParamMap.get('tipo');
+
+    if (tipo === 'docente' || tipo === 'estudiante') {
+      return tipo;
+    }
+
+    return 'administrador';
   }
 
   enviarFormulario(): void {
@@ -69,7 +126,7 @@ export class InicioSesionComponent {
       password: datosFormulario.contrasena,
     };
 
-    const tipoPerfil = this.rutaActiva.snapshot.queryParamMap.get('tipo');
+    const tipoPerfil = this.perfilSeleccionado();
 
     if (tipoPerfil === 'docente' || tipoPerfil === 'estudiante') {
       credenciales.tipo = tipoPerfil;

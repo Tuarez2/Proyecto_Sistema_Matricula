@@ -3,11 +3,35 @@
     <div class="cabecera-acceso">
       <p class="membrete-institucion">Universidad Nacional</p>
       <h1 id="titulo-inicio-sesion" class="titulo-login">Portal de Matrícula</h1>
-      <p class="subtitulo-entrada">Entrada al sistema</p>
+      <p class="subtitulo-entrada">{{ tituloPerfil() }}</p>
       <p class="descripcion-entrada">
-        Ingrese con su correo institucional y contraseña para acceder.
+        {{ descripcionPerfil() }}
       </p>
     </div>
+
+    <nav class="selector-perfil" aria-label="Tipo de acceso">
+      <a
+        class="opcion-perfil"
+        [class.activa]="perfilSeleccionado() === 'administrador'"
+        (click)="seleccionarPerfil('administrador')"
+      >
+        Administrador
+      </a>
+      <a
+        class="opcion-perfil"
+        [class.activa]="perfilSeleccionado() === 'docente'"
+        (click)="seleccionarPerfil('docente')"
+      >
+        Docente
+      </a>
+      <a
+        class="opcion-perfil"
+        [class.activa]="perfilSeleccionado() === 'estudiante'"
+        (click)="seleccionarPerfil('estudiante')"
+      >
+        Estudiante
+      </a>
+    </nav>
 
     <form
       [formGroup]="formularioInicioSesion"
@@ -153,6 +177,22 @@
         Política de Privacidad de la institución.
       </p>
     </form>
+
+    <a class="volver-inicio" (click)="volverAlInicio()">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true">
+        <path d="m12 19-7-7 7-7" />
+        <path d="M19 12H5" />
+      </svg>
+      Volver al inicio
+    </a>
   </section>
 
   <footer class="pie-institucional">
