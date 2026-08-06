@@ -1,18 +1,13 @@
 <main class="pagina-login">
   <section class="contenedor-login" aria-labelledby="titulo-inicio-sesion">
-    <header class="marca-login">
-      <span class="emblema-login" aria-hidden="true">U</span>
-      <div class="texto-marca">
-        <p class="institucion-login">Universidad Nacional</p>
-        <h1 id="titulo-inicio-sesion" class="titulo-login">Portal de Matrícula</h1>
-      </div>
-    </header>
-
-    <p class="sistema-login">Sistema Integrado de Matrícula Universitaria</p>
-
-    <p class="bienvenida-login">
-      Ingresa con tu correo institucional y contraseña para acceder al sistema académico.
-    </p>
+    <div class="cabecera-acceso">
+      <p class="membrete-institucion">Universidad Nacional</p>
+      <h1 id="titulo-inicio-sesion" class="titulo-login">Portal de Matrícula</h1>
+      <p class="subtitulo-entrada">Entrada al sistema</p>
+      <p class="descripcion-entrada">
+        Ingrese con su correo institucional y contraseña para acceder.
+      </p>
+    </div>
 
     <form
       [formGroup]="formularioInicioSesion"
@@ -121,9 +116,9 @@
         </div>
       }
 
-      <button type="submit" class="boton-ingresar" [disabled]="enviandoFormulario()">
+      <button type="submit" class="boton-entrar" [disabled]="enviandoFormulario()">
         @if (enviandoFormulario()) {
-          Iniciando sesión...
+          Ingresando...
         } @else {
           <span class="icono-boton" aria-hidden="true">
             <svg
@@ -139,13 +134,19 @@
               <path d="M15 12H3" />
             </svg>
           </span>
-          Iniciar sesión
+          Entrar
         }
       </button>
 
-      <a class="enlace-olvidar" href="mailto:mesa.ayuda&#64;universidad.edu">
-        ¿Has olvidado tu contraseña?
-      </a>
+      <div class="enlaces-ayuda">
+        <a class="enlace-olvidar" href="mailto:mesa.ayuda&#64;universidad.edu">
+          ¿Has olvidado tu contraseña?
+        </a>
+        <span class="separador-enlace" aria-hidden="true">•</span>
+        <a class="enlace-contacto" href="mailto:mesa.ayuda&#64;universidad.edu">
+          Contactar al administrador
+        </a>
+      </div>
 
       <p class="nota-terminos-login">
         Al utilizar este sistema, acepta cumplir con los Términos de Servicio y la
@@ -153,4 +154,11 @@
       </p>
     </form>
   </section>
+
+  <footer class="pie-institucional">
+    <p>
+      Sistema de Gestión Académica de la Universidad Nacional · Todos los derechos
+      reservados © 2026
+    </p>
+  </footer>
 </main>

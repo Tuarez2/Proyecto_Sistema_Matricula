@@ -4,28 +4,25 @@
   justify-content: center;
   min-height: 100vh;
   padding: 1.5rem;
+  background: linear-gradient(150deg, #e5edfb 0%, #d6e2f7 45%, #c3d5f2 100%);
 }
 
 /* --------------------------------------------------------------------------
    Tema docente: variante verde bajo (fondo y acentos)
    -------------------------------------------------------------------------- */
 :host.tema-docente {
-  background: linear-gradient(180deg, var(--color-verde-fondo) 0%, var(--color-verde-fondo-suave) 100%);
+  background: linear-gradient(150deg, #e7f4ec 0%, #d8ecdf 45%, #c4e0ce 100%);
 }
 
 :host.tema-docente .contenedor-login {
   background: var(--color-verde-superficie);
   border-color: var(--color-verde-borde);
-  box-shadow: var(--sombra-verde-flotante);
+  box-shadow:
+    0 26px 55px -15px rgba(10, 94, 38, 0.38),
+    0 18px 40px -10px rgba(10, 94, 38, 0.2);
 }
 
-:host.tema-docente .emblema-login {
-  background: linear-gradient(135deg, var(--color-verde-suave), var(--color-verde-borde));
-  border-color: var(--color-verde-borde);
-  color: var(--color-verde-oscuro);
-}
-
-:host.tema-docente .sistema-login {
+:host.tema-docente .subtitulo-entrada {
   background: var(--color-verde-suave);
   border-color: var(--color-verde-borde);
   color: var(--color-verde-oscuro);
@@ -36,60 +33,47 @@
   box-shadow: 0 0 0 3px var(--color-verde-suave);
 }
 
-:host.tema-docente :is(.enlace-olvidar, a) {
+:host.tema-docente .enlaces-ayuda a {
   color: var(--color-verde);
 }
 
-:host.tema-docente .boton-ingresar {
+:host.tema-docente .boton-entrar {
   background: var(--color-verde);
 }
 
-:host.tema-docente .boton-ingresar:hover:not(:disabled) {
+:host.tema-docente .boton-entrar:hover:not(:disabled) {
   background: var(--color-verde-oscuro);
 }
 
 .pagina-login {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6rem;
   animation: opcode-fade-login 320ms ease both;
 }
 
 .contenedor-login {
   width: min(100%, 26rem);
-  margin: 0 auto;
   background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
+  border: 1px solid rgba(31, 63, 130, 0.14);
   border-radius: 1.5rem;
-  box-shadow: var(--sombra-flotante);
-  padding: 2.5rem 2.25rem 1.75rem;
+  box-shadow:
+    0 26px 55px -18px rgba(31, 63, 130, 0.4),
+    0 10px 22px -8px rgba(31, 63, 130, 0.22);
+  padding: 2.1rem 2.25rem 1.75rem;
   text-align: center;
 }
 
-.marca-login {
+.cabecera-acceso {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.3rem;
 }
 
-.emblema-login {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.6rem;
-  height: 3.6rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primario-suave), var(--color-primario-borde));
-  border: 1px solid var(--color-primario-borde);
-  color: var(--color-primario-oscuro);
-  font-size: 1.8rem;
-  font-weight: 700;
-}
-
-.texto-marca {
-  min-width: 0;
-}
-
-.institucion-login {
+.membrete-institucion {
   margin: 0 0 0.15rem;
   color: var(--color-texto-claro);
   font-size: 0.72rem;
@@ -100,26 +84,26 @@
 
 .titulo-login {
   margin: 0;
-  font-size: 1.55rem;
+  font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--color-texto);
 }
 
-.sistema-login {
-  margin: 0.9rem 0 0.35rem;
+.subtitulo-entrada {
+  margin: 0.65rem 0 0;
   display: inline-block;
   background: var(--color-primario-suave);
   border: 1px solid var(--color-primario-borde);
   border-radius: var(--radio-boton);
   color: var(--color-primario-oscuro);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 650;
-  padding: 0.35rem 0.9rem;
+  padding: 0.4rem 1.1rem;
 }
 
-.bienvenida-login {
-  margin: 0.9rem 0 1.6rem;
+.descripcion-entrada {
+  margin: 0.75rem 0 0;
   color: var(--color-texto-suave);
   font-size: 0.9rem;
   line-height: 1.5;
@@ -129,7 +113,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.05rem;
-  margin: 0;
+  margin: 1.6rem 0 0;
   padding: 0;
   background: none;
   border: none;
@@ -200,7 +184,7 @@
   display: block;
 }
 
-.boton-ingresar {
+.boton-entrar {
   margin-top: 0.4rem;
   border-radius: var(--radio-boton);
   padding: 0.85rem 1rem;
@@ -213,26 +197,43 @@
   background: var(--color-primario);
 }
 
-.boton-ingresar:hover:not(:disabled) {
+.boton-entrar:hover:not(:disabled) {
   background: var(--color-primario-oscuro);
 }
 
-.boton-ingresar .icono-boton {
+.boton-entrar .icono-boton {
   width: 1.15rem;
   height: 1.15rem;
   display: inline-flex;
 }
 
-.boton-ingresar .icono-boton svg {
+.boton-entrar .icono-boton svg {
   width: 100%;
   height: 100%;
 }
 
-.enlace-olvidar {
+.enlaces-ayuda {
   margin-top: 0.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
   font-size: 0.855rem;
   font-weight: 600;
-  text-align: center;
+}
+
+.enlaces-ayuda a {
+  color: var(--color-primario-oscuro);
+  text-decoration: none;
+}
+
+.enlaces-ayuda a:hover {
+  text-decoration: underline;
+}
+
+.separador-enlace {
+  color: var(--color-texto-claro);
 }
 
 .nota-terminos-login {
@@ -241,6 +242,19 @@
   font-size: 0.74rem;
   line-height: 1.5;
   text-align: center;
+}
+
+.pie-institucional {
+  width: 100%;
+  max-width: 46rem;
+  text-align: center;
+}
+
+.pie-institucional p {
+  margin: 0;
+  color: var(--color-texto-claro);
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 
 @keyframes opcode-fade-login {
@@ -255,8 +269,12 @@
 }
 
 @media (max-width: 480px) {
+  :host {
+    padding: 1rem;
+  }
+
   .contenedor-login {
-    padding: 1.9rem 1.4rem 1.5rem;
+    padding: 1.7rem 1.4rem 1.5rem;
     border-radius: 1.25rem;
   }
 }
