@@ -556,6 +556,8 @@ function crearUsuario(
     correo: 'persona.prueba@universidad.edu',
     estado: 'ACTIVO',
     debe_cambiar_password: false,
+    estudiante_id: null,
+    docente_id: null,
     rol: {
       id: 1,
       codigo: 'ADMIN',

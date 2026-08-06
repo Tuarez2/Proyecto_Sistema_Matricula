@@ -1,0 +1,35 @@
+.portal-estudiante__resumen {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.portal-estudiante__resumen h2 {
+  margin: 0;
+}
+
+.portal-estudiante__datos {
+  color: #475569;
+}
+
+.portal-estudiante__datos p {
+  margin: 0;
+}
+
+.portal-estudiante__titulo-seccion {
+  margin: 1.25rem 0 0.5rem;
+}
+
+.portal-estudiante__grupo {
+  margin-bottom: 1.5rem;
+}
+
+.portal-estudiante__grupo h3 {
+  margin: 0 0 0.5rem;
+}

@@ -22,6 +22,8 @@ export interface UsuarioAutenticado {
   correo: string;
   estado: string;
   debe_cambiar_password: boolean;
+  estudiante_id: number | null;
+  docente_id: number | null;
   rol: RolAutenticado | null;
 }
 

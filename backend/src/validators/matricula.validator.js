@@ -6,6 +6,8 @@ import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
 
 const estadosMatricula = Object.values(ENROLLMENT_STATUS);
 const camposCreacion = ['estudiante_id', 'curso_id'];
+const camposCreacionLote = ['estudiante_id', 'curso_ids'];
+const LIMITE_CURSOS_MATRICULA_LOTE = 10;
 const camposEstado = ['estado'];
 const camposListado = [
   'estudiante_id',
@@ -93,6 +95,30 @@ export const validarCreacionMatricula = [
     .toInt()
 ];
 
+export const validarCreacionMatriculasLote = [
+  validarCamposPermitidos(camposCreacionLote),
+  body('estudiante_id')
+    .exists()
+    .withMessage('El estudiante es obligatorio.')
+    .bail()
+    .isInt({ min: 1 })
+    .withMessage('El estudiante debe ser valido.')
+    .toInt(),
+  body('curso_ids')
+    .exists()
+    .withMessage('Los cursos son obligatorios.')
+    .bail()
+    .isArray({ min: 1 })
+    .withMessage('Debe enviar al menos un curso.')
+    .bail()
+    .custom((cursoIds) => cursoIds.length <= LIMITE_CURSOS_MATRICULA_LOTE)
+    .withMessage(`El limite de cursos por solicitud es ${LIMITE_CURSOS_MATRICULA_LOTE}.`)
+    .custom((cursoIds) => new Set(cursoIds).size === cursoIds.length)
+    .withMessage('Los cursos no pueden repetirse.')
+    .custom((cursoIds) => cursoIds.every((cursoId) => Number.isInteger(cursoId) && cursoId >= 1))
+    .withMessage('Cada curso debe ser un entero positivo.')
+];
+
 export const validarEstadoMatricula = [
   validarCamposPermitidos(camposEstado),
   body('estado')
@@ -109,5 +135,6 @@ export default {
   validarListadoMatriculas,
   validarIdMatricula,
   validarCreacionMatricula,
+  validarCreacionMatriculasLote,
   validarEstadoMatricula
 };

@@ -4,6 +4,7 @@ import {
   actualizarEstudiante,
   crearEstudiante,
   eliminarEstudiante,
+  obtenerCursosDisponibles,
   obtenerEstudiantePorId,
   obtenerEstudiantes
 } from '../controllers/estudiante.controller.js';
@@ -13,6 +14,7 @@ import authorizeRoles from '../middlewares/authorizeRoles.js';
 import validarSolicitud from '../middlewares/validateRequest.js';
 import {
   validarCreacionEstudiante,
+  validarCursosDisponiblesEstudiante,
   validarIdParam,
   validarListadoEstudiantes,
   validarActualizacionEstudiante
@@ -20,12 +22,14 @@ import {
 
 const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
+const rolesGestionEstudiantes = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER);
 
 router.use(authenticate);
 router.get('/', validarListadoEstudiantes, validarSolicitud, obtenerEstudiantes);
 router.get('/:id', validarIdParam, validarSolicitud, obtenerEstudiantePorId);
-router.post('/', adminOnly, validarCreacionEstudiante, validarSolicitud, crearEstudiante);
-router.put('/:id', adminOnly, validarIdParam, validarActualizacionEstudiante, validarSolicitud, actualizarEstudiante);
+router.get('/:id/cursos-disponibles', rolesGestionEstudiantes, validarIdParam, validarCursosDisponiblesEstudiante, validarSolicitud, obtenerCursosDisponibles);
+router.post('/', rolesGestionEstudiantes, validarCreacionEstudiante, validarSolicitud, crearEstudiante);
+router.put('/:id', rolesGestionEstudiantes, validarIdParam, validarActualizacionEstudiante, validarSolicitud, actualizarEstudiante);
 router.delete('/:id', adminOnly, validarIdParam, validarSolicitud, eliminarEstudiante);
 
 export default router;

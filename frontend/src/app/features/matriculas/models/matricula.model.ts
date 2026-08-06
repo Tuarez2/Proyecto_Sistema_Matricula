@@ -96,6 +96,61 @@ export interface SolicitudCrearMatricula {
   curso_id: number;
 }
 
+export interface SolicitudCrearMatriculasLote {
+  estudiante_id: number;
+  curso_ids: number[];
+}
+
+export interface CursoDisponibleMatricula {
+  id: number;
+  periodo_id: number;
+  asignatura_id: number;
+  docente_id: number;
+  paralelo: string;
+  aula: string;
+  horario: string;
+  cupo_maximo: number;
+  estado: string;
+  cantidad_matriculados: number;
+  cupos_disponibles: number;
+  disponible: boolean;
+  asignatura?: AsignaturaMatricula;
+  docente?: DocenteMatricula;
+  periodoAcademico?: PeriodoAcademicoMatricula;
+}
+
+export interface RespuestaCursosDisponiblesEstudiante {
+  estudiante_id: number;
+  periodo: Pick<
+    PeriodoAcademicoMatricula,
+    'id' | 'codigo' | 'nombre' | 'estado'
+  >;
+  cursos: CursoDisponibleMatricula[];
+}
+
+export interface ResultadoLoteMatriculas {
+  estudiante: EstudianteMatricula;
+  periodo: PeriodoAcademicoMatricula;
+  matriculas: Matricula[];
+  total_cursos: number;
+}
+
+export interface ResumenMatriculas {
+  periodo_actual: PeriodoAcademicoMatricula | null;
+  ventana_matricula_abierta: boolean;
+  matriculas_registradas_hoy: number;
+  estudiantes_matriculados_periodo: number;
+  cursos_con_pocos_cupos: CursoMatricula[];
+  cursos_llenos: CursoMatricula[];
+  ultimas_matriculas: Matricula[];
+}
+
+export interface RespuestaCursosDisponibles
+  extends RespuestaApi<RespuestaCursosDisponiblesEstudiante> {}
+
+export type RespuestaLoteMatriculas = RespuestaApi<ResultadoLoteMatriculas>;
+export type RespuestaResumenMatriculas = RespuestaApi<ResumenMatriculas>;
+
 export interface SolicitudCambiarEstadoMatricula {
   estado: EstadoMatricula;
 }

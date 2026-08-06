@@ -7,6 +7,8 @@ import {
   validarIdParam
 } from './common.validator.js';
 
+const camposCursosDisponibles = ['periodo_id'];
+
 const camposPermitidos = [
   'carrera_id',
   'numero_matricula',
@@ -128,11 +130,23 @@ export const validarListadoEstudiantes = [
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('El limite debe estar entre 1 y 100.').toInt()
 ];
 
+export const validarCursosDisponiblesEstudiante = [
+  validarFiltrosPermitidos(camposCursosDisponibles),
+  query('periodo_id')
+    .exists()
+    .withMessage('El periodo academico es obligatorio.')
+    .bail()
+    .isInt({ min: 1 })
+    .withMessage('El periodo academico debe ser un entero positivo.')
+    .toInt()
+];
+
 export { validarIdParam };
 
 export default {
   validarCreacionEstudiante,
   validarActualizacionEstudiante,
   validarListadoEstudiantes,
+  validarCursosDisponiblesEstudiante,
   validarIdParam
 };

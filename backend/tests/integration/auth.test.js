@@ -2,11 +2,19 @@ import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import app from '../../src/app.js';
-import { USER_STATUS } from '../../src/constants/domain.constants.js';
+import { ROLE_CODES, USER_STATUS } from '../../src/constants/domain.constants.js';
 import { Sesion } from '../../src/models/index.js';
-import { crearUsuarioPrueba, obtenerTokenUsuarioComun } from '../helpers/autenticacion.js';
+import {
+  crearUsuarioPrueba,
+  obtenerTokenUsuarioComun,
+  obtenerTokenUsuarioPrueba
+} from '../helpers/autenticacion.js';
 import { limpiarDatosPrueba } from '../helpers/baseDatos.js';
-import { generarSufijoPrueba } from '../helpers/datosPrueba.js';
+import {
+  crearCarreraPrueba,
+  crearEstudiantePrueba,
+  generarSufijoPrueba
+} from '../helpers/datosPrueba.js';
 
 const sufijo = generarSufijoPrueba('auth');
 
@@ -70,6 +78,20 @@ describe('Autenticación y autorización', () => {
     expect(respuesta.status).toBe(200);
     expect(respuesta.body.data.user.correo).toContain(sufijo);
     expect(JSON.stringify(respuesta.body)).not.toMatch(/password_hash|refresh_token_hash/i);
+  });
+
+  it('expone estudiante_id en el perfil de un usuario estudiante', async () => {
+    const { carrera } = await crearCarreraPrueba(sufijo);
+    const estudiante = await crearEstudiantePrueba(`${sufijo}.portal`, carrera.id, 1);
+    const { token } = await obtenerTokenUsuarioPrueba({
+      sufijo: `${sufijo}.portal`,
+      codigoRol: ROLE_CODES.STUDENT,
+      estudiante_id: estudiante.id
+    });
+    const respuesta = await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body.data.user.estudiante_id).toBe(estudiante.id);
   });
 
   it('rota refresh token y revoca el token anterior de forma efectiva', async () => {

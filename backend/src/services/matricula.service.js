@@ -25,11 +25,15 @@ import { construirLimiteFinDia, construirLimiteInicioDia } from '../utils/fechas
 import { normalizarPaginacion } from '../utils/pagination.js';
 
 const camposPermitidosCreacion = ['estudiante_id', 'curso_id'];
+const camposPermitidosCreacionLote = ['estudiante_id', 'curso_ids'];
+const LIMITE_CURSOS_MATRICULA_LOTE = 10;
 const ESTADO_INICIAL_MATRICULA = ENROLLMENT_STATUS.ENROLLED;
 const ESTADOS_ESTUDIANTE_HABILITADOS = [ACADEMIC_STATUS.ACTIVE];
 const ESTADOS_PERIODO_PERMITEN_MATRICULA = [ACADEMIC_PERIOD_STATUS.ENROLLMENT_OPEN];
 const ESTADOS_CURSO_PERMITEN_MATRICULA = [COURSE_STATUS.OPEN];
 const ROLES_GESTION_MATRICULA = [ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER];
+const CANTIDAD_ULTIMAS_MATRICULAS_RESUMEN = 5;
+const CURSOS_POCOS_CUPOS_UMBRAL = 3;
 
 const esRolGestionMatricula = (codigoRol) => ROLES_GESTION_MATRICULA.includes(codigoRol);
 
@@ -390,21 +394,7 @@ const verificarPeriodoDeMatricula = (periodoAcademico) => {
   }
 };
 
-const verificarCursoHabilitado = async (cursoId, opciones = {}) => {
-  const curso = await Curso.findByPk(cursoId, {
-    include: [
-      { model: Asignatura, as: 'asignatura', attributes: atributosAsignatura },
-      { model: Docente, as: 'docente', attributes: atributosDocente },
-      { model: PeriodoAcademico, as: 'periodoAcademico', attributes: atributosPeriodo }
-    ],
-    transaction: opciones.transaction,
-    lock: opciones.lock
-  });
-
-  if (!curso) {
-    throw new ApiError(404, 'Curso no encontrado.', 'CURSO_NOT_FOUND');
-  }
-
+const verificarCursoHabilitadoRegistro = (curso) => {
   if (!ESTADOS_CURSO_PERMITEN_MATRICULA.includes(curso.estado)) {
     throw new ApiError(409, 'El curso no esta disponible para matriculas.', 'CURSO_NO_DISPONIBLE');
   }
@@ -430,6 +420,24 @@ const verificarCursoHabilitado = async (cursoId, opciones = {}) => {
   }
 
   verificarPeriodoDeMatricula(curso.periodoAcademico);
+};
+
+const verificarCursoHabilitado = async (cursoId, opciones = {}) => {
+  const curso = await Curso.findByPk(cursoId, {
+    include: [
+      { model: Asignatura, as: 'asignatura', attributes: atributosAsignatura },
+      { model: Docente, as: 'docente', attributes: atributosDocente },
+      { model: PeriodoAcademico, as: 'periodoAcademico', attributes: atributosPeriodo }
+    ],
+    transaction: opciones.transaction,
+    lock: opciones.lock
+  });
+
+  if (!curso) {
+    throw new ApiError(404, 'Curso no encontrado.', 'CURSO_NOT_FOUND');
+  }
+
+  verificarCursoHabilitadoRegistro(curso);
 
   return curso;
 };
@@ -602,6 +610,188 @@ export const crearMatricula = async (datos, usuario) => {
   }
 };
 
+export const crearMatriculasLote = async (datos, usuario) => {
+  const datosLote = seleccionarDatosPermitidos(datos, camposPermitidosCreacionLote);
+
+  const resultado = await sequelize.transaction(async (transaction) => {
+    const estudiante = await verificarEstudianteHabilitado(datosLote.estudiante_id, {
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+
+    const cursos = await Curso.findAll({
+      where: { id: { [Op.in]: datosLote.curso_ids } },
+      include: [
+        { model: Asignatura, as: 'asignatura', attributes: atributosAsignatura },
+        { model: Docente, as: 'docente', attributes: atributosDocente },
+        { model: PeriodoAcademico, as: 'periodoAcademico', attributes: atributosPeriodo }
+      ],
+      order: [['id', 'ASC']],
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+
+    if (cursos.length !== datosLote.curso_ids.length) {
+      throw new ApiError(404, 'Uno o más cursos no existen.', 'CURSO_NOT_FOUND');
+    }
+
+    for (const curso of cursos) {
+      verificarPeriodoDeMatricula(curso.periodoAcademico);
+    }
+
+    const periodosDistintos = new Set(cursos.map((curso) => curso.periodo_id));
+
+    if (periodosDistintos.size !== 1) {
+      throw new ApiError(
+        409,
+        'Todos los cursos deben pertenecer al mismo periodo academico.',
+        'CURSOS_DE_DISTINTOS_PERIODOS'
+      );
+    }
+
+    for (const curso of cursos) {
+      verificarCursoHabilitadoRegistro(curso);
+      await verificarAsignaturaEnMalla(estudiante, curso, { transaction, lock: transaction.LOCK.UPDATE });
+      await verificarMatriculaDuplicada(estudiante.id, curso.id, { transaction, lock: transaction.LOCK.UPDATE });
+      await verificarCupoDisponible(curso, { transaction });
+    }
+
+    const matriculas = [];
+
+    for (const curso of cursos) {
+      const matricula = await Matricula.create(
+        {
+          estudiante_id: estudiante.id,
+          curso_id: curso.id,
+          estado: ESTADO_INICIAL_MATRICULA
+        },
+        { transaction }
+      );
+      matriculas.push(matricula);
+    }
+
+    return {
+      estudiante,
+      periodo: cursos[0].periodoAcademico,
+      matriculaIds: matriculas.map((matricula) => matricula.id)
+    };
+  });
+
+  const matriculas = await Matricula.findAll({
+    where: { id: { [Op.in]: resultado.matriculaIds } },
+    include: [inclusionEstudiante, inclusionCurso],
+    order: [['id', 'ASC']]
+  });
+
+  return {
+    estudiante: sanitizarEstudiante(resultado.estudiante),
+    periodo: sanitizarPeriodo(resultado.periodo),
+    matriculas: matriculas.map((matricula) => sanitizarMatricula(matricula)),
+    total_cursos: matriculas.length
+  };
+};
+
+export const obtenerResumenMatriculas = async () => {
+  const ahora = new Date();
+  const periodoActual = await PeriodoAcademico.findOne({
+    where: { estado: ACADEMIC_PERIOD_STATUS.ENROLLMENT_OPEN },
+    attributes: atributosPeriodo,
+    order: [['id', 'DESC']]
+  });
+
+  const fechaHoy = ahora.toISOString().slice(0, 10);
+  const matriculasRegistradasHoy = await Matricula.count({
+    where: {
+      fecha_matricula: {
+        [Op.between]: [construirLimiteInicioDia(fechaHoy), construirLimiteFinDia(fechaHoy)]
+      }
+    }
+  });
+
+  let estudiantesMatriculadosPeriodo = 0;
+  let cursosConPocosCupos = [];
+  let cursosLlenos = [];
+  let ultimasMatriculas = [];
+
+  if (periodoActual) {
+    const cursos = await Curso.findAll({
+      where: { periodo_id: periodoActual.id },
+      attributes: atributosCurso,
+      include: [
+        { model: Asignatura, as: 'asignatura', attributes: atributosAsignatura },
+        { model: Docente, as: 'docente', attributes: atributosDocente },
+        { model: PeriodoAcademico, as: 'periodoAcademico', attributes: atributosPeriodo }
+      ],
+      order: [['id', 'ASC']]
+    });
+
+    const cursoIds = cursos.map((curso) => curso.id);
+    const ocupaciones = await Matricula.findAll({
+      attributes: ['curso_id', [sequelize.fn('COUNT', sequelize.col('Matricula.id')), 'cantidad']],
+      where: {
+        curso_id: { [Op.in]: cursoIds },
+        estado: { [Op.in]: ESTADOS_MATRICULA_OCUPAN_CUPO }
+      },
+      group: ['curso_id'],
+      raw: true
+    });
+    const cantidadPorCurso = new Map(ocupaciones.map((registro) => [Number(registro.curso_id), Number(registro.cantidad)]));
+
+    cursosConPocosCupos = cursos
+      .filter((curso) => {
+        const cantidadOcupada = cantidadPorCurso.get(curso.id) ?? 0;
+        const disponibles = curso.cupo_maximo - cantidadOcupada;
+
+        return disponibles > 0 && disponibles <= CURSOS_POCOS_CUPOS_UMBRAL;
+      })
+      .map((curso) => sanitizarCurso(curso, cantidadPorCurso.get(curso.id) ?? 0));
+
+    cursosLlenos = cursos
+      .filter((curso) => (curso.cupo_maximo - (cantidadPorCurso.get(curso.id) ?? 0)) <= 0)
+      .map((curso) => sanitizarCurso(curso, cantidadPorCurso.get(curso.id) ?? 0));
+
+    const registrosEstudiantes = await Matricula.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('estudiante_id')), 'estudiante_id']],
+      where: {
+        curso_id: { [Op.in]: cursoIds },
+        estado: { [Op.in]: ESTADOS_MATRICULA_OCUPAN_CUPO }
+      },
+      raw: true
+    });
+    estudiantesMatriculadosPeriodo = registrosEstudiantes.length;
+
+    const recientes = await Matricula.findAll({
+      where: { curso_id: { [Op.in]: cursoIds } },
+      include: [inclusionEstudiante, inclusionCurso],
+      order: [
+        ['fecha_matricula', 'DESC'],
+        ['id', 'DESC']
+      ],
+      limit: CANTIDAD_ULTIMAS_MATRICULAS_RESUMEN
+    });
+    ultimasMatriculas = recientes.map((matricula) => sanitizarMatricula(matricula));
+  }
+
+  const ventanaMatriculaAbierta = (() => {
+    if (!periodoActual) return false;
+
+    const inicioMatricula = fechaValida(periodoActual.fecha_inicio_matricula);
+    const finMatricula = fechaValida(periodoActual.fecha_fin_matricula);
+
+    return inicioMatricula !== null && finMatricula !== null && ahora >= inicioMatricula && ahora <= finMatricula;
+  })();
+
+  return {
+    periodo_actual: periodoActual ? sanitizarPeriodo(periodoActual) : null,
+    ventana_matricula_abierta: ventanaMatriculaAbierta,
+    matriculas_registradas_hoy: matriculasRegistradasHoy,
+    estudiantes_matriculados_periodo: estudiantesMatriculadosPeriodo,
+    cursos_con_pocos_cupos: cursosConPocosCupos,
+    cursos_llenos: cursosLlenos,
+    ultimas_matriculas: ultimasMatriculas
+  };
+};
+
 export const cambiarEstadoMatricula = async (id, estado, usuario) => {
   const matriculaId = await sequelize.transaction(async (transaction) => {
     const matricula = await obtenerMatriculaExistente(id, {
@@ -627,5 +817,7 @@ export default {
   listarMatriculas,
   obtenerMatriculaPorId,
   crearMatricula,
+  crearMatriculasLote,
+  obtenerResumenMatriculas,
   cambiarEstadoMatricula
 };

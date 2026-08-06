@@ -33,6 +33,25 @@ export const crearMatricula = manejadorAsync(async (req, res) => {
   });
 });
 
+export const crearMatriculasLote = manejadorAsync(async (req, res) => {
+  const resultado = await matriculaService.crearMatriculasLote(req.body, req.user);
+
+  res.status(201).json({
+    success: true,
+    message: 'Matricula registrada correctamente',
+    data: resultado
+  });
+});
+
+export const obtenerResumenMatriculas = manejadorAsync(async (req, res) => {
+  const resumen = await matriculaService.obtenerResumenMatriculas();
+
+  res.status(200).json({
+    success: true,
+    data: resumen
+  });
+});
+
 export const cambiarEstadoMatricula = manejadorAsync(async (req, res) => {
   const matricula = await matriculaService.cambiarEstadoMatricula(req.params.id, req.body.estado, req.user);
 
@@ -47,5 +66,7 @@ export default {
   obtenerMatriculas,
   obtenerMatriculaPorId,
   crearMatricula,
+  crearMatriculasLote,
+  obtenerResumenMatriculas,
   cambiarEstadoMatricula
 };
