@@ -27,6 +27,8 @@ function crearDatosSesion(sufijo = 'inicial'): DatosAutenticacion {
       correo: `persona.${sufijo}@universidad.edu`,
       estado: 'ACTIVO',
       debe_cambiar_password: false,
+      estudiante_id: null,
+      docente_id: null,
       rol: {
         id: 1,
         codigo: 'ADMIN',
@@ -50,6 +52,8 @@ function crearUsuarioActualizado(): UsuarioAutenticado {
     correo: 'persona.actualizada@universidad.edu',
     estado: 'ACTIVO',
     debe_cambiar_password: true,
+    estudiante_id: null,
+    docente_id: null,
     rol: {
       id: 1,
       codigo: 'ADMIN',

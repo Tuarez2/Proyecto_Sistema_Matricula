@@ -1,0 +1,100 @@
+<section class="comprobante-pagina" aria-labelledby="titulo-comprobante">
+  <h1 id="titulo-comprobante" class="comprobante-pagina__titulo">
+    Comprobante de matrícula
+  </h1>
+
+  <div class="comprobante-pagina__acciones">
+    <a routerLink="/matriculas" class="btn btn-neutral">Volver a matrículas</a>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="cargando() || !matricula()"
+      (click)="imprimir()"
+    >
+      Imprimir
+    </button>
+  </div>
+
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando matrícula...
+    </div>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && matricula(); as matricula) {
+    <article class="comprobante" aria-label="Comprobante de matrícula">
+      <header class="comprobante__encabezado">
+        <div>
+          <p class="comprobante__sigla">SM</p>
+          <p class="comprobante__marca">Sistema de Matrícula Universitaria</p>
+        </div>
+        <div class="comprobante__meta">
+          <p>Comprobante #{{ matricula.id }}</p>
+          <p>Fecha: {{ matricula.fecha_matricula | date: 'yyyy-MM-dd' }}</p>
+          <p>Generado: {{ fechaHoy | date: 'yyyy-MM-dd HH:mm' }}</p>
+        </div>
+      </header>
+
+      <h2 class="comprobante__subtitulo">Datos del estudiante</h2>
+      <dl class="comprobante__datos">
+        <div>
+          <dt>Nombre completo</dt>
+          <dd>{{ obtenerNombreEstudiante(matricula) }}</dd>
+        </div>
+        <div>
+          <dt>Número de matrícula</dt>
+          <dd>{{ matricula.estudiante?.numero_matricula ?? 'Sin número' }}</dd>
+        </div>
+        @if (puedeVerDatosPersonales()) {
+          <div>
+            <dt>Identificación</dt>
+            <dd>{{ matricula.estudiante?.identificacion ?? 'Sin identificación' }}</dd>
+          </div>
+          <div>
+            <dt>Correo</dt>
+            <dd>{{ matricula.estudiante?.correo ?? 'Sin correo' }}</dd>
+          </div>
+        }
+      </dl>
+
+      <h2 class="comprobante__subtitulo">Curso matriculado</h2>
+      <dl class="comprobante__datos">
+        <div>
+          <dt>Curso</dt>
+          <dd>{{ obtenerDescripcionCurso(matricula) }}</dd>
+        </div>
+        <div>
+          <dt>Periodo</dt>
+          <dd>{{ obtenerPeriodo(matricula) }}</dd>
+        </div>
+        <div>
+          <dt>Docente</dt>
+          <dd>{{ obtenerDocente(matricula) }}</dd>
+        </div>
+        <div>
+          <dt>Horario</dt>
+          <dd>{{ matricula.curso?.horario ?? 'Sin horario' }}</dd>
+        </div>
+        <div>
+          <dt>Aula</dt>
+          <dd>{{ matricula.curso?.aula ?? 'Sin aula' }}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd>{{ obtenerEtiquetaEstado(matricula.estado) }}</dd>
+        </div>
+      </dl>
+
+      <footer class="comprobante__pie">
+        <p>
+          Este documento certifica la matrícula registrada en el sistema.
+        </p>
+      </footer>
+    </article>
+  }
+</section>

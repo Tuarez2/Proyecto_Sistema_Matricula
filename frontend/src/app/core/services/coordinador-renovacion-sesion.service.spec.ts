@@ -21,6 +21,8 @@ function crearDatosSesion(sufijo = 'renovada'): DatosAutenticacion {
       correo: `persona.${sufijo}@universidad.edu`,
       estado: 'ACTIVO',
       debe_cambiar_password: false,
+      estudiante_id: null,
+      docente_id: null,
       rol: null,
     },
     tokens: {

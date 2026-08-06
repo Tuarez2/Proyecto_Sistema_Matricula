@@ -1,0 +1,234 @@
+<section class="page" aria-labelledby="titulo-renovar-matricula">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-renovar-matricula">Renovar matrícula</h1>
+      <p class="page-subtitle">
+        Repite las asignaturas del periodo anterior en el nuevo periodo.
+      </p>
+    </div>
+    <a routerLink="/matriculas" class="btn btn-neutral">Volver a matrículas</a>
+  </header>
+
+  <ol class="renovar-matricula__pasos">
+    <li [class.renovar-matricula__paso--activo]="pasoActual() === 1">
+      1. Estudiante
+    </li>
+    <li [class.renovar-matricula__paso--activo]="pasoActual() === 2">
+      2. Periodo
+    </li>
+    <li [class.renovar-matricula__paso--activo]="pasoActual() === 3">
+      3. Revisar
+    </li>
+  </ol>
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (mensajeExito()) {
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (pasoActual() === 1 && !resultadoLote()) {
+    <div class="renovar-matricula__bloque">
+      <h2>Buscar estudiante</h2>
+      <p class="page-subtitle">
+        Busque por número de matrícula, identificación, nombres o apellidos.
+      </p>
+
+      <form
+        class="renovar-matricula__busqueda"
+        [formGroup]="formularioBusqueda"
+        (ngSubmit)="buscarEstudiantes()"
+        novalidate
+      >
+        <div class="form-field renovar-matricula__busqueda-campo">
+          <label for="criterio">Criterio de búsqueda</label>
+          <input
+            id="criterio"
+            type="search"
+            formControlName="criterio"
+            maxlength="120"
+            placeholder="Ej: EST-2026-001"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary" [disabled]="cargando()">
+          Buscar
+        </button>
+      </form>
+
+      @if (cargando()) {
+        <div class="loading" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          Buscando estudiantes...
+        </div>
+      }
+
+      @if (!cargando() && resultadosBusqueda().length > 0) {
+        <ul class="renovar-matricula__lista">
+          @for (estudiante of resultadosBusqueda(); track estudiante.id) {
+            <li>
+              <button
+                type="button"
+                class="renovar-matricula__item"
+                (click)="seleccionarEstudiante(estudiante)"
+              >
+                <span class="renovar-matricula__item-nombre">
+                  {{ obtenerNombreCompleto(estudiante) }}
+                </span>
+                <span class="renovar-matricula__item-detalle">
+                  {{ estudiante.numero_matricula }} · {{ estudiante.carrera?.nombre ?? 'Sin carrera' }}
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (!cargando() && resultadosBusqueda().length === 0) {
+        <div class="empty-state">
+          <h3>Sin resultados.</h3>
+          <p>No se encontraron estudiantes con ese criterio.</p>
+        </div>
+      }
+    </div>
+  }
+
+  @if (pasoActual() === 2 && estudianteSeleccionado(); as estudiante) {
+    <div class="renovar-matricula__bloque">
+      <h2>Seleccionar periodo a renovar</h2>
+      <p class="page-subtitle">
+        Estudiante: {{ obtenerNombreCompleto(estudiante) }} ({{ estudiante.numero_matricula }})
+      </p>
+
+      @if (periodos().length === 0) {
+        <div class="empty-state">
+          <h3>Sin periodos disponibles.</h3>
+          <p>No hay periodos académicos registrados.</p>
+        </div>
+      } @else {
+        <ul class="renovar-matricula__lista">
+          @for (periodo of periodos(); track periodo.id) {
+            <li>
+              <button
+                type="button"
+                class="renovar-matricula__item"
+                (click)="seleccionarPeriodo(periodo)"
+              >
+                <span class="renovar-matricula__item-nombre">{{ periodo.nombre }}</span>
+                <span class="renovar-matricula__item-detalle">{{ periodo.codigo }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <button type="button" class="btn btn-neutral" (click)="volverAlPasoAnterior()">
+        Cambiar estudiante
+      </button>
+    </div>
+  }
+
+  @if (pasoActual() === 3 && estudianteSeleccionado(); as estudiante) {
+    <div class="renovar-matricula__bloque">
+      <h2>Revisar cursos a renovar</h2>
+      <p class="page-subtitle">
+        {{ obtenerNombreCompleto(estudiante) }} ·
+        {{ periodoSeleccionado()?.nombre }} (renovando desde
+        {{ periodoAnterior()?.nombre }})
+      </p>
+
+      @if (cargando()) {
+        <div class="loading" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          Consultando cursos del periodo...
+        </div>
+      }
+
+      @if (!cargando() && cursosRenovacion().length === 0) {
+        <div class="empty-state">
+          <h3>Sin cursos para renovar.</h3>
+          <p>
+            No se encontraron asignaturas del periodo anterior con oferta en el
+            nuevo periodo.
+          </p>
+        </div>
+      }
+
+      @if (!cargando() && cursosRenovacion().length > 0) {
+        <ul class="renovar-matricula__lista">
+          @for (grupo of cursosRenovacion(); track grupo.asignaturaId) {
+            <li class="renovar-matricula__grupo">
+              <h3 class="renovar-matricula__grupo-titulo">
+                {{ grupo.codigo }} - {{ grupo.nombre }}
+              </h3>
+
+              @if (grupo.sinOferta) {
+                <p class="renovar-matricula__advertencia" role="alert">
+                  Sin oferta para esta asignatura en el nuevo periodo.
+                </p>
+              } @else {
+                @for (item of grupo.cursos; track item.curso.id) {
+                  <label class="renovar-matricula__item renovar-matricula__item--seleccionable">
+                    <input
+                      type="checkbox"
+                      [checked]="estaSeleccionado(item.curso.id)"
+                      (change)="alternarCurso(item.curso.id)"
+                    />
+                    <span class="renovar-matricula__item-nombre">
+                      {{ obtenerNombreCurso(item.curso) }}
+                    </span>
+                    <span class="renovar-matricula__item-detalle">
+                      {{ item.curso.cupos_disponibles }} cupos ·
+                      {{ item.curso.horario }}
+                    </span>
+                  </label>
+                }
+
+                @if (grupo.cursos.length > 1) {
+                  <p class="renovar-matricula__aviso">
+                    Existen varios paralelos. Seleccione uno para esta asignatura.
+                  </p>
+                }
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="renovar-matricula__acciones">
+        <button type="button" class="btn btn-neutral" (click)="volverAlPasoAnterior()">
+          Cambiar periodo
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="enviando() || cursosSeleccionados().length === 0"
+          (click)="registrarRenovacion()"
+        >
+          @if (enviando()) {
+            Registrando...
+          } @else {
+            Renovar matrícula
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (resultadoLote(); as resultado) {
+    <div class="renovar-matricula__resultado">
+      <p class="alert alert--success" role="status">
+        La matrícula fue renovada para
+        {{ resultado.estudiante.nombres }} {{ resultado.estudiante.apellidos }}.
+      </p>
+
+      <div class="renovar-matricula__acciones">
+        <button type="button" class="btn btn-neutral" (click)="reiniciarFlujo()">
+          Renovar otra matrícula
+        </button>
+        <a routerLink="/matriculas" class="btn btn-neutral">Ir a matrículas</a>
+      </div>
+    </div>
+  }
+</section>

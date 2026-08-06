@@ -284,6 +284,18 @@ export class ListarMatriculasComponent implements OnInit {
     return etiquetas[estado];
   }
 
+  obtenerClaseEstado(estado: EstadoMatricula): string {
+    const clases: Record<EstadoMatricula, string> = {
+      [ESTADOS_MATRICULA.inscrita]: 'estado-badge--info',
+      [ESTADOS_MATRICULA.aprobada]: 'estado-badge--success',
+      [ESTADOS_MATRICULA.reprobada]: 'estado-badge--danger',
+      [ESTADOS_MATRICULA.retirada]: 'estado-badge--warning',
+      [ESTADOS_MATRICULA.anulada]: 'estado-badge--neutral',
+    };
+
+    return clases[estado];
+  }
+
   obtenerAccionesEstado(matricula: Matricula): AccionEstadoMatricula[] {
     if (matricula.estado !== ESTADOS_MATRICULA.inscrita) {
       return [];

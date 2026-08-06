@@ -168,6 +168,8 @@ function crearUsuario(codigoRol: string): UsuarioAutenticado {
     correo: 'persona.prueba@universidad.edu',
     estado: 'activo',
     debe_cambiar_password: false,
+    estudiante_id: null,
+    docente_id: null,
     rol: {
       id: 1,
       codigo: codigoRol,

@@ -7,9 +7,12 @@ import type {
   FiltrosMatriculas,
   RespuestaCambioEstadoMatricula,
   RespuestaListadoMatriculas,
+  RespuestaLoteMatriculas,
   RespuestaMatricula,
+  RespuestaResumenMatriculas,
   SolicitudCambiarEstadoMatricula,
   SolicitudCrearMatricula,
+  SolicitudCrearMatriculasLote,
 } from '../models/matricula.model';
 
 @Injectable({
@@ -37,6 +40,21 @@ export class MatriculasService {
     solicitud: SolicitudCrearMatricula,
   ): Observable<RespuestaMatricula> {
     return this.http.post<RespuestaMatricula>(this.urlMatriculas, solicitud);
+  }
+
+  crearMatriculasLote(
+    solicitud: SolicitudCrearMatriculasLote,
+  ): Observable<RespuestaLoteMatriculas> {
+    return this.http.post<RespuestaLoteMatriculas>(
+      obtenerUrlApi('matriculas/lote'),
+      solicitud,
+    );
+  }
+
+  obtenerResumenMatriculas(): Observable<RespuestaResumenMatriculas> {
+    return this.http.get<RespuestaResumenMatriculas>(
+      obtenerUrlApi('matriculas/resumen'),
+    );
   }
 
   cambiarEstadoMatricula(

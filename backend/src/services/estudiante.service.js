@@ -1,7 +1,22 @@
 import { Op } from 'sequelize';
 
-import { ACADEMIC_STATUS } from '../constants/domain.constants.js';
-import { Carrera, Estudiante } from '../models/index.js';
+import {
+  ACADEMIC_PERIOD_STATUS,
+  ACADEMIC_STATUS,
+  COURSE_STATUS,
+  ESTADOS_MATRICULA_OCUPAN_CUPO
+} from '../constants/domain.constants.js';
+import {
+  Asignatura,
+  Carrera,
+  CarreraAsignatura,
+  Curso,
+  Docente,
+  Estudiante,
+  Matricula,
+  PeriodoAcademico,
+  sequelize
+} from '../models/index.js';
 import ApiError from '../utils/ApiError.js';
 import { normalizarPaginacion } from '../utils/pagination.js';
 
@@ -17,6 +32,27 @@ const camposPermitidos = [
   'estado_academico',
   'nivel_academico_actual'
 ];
+
+const ESTADOS_ESTUDIANTE_HABILITADOS = [ACADEMIC_STATUS.ACTIVE];
+const ESTADOS_PERIODO_PERMITEN_MATRICULA = [ACADEMIC_PERIOD_STATUS.ENROLLMENT_OPEN];
+
+const atributosPeriodo = [
+  'id',
+  'codigo',
+  'nombre',
+  'fecha_inicio',
+  'fecha_fin',
+  'fecha_inicio_matricula',
+  'fecha_fin_matricula',
+  'estado'
+];
+const atributosAsignatura = ['id', 'codigo', 'nombre', 'creditos', 'nivel_academico', 'activo'];
+const atributosDocente = ['id', 'identificacion', 'nombres', 'apellidos', 'correo', 'especialidad', 'activo'];
+
+const fechaValida = (valor) => {
+  const fecha = new Date(valor);
+  return fecha instanceof Date && !Number.isNaN(fecha.getTime()) ? fecha : null;
+};
 
 const inclusionesListado = [{ association: 'carrera' }];
 const inclusionesDetalle = [{ association: 'carrera' }, { association: 'cursosMatriculados' }];
@@ -180,10 +216,202 @@ export const eliminarEstudiante = async (id) => {
   return estudiante;
 };
 
+const verificarVentanaMatricula = (periodoAcademico) => {
+  const fechaActual = new Date();
+  const inicioMatricula = fechaValida(periodoAcademico.fecha_inicio_matricula);
+  const finMatricula = fechaValida(periodoAcademico.fecha_fin_matricula);
+
+  if (
+    !inicioMatricula ||
+    !finMatricula ||
+    fechaActual < inicioMatricula ||
+    fechaActual > finMatricula
+  ) {
+    throw new ApiError(
+      409,
+      'La fecha actual esta fuera de la ventana de matricula del periodo academico.',
+      'PERIODO_FUERA_DE_VENTANA_MATRICULA'
+    );
+  }
+};
+
+const sanitizarCursoDisponible = (curso, cantidadMatriculados) => {
+  const cursoPlano = typeof curso.get === 'function' ? curso.get({ plain: true }) : curso;
+  const cuposDisponibles = Math.max(cursoPlano.cupo_maximo - cantidadMatriculados, 0);
+
+  const cursoSanitizado = {
+    id: cursoPlano.id,
+    periodo_id: cursoPlano.periodo_id,
+    asignatura_id: cursoPlano.asignatura_id,
+    docente_id: cursoPlano.docente_id,
+    paralelo: cursoPlano.paralelo,
+    aula: cursoPlano.aula,
+    horario: cursoPlano.horario,
+    cupo_maximo: cursoPlano.cupo_maximo,
+    estado: cursoPlano.estado,
+    cantidad_matriculados: cantidadMatriculados,
+    cupos_disponibles: cuposDisponibles,
+    disponible: cuposDisponibles > 0
+  };
+
+  if (cursoPlano.periodoAcademico) {
+    const periodoPlano = typeof cursoPlano.periodoAcademico.get === 'function'
+      ? cursoPlano.periodoAcademico.get({ plain: true })
+      : cursoPlano.periodoAcademico;
+    cursoSanitizado.periodoAcademico = {
+      id: periodoPlano.id,
+      codigo: periodoPlano.codigo,
+      nombre: periodoPlano.nombre,
+      estado: periodoPlano.estado,
+      fecha_inicio: periodoPlano.fecha_inicio,
+      fecha_fin: periodoPlano.fecha_fin,
+      fecha_inicio_matricula: periodoPlano.fecha_inicio_matricula,
+      fecha_fin_matricula: periodoPlano.fecha_fin_matricula
+    };
+  }
+
+  if (cursoPlano.asignatura) {
+    const asignaturaPlano = typeof cursoPlano.asignatura.get === 'function'
+      ? cursoPlano.asignatura.get({ plain: true })
+      : cursoPlano.asignatura;
+    cursoSanitizado.asignatura = {
+      id: asignaturaPlano.id,
+      codigo: asignaturaPlano.codigo,
+      nombre: asignaturaPlano.nombre,
+      creditos: asignaturaPlano.creditos,
+      nivel_academico: asignaturaPlano.nivel_academico,
+      activo: asignaturaPlano.activo
+    };
+  }
+
+  if (cursoPlano.docente) {
+    const docentePlano = typeof cursoPlano.docente.get === 'function'
+      ? cursoPlano.docente.get({ plain: true })
+      : cursoPlano.docente;
+    cursoSanitizado.docente = {
+      id: docentePlano.id,
+      identificacion: docentePlano.identificacion,
+      nombres: docentePlano.nombres,
+      apellidos: docentePlano.apellidos,
+      correo: docentePlano.correo,
+      especialidad: docentePlano.especialidad,
+      activo: docentePlano.activo
+    };
+  }
+
+  return cursoSanitizado;
+};
+
+export const obtenerCursosDisponiblesEstudiante = async (estudianteId, periodoId) => {
+  const estudiante = await Estudiante.findByPk(estudianteId, {
+    include: [{ model: Carrera, as: 'carrera', attributes: atributosCarrera }]
+  });
+
+  if (!estudiante) {
+    throw new ApiError(404, 'Estudiante no encontrado.', 'ESTUDIANTE_NOT_FOUND');
+  }
+
+  if (!ESTADOS_ESTUDIANTE_HABILITADOS.includes(estudiante.estado_academico)) {
+    throw new ApiError(
+      409,
+      'El estado academico del estudiante no permite matricula.',
+      'ESTUDIANTE_NO_HABILITADO'
+    );
+  }
+
+  if (!estudiante.carrera_id || !estudiante.carrera || !estudiante.carrera.activo) {
+    throw new ApiError(409, 'El estudiante no tiene una carrera activa asociada.', 'ESTUDIANTE_SIN_CARRERA');
+  }
+
+  const periodo = await PeriodoAcademico.findByPk(periodoId, { attributes: atributosPeriodo });
+
+  if (!periodo) {
+    throw new ApiError(404, 'Periodo academico no encontrado.', 'PERIODO_ACADEMICO_NOT_FOUND');
+  }
+
+  if (!ESTADOS_PERIODO_PERMITEN_MATRICULA.includes(periodo.estado)) {
+    throw new ApiError(
+      409,
+      'El periodo academico no permite registrar matriculas.',
+      'PERIODO_NO_PERMITE_MATRICULA'
+    );
+  }
+
+  verificarVentanaMatricula(periodo);
+
+  const cursos = await Curso.findAll({
+    where: { periodo_id: periodoId, estado: COURSE_STATUS.OPEN },
+    include: [
+      { model: Asignatura, as: 'asignatura', attributes: atributosAsignatura },
+      { model: Docente, as: 'docente', attributes: atributosDocente },
+      { model: PeriodoAcademico, as: 'periodoAcademico', attributes: atributosPeriodo }
+    ],
+    order: [
+      ['asignatura_id', 'ASC'],
+      ['paralelo', 'ASC'],
+      ['id', 'ASC']
+    ]
+  });
+
+  const asignacionesMalla = await CarreraAsignatura.findAll({
+    where: { carrera_id: estudiante.carrera_id },
+    attributes: ['asignatura_id'],
+    raw: true
+  });
+  const asignaturasEnMalla = new Set(asignacionesMalla.map((asignacion) => Number(asignacion.asignatura_id)));
+
+  const matriculasEstudiante = await Matricula.findAll({
+    where: { estudiante_id: estudianteId },
+    attributes: ['curso_id'],
+    raw: true
+  });
+  const cursosYaMatriculados = new Set(matriculasEstudiante.map((matricula) => Number(matricula.curso_id)));
+
+  const cursoIds = cursos.map((curso) => curso.id);
+  const ocupaciones = await Matricula.findAll({
+    attributes: ['curso_id', [sequelize.fn('COUNT', sequelize.col('Matricula.id')), 'cantidad']],
+    where: {
+      curso_id: { [Op.in]: cursoIds },
+      estado: { [Op.in]: ESTADOS_MATRICULA_OCUPAN_CUPO }
+    },
+    group: ['curso_id'],
+    raw: true
+  });
+  const cantidadPorCurso = new Map(ocupaciones.map((registro) => [Number(registro.curso_id), Number(registro.cantidad)]));
+
+  const cursosDisponibles = [];
+
+  for (const curso of cursos) {
+    if (!curso.asignatura || !curso.asignatura.activo) continue;
+    if (!curso.docente || !curso.docente.activo) continue;
+    if (!asignaturasEnMalla.has(Number(curso.asignatura_id))) continue;
+    if (cursosYaMatriculados.has(Number(curso.id))) continue;
+
+    const cantidadMatriculados = cantidadPorCurso.get(curso.id) ?? 0;
+    const cuposDisponibles = curso.cupo_maximo - cantidadMatriculados;
+
+    if (cuposDisponibles <= 0) continue;
+
+    cursosDisponibles.push(sanitizarCursoDisponible(curso, cantidadMatriculados));
+  }
+
+  return {
+    estudiante_id: estudiante.id,
+    periodo: {
+      id: periodo.id,
+      codigo: periodo.codigo,
+      nombre: periodo.nombre,
+      estado: periodo.estado
+    },
+    cursos: cursosDisponibles
+  };
+};
+
 export default {
   listarEstudiantes,
   obtenerEstudiantePorId,
   crearEstudiante,
   actualizarEstudiante,
-  eliminarEstudiante
+  eliminarEstudiante,
+  obtenerCursosDisponiblesEstudiante
 };

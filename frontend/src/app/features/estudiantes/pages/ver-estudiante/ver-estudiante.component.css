@@ -1,0 +1,68 @@
+.ver-estudiante__encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ver-estudiante__encabezado h2 {
+  margin: 0;
+}
+
+.ver-estudiante__pestanias {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.25rem;
+}
+
+.ver-estudiante__pestania {
+  border: none;
+  background: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  color: #475569;
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+}
+
+.ver-estudiante__pestania--activa {
+  color: #0f172a;
+  border-bottom-color: #0f172a;
+}
+
+.ver-estudiante__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.ver-estudiante__datos div {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: #ffffff;
+}
+
+.ver-estudiante__datos dt {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0;
+}
+
+.ver-estudiante__datos dd {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ver-estudiante__grupo {
+  margin-bottom: 1.5rem;
+}
+
+.ver-estudiante__grupo h3 {
+  margin: 0 0 0.5rem;
+}

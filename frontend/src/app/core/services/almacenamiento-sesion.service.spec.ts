@@ -14,6 +14,8 @@ function crearDatosSesion(): DatosAutenticacion {
       correo: 'persona.prueba@universidad.edu',
       estado: 'ACTIVO',
       debe_cambiar_password: false,
+      estudiante_id: null,
+      docente_id: null,
       rol: {
         id: 2,
         codigo: 'DOCENTE',

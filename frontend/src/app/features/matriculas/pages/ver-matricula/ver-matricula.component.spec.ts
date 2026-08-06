@@ -1,8 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { Observable } from 'rxjs';
 
+import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
+import type { UsuarioAutenticado } from '../../../../core/models/autenticacion.model';
+import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import {
   ESTADOS_MATRICULA,
   type Matricula,
@@ -21,9 +25,13 @@ describe('VerMatriculaComponent', () => {
   let fixture: ComponentFixture<VerMatriculaComponent>;
   let matriculasService: MatriculasServiceMock;
   let parametroId: string;
+  let usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
 
   beforeEach(async () => {
     parametroId = '15';
+    usuarioActual = signal<UsuarioAutenticado | null>(
+      crearUsuario(CODIGOS_ROL.ADMIN),
+    );
     matriculasService = {
       obtenerMatricula: vi.fn(() =>
         respuestaObservable(crearRespuestaMatricula()),
@@ -37,6 +45,12 @@ describe('VerMatriculaComponent', () => {
         {
           provide: MatriculasService,
           useValue: matriculasService,
+        },
+        {
+          provide: AutenticacionService,
+          useValue: {
+            usuarioActual: usuarioActual.asReadonly(),
+          },
         },
         {
           provide: ActivatedRoute,
@@ -63,6 +77,22 @@ describe('VerMatriculaComponent', () => {
     expect(obtenerTexto()).toContain('MAT101 - Matemática I');
     expect(obtenerTexto()).toContain('Periodo 2026-1');
     expect(obtenerTexto()).toContain('Inscrita');
+  });
+
+  it('muestra identificación y correo para roles de gestión', () => {
+    crearComponente();
+
+    expect(obtenerTexto()).toContain('1002003004');
+    expect(obtenerTexto()).toContain('ana.vera@universidad.edu');
+  });
+
+  it('oculta identificación y correo para el estudiante', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
+
+    crearComponente();
+
+    expect(obtenerTexto()).not.toContain('1002003004');
+    expect(obtenerTexto()).not.toContain('ana.vera@universidad.edu');
   });
 
   it('maneja identificador inválido sin consultar la API', () => {
@@ -174,5 +204,23 @@ function crearRespuestaMatricula(): RespuestaMatricula {
   return {
     success: true,
     data: crearMatricula(),
+  };
+}
+
+function crearUsuario(codigoRol: string): UsuarioAutenticado {
+  return {
+    id: 1,
+    nombres: 'Persona',
+    apellidos: 'Prueba',
+    correo: 'persona.prueba@universidad.edu',
+    estado: 'activo',
+    debe_cambiar_password: false,
+    estudiante_id: null,
+    docente_id: null,
+    rol: {
+      id: 1,
+      codigo: codigoRol,
+      nombre: codigoRol,
+    },
   };
 }

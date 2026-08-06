@@ -1,0 +1,228 @@
+.nueva-matricula__pasos {
+  list-style: none;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+
+.nueva-matricula__pasos li {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #64748b;
+  font-size: 0.875rem;
+  background: #ffffff;
+}
+
+.nueva-matricula__paso--activo {
+  border-color: #0f172a !important;
+  color: #0f172a !important;
+  font-weight: 700;
+}
+
+.nueva-matricula__bloque {
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  display: grid;
+  gap: 1rem;
+}
+
+.nueva-matricula__bloque h2 {
+  margin: 0;
+}
+
+.nueva-matricula__busqueda {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.nueva-matricula__busqueda-campo {
+  flex: 1 1 280px;
+}
+
+.nueva-matricula__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.nueva-matricula__lista li {
+  margin: 0;
+}
+
+.nueva-matricula__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  cursor: pointer;
+  color: inherit;
+}
+
+.nueva-matricula__item:hover {
+  border-color: #94a3b8;
+}
+
+.nueva-matricula__item--seleccionable {
+  cursor: pointer;
+}
+
+.nueva-matricula__item--seleccionable input {
+  margin-right: 0.5rem;
+}
+
+.nueva-matricula__item-nombre {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.nueva-matricula__item-detalle {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.nueva-matricula__acciones {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.nueva-matricula__resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.nueva-matricula__resumen div {
+  border-bottom: 1px dashed #e2e8f0;
+  padding-bottom: 0.25rem;
+}
+
+.nueva-matricula__resumen dt {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.nueva-matricula__resumen dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.nueva-matricula__resultado {
+  display: grid;
+  gap: 1rem;
+}
+
+@media print {
+  .nueva-matricula__pasos,
+  .nueva-matricula__acciones,
+  .nueva-matricula__bloque,
+  .page-header {
+    display: none;
+  }
+}
+
+.comprobante {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 1.5rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.comprobante__encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.comprobante__sigla {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+  color: #0f172a;
+}
+
+.comprobante__marca {
+  margin: 0;
+  color: #475569;
+}
+
+.comprobante__meta {
+  text-align: right;
+  color: #475569;
+}
+
+.comprobante__meta p {
+  margin: 0;
+}
+
+.comprobante__subtitulo {
+  font-size: 1.1rem;
+  margin: 0;
+  color: #0f172a;
+}
+
+.comprobante__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0;
+}
+
+.comprobante__datos div {
+  border-bottom: 1px dashed #e2e8f0;
+  padding-bottom: 0.25rem;
+}
+
+.comprobante__datos dt {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0;
+}
+
+.comprobante__datos dd {
+  margin: 0;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.comprobante__lista-cursos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.comprobante__pie {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.75rem;
+  color: #64748b;
+}
+
+.comprobante__pie p {
+  margin: 0;
+}

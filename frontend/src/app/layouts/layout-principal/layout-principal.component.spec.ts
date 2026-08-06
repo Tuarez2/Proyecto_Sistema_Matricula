@@ -686,7 +686,7 @@ describe('LayoutPrincipalComponent', () => {
   }
 
   function obtenerBotonCierre(): HTMLButtonElement | null {
-    return obtenerElemento<HTMLButtonElement>('button');
+    return obtenerElemento<HTMLButtonElement>('.btn-cerrar-sesion');
   }
 
   function obtenerBotonMenu(): HTMLButtonElement | null {
@@ -736,6 +736,8 @@ function crearUsuario(
     correo: 'persona.prueba@universidad.edu',
     estado: 'ACTIVO',
     debe_cambiar_password: false,
+    estudiante_id: null,
+    docente_id: null,
     rol: {
       id: 1,
       codigo: 'ADMIN',

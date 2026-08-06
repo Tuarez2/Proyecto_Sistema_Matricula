@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { obtenerUrlApi } from '../../../core/config/configuracion-api';
+import type { RespuestaCursosDisponibles } from '../../matriculas/models/matricula.model';
 import {
   type Estudiante,
   type FiltrosEstudiantes,
@@ -30,6 +31,16 @@ export class EstudiantesService {
   obtenerEstudiante(idEstudiante: number): Observable<RespuestaEstudiante> {
     return this.http.get<RespuestaEstudiante>(
       obtenerUrlApi(`estudiantes/${idEstudiante}`),
+    );
+  }
+
+  obtenerCursosDisponibles(
+    idEstudiante: number,
+    idPeriodo: number,
+  ): Observable<RespuestaCursosDisponibles> {
+    return this.http.get<RespuestaCursosDisponibles>(
+      obtenerUrlApi(`estudiantes/${idEstudiante}/cursos-disponibles`),
+      { params: new HttpParams().set('periodo_id', String(idPeriodo)) },
     );
   }
 

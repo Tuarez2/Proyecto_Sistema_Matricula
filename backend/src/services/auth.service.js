@@ -30,6 +30,8 @@ export const sanitizarUsuario = (usuario) => {
     correo: usuarioPlano.correo,
     estado: usuarioPlano.estado,
     debe_cambiar_password: usuarioPlano.debe_cambiar_password,
+    estudiante_id: usuarioPlano.estudiante_id ?? null,
+    docente_id: usuarioPlano.docente_id ?? null,
     rol: usuarioPlano.rol
       ? {
           id: usuarioPlano.rol.id,

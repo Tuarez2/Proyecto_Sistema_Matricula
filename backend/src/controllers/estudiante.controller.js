@@ -53,10 +53,23 @@ export const eliminarEstudiante = manejadorAsync(async (req, res) => {
   });
 });
 
+export const obtenerCursosDisponibles = manejadorAsync(async (req, res) => {
+  const resultado = await estudianteService.obtenerCursosDisponiblesEstudiante(
+    req.params.id,
+    req.query.periodo_id
+  );
+
+  res.status(200).json({
+    success: true,
+    data: resultado
+  });
+});
+
 export default {
   obtenerEstudiantes,
   obtenerEstudiantePorId,
   crearEstudiante,
   actualizarEstudiante,
-  eliminarEstudiante
+  eliminarEstudiante,
+  obtenerCursosDisponibles
 };
