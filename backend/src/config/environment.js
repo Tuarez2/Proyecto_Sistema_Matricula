@@ -10,10 +10,6 @@ const requiredVariables = [
   ...(USA_URL_CONEXION ? [] : ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']),
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
-  'JWT_ACCESS_EXPIRES_IN',
-  'JWT_REFRESH_EXPIRES_IN',
-  'INITIAL_ADMIN_FIRST_NAME',
-  'INITIAL_ADMIN_LAST_NAME',
   'INITIAL_ADMIN_EMAIL',
   'INITIAL_ADMIN_PASSWORD'
 ];
@@ -156,16 +152,16 @@ const environment = Object.freeze({
         }
   ),
   initialAdmin: Object.freeze({
-    firstName: process.env.INITIAL_ADMIN_FIRST_NAME,
-    lastName: process.env.INITIAL_ADMIN_LAST_NAME,
+    firstName: process.env.INITIAL_ADMIN_FIRST_NAME || 'Administrador',
+    lastName: process.env.INITIAL_ADMIN_LAST_NAME || 'Sistema',
     email: process.env.INITIAL_ADMIN_EMAIL,
     password: process.env.INITIAL_ADMIN_PASSWORD
   }),
   jwt: Object.freeze({
     accessSecret: process.env.JWT_ACCESS_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
-    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN,
-    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN
+    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   })
 });
 
