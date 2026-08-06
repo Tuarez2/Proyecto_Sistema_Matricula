@@ -1106,3 +1106,173 @@ tbody tr {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Tema oscuro — mismas variables semánticas, valores nocturnos
+   ========================================================================== */
+
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+
+  --color-primary: #3f8b6a;
+  --color-primary-hover: #4f9c7a;
+  --color-primary-active: #5caf8c;
+  --color-primary-soft: #1d3026;
+
+  --color-secondary: #c29a58;
+  --color-secondary-hover: #d3ad6d;
+  --color-secondary-soft: #33291a;
+
+  --color-accent: #c97b80;
+  --color-accent-soft: #3a2426;
+
+  --color-background: #171b18;
+  --color-surface: #20241f;
+  --color-surface-secondary: #282d27;
+  --color-surface-elevated: #2a2f29;
+
+  --color-text: #e6e9e4;
+  --color-text-secondary: #b4bbb3;
+  --color-text-muted: #8f9a90;
+
+  --color-border: #394039;
+  --color-border-strong: #4a524a;
+
+  --color-success: #5fae87;
+  --color-success-soft: #1f3328;
+
+  --color-warning: #d1a24f;
+  --color-warning-soft: #372c1a;
+
+  --color-danger: #d06a6a;
+  --color-danger-soft: #3a2121;
+
+  --color-info: #79a5b8;
+  --color-info-soft: #1e2d34;
+
+  --color-focus: #7bc4a3;
+  --color-focus-ring: rgb(123 196 163 / 0.22);
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-md: 0 4px 14px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 14px 32px rgb(0 0 0 / 0.5);
+}
+
+/* Estado de selección acorde al tema */
+:root[data-tema="oscuro"] ::selection {
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   Tamaño de texto ampliado
+   ========================================================================== */
+
+:root[data-tamano-texto="grande"] {
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.9063rem;
+  --font-size-base: 1.0625rem;
+  --font-size-md: 1.1875rem;
+  --font-size-lg: 1.5625rem;
+  --font-size-xl: 2.125rem;
+  --font-size-display: 2.375rem;
+}
+
+/* ==========================================================================
+   Densidad compacta
+   ========================================================================== */
+
+:root[data-densidad="compacta"] {
+  --altura-control: 2.375rem;
+
+  .card,
+  .form-card,
+  .detail-card,
+  .kpi-card,
+  .comprobante {
+    padding-block: var(--espacio-3);
+  }
+
+  .page {
+    padding-block: var(--espacio-4);
+  }
+
+  thead th,
+  tbody td {
+    padding-top: var(--espacio-2);
+    padding-bottom: var(--espacio-2);
+  }
+
+  .empty-state {
+    padding: var(--espacio-5) var(--espacio-4);
+  }
+
+  button,
+  .btn {
+    min-height: 2.375rem;
+  }
+
+  .content {
+    padding-block: var(--espacio-4);
+  }
+}
+
+/* ==========================================================================
+   Contraste reforzado
+   ========================================================================== */
+
+:root[data-contraste="reforzado"] {
+  --color-text-secondary: var(--color-text);
+  --color-text-muted: var(--color-text-secondary);
+
+  input,
+  select,
+  textarea,
+  .table-wrap,
+  .card,
+  .form-card,
+  .detail-card,
+  .comprobante {
+    border-color: var(--color-border-fuerte, var(--color-text-secondary));
+  }
+
+  .estado-badge--neutral {
+    border-color: var(--color-text-secondary);
+  }
+}
+
+/* ==========================================================================
+   Foco reforzado
+   ========================================================================== */
+
+:root[data-foco="reforzado"] {
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+  }
+}
+
+/* ==========================================================================
+   Movimiento reducido por preferencia del usuario
+   ========================================================================== */
+
+:root[data-movimiento="reducido"],
+:root[data-movimiento-reducido="true"] {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Soporte tema sistema: valor predeterminado por esquema de color
+   ========================================================================== */
+
+:root[data-tema="sistema"] {
+  color-scheme: light dark;
+}

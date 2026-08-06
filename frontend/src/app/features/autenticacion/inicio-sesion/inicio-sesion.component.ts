@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  HostListener,
   inject,
   signal,
 } from '@angular/core';
@@ -14,10 +15,40 @@ import { finalize } from 'rxjs';
 import { obtenerRutaInicialPorRol } from '../../../core/config/rutas-por-rol';
 import type { CredencialesInicioSesion } from '../../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import { LogoComponent } from '../../../shared/components/logo/logo.component';
+
+interface PerfilOrientacion {
+  codigo: string;
+  etiqueta: string;
+  icono: string;
+}
+
+const PERFILES_ORIENTACION: PerfilOrientacion[] = [
+  {
+    codigo: 'ADMIN',
+    etiqueta: 'Administrativo',
+    icono: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  },
+  {
+    codigo: 'GESTOR',
+    etiqueta: 'Gestor',
+    icono: 'M12 2 2 7l10 5 10-5-10-5ZM2 17l10 5 10-5M2 12l10 5 10-5',
+  },
+  {
+    codigo: 'ESTUDIANTE',
+    etiqueta: 'Estudiante',
+    icono: 'M22 10 12 5 2 10l10 5 10-5ZM6 12v5c0 1.7 3 3.5 6 3.5s6-1.8 6-3.5v-5',
+  },
+  {
+    codigo: 'DOCENTE',
+    etiqueta: 'Docente',
+    icono: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM6 19h12M6 15h12',
+  },
+];
 
 @Component({
   selector: 'app-inicio-sesion',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, LogoComponent],
   templateUrl: './inicio-sesion.component.html',
   styleUrl: './inicio-sesion.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,10 +62,14 @@ export class InicioSesionComponent {
 
   readonly enviandoFormulario = signal(false);
   readonly mensajeError = signal<string | null>(null);
+  readonly contrasenaVisible = signal(false);
+  readonly bloqMayusActivo = signal(false);
+  readonly perfilSeleccionado = signal<string | null>(null);
   readonly formularioInicioSesion = this.constructorFormulario.nonNullable.group({
     correo: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
     contrasena: ['', [Validators.required, Validators.maxLength(128)]],
   });
+  readonly perfilesOrientacion = PERFILES_ORIENTACION;
 
   get controlCorreo() {
     return this.formularioInicioSesion.controls.correo;
@@ -42,6 +77,27 @@ export class InicioSesionComponent {
 
   get controlContrasena() {
     return this.formularioInicioSesion.controls.contrasena;
+  }
+
+  alternarVisibilidadContrasena(): void {
+    this.contrasenaVisible.update((visible) => !visible);
+  }
+
+  seleccionarPerfil(codigo: string): void {
+    this.perfilSeleccionado.set(
+      this.perfilSeleccionado() === codigo ? null : codigo,
+    );
+  }
+
+  detectarBloqMayus(evento: KeyboardEvent): void {
+    this.bloqMayusActivo.set(evento.getModifierState('CapsLock'));
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  detectarBloqMayusGlobal(evento: KeyboardEvent): void {
+    if (evento.key === 'CapsLock') {
+      this.bloqMayusActivo.set(evento.getModifierState('CapsLock'));
+    }
   }
 
   enviarFormulario(): void {

@@ -32,16 +32,31 @@
   flex-wrap: wrap;
 }
 
-.comprobante__sigla {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  margin: 0;
-  color: var(--color-primary);
+.comprobante__identidad {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+}
+
+.comprobante__isotipo {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 }
 
 .comprobante__marca {
   margin: 0;
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  font-size: var(--font-size-md);
+}
+
+.comprobante__subtitulo-marca {
+  margin: 0;
   color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
 }
 
 .comprobante__meta {

@@ -1,0 +1,11 @@
+.logo-marca {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.logo-marca--compacto {
+  width: 2.5rem;
+  height: 2.5rem;
+}

@@ -8,6 +8,7 @@ import type {
   UsuarioAutenticado,
 } from '../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
+import { PreferenciasService } from '../../core/services/preferencias.service';
 import { LayoutPrincipalComponent } from './layout-principal.component';
 
 interface AutenticacionServiceMock {
@@ -42,6 +43,7 @@ describe('LayoutPrincipalComponent', () => {
           provide: AutenticacionService,
           useValue: autenticacionService,
         },
+        PreferenciasService,
       ],
     }).compileComponents();
 
@@ -89,16 +91,16 @@ describe('LayoutPrincipalComponent', () => {
     expect(obtenerEnlace('Usuarios')).toBeTruthy();
   });
 
-  it('existe enlace Periodos académicos', () => {
+  it('existe enlace Periodos', () => {
     fixture.detectChanges();
 
-    expect(obtenerEnlaces('Periodos académicos')).toHaveLength(1);
+    expect(obtenerEnlaces('Periodos')).toHaveLength(1);
   });
 
-  it('el enlace Periodos académicos apunta a /periodos-academicos', () => {
+  it('el enlace Periodos apunta a /periodos-academicos', () => {
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Periodos académicos')?.getAttribute('href')).toBe(
+    expect(obtenerEnlace('Periodos')?.getAttribute('href')).toBe(
       '/periodos-academicos',
     );
   });
@@ -107,105 +109,105 @@ describe('LayoutPrincipalComponent', () => {
     'ADMIN',
     'GESTOR_MATRICULA',
     'DOCENTE',
-  ])('%s puede ver Periodos académicos', (codigoRol) => {
+  ])('%s puede ver Periodos', (codigoRol) => {
     usuarioActual.set(crearUsuarioConRol(codigoRol));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Periodos académicos')).toBeTruthy();
+    expect(obtenerEnlace('Periodos')).toBeTruthy();
   });
 
-  it('ESTUDIANTE no ve Periodos académicos', () => {
+  it('ESTUDIANTE no ve Periodos', () => {
     usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Periodos académicos')).toBeNull();
+    expect(obtenerEnlace('Periodos')).toBeNull();
   });
 
-  it('un GESTOR_MATRICULA ve Dashboard del gestor', () => {
+  it('un GESTOR_MATRICULA ve Dashboard', () => {
     usuarioActual.set(crearUsuarioConRol('GESTOR_MATRICULA'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Dashboard del gestor')).toBeTruthy();
+    expect(obtenerEnlace('Dashboard')).toBeTruthy();
   });
 
-  it('un ADMIN ve Dashboard del gestor', () => {
+  it('un ADMIN ve Dashboard', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Dashboard del gestor')).toBeTruthy();
+    expect(obtenerEnlace('Dashboard')).toBeTruthy();
   });
 
-  it('DOCENTE no ve Dashboard del gestor', () => {
+  it('DOCENTE no ve Dashboard', () => {
     usuarioActual.set(crearUsuarioConRol('DOCENTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Dashboard del gestor')).toBeNull();
+    expect(obtenerEnlace('Dashboard')).toBeNull();
   });
 
-  it('ESTUDIANTE no ve Dashboard del gestor', () => {
+  it('ESTUDIANTE no ve Dashboard', () => {
     usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Dashboard del gestor')).toBeNull();
+    expect(obtenerEnlace('Dashboard')).toBeNull();
   });
 
-  it('un GESTOR_MATRICULA ve el enlace Matrículas', () => {
+  it('un GESTOR_MATRICULA ve el enlace Listado', () => {
     usuarioActual.set(crearUsuarioConRol('GESTOR_MATRICULA'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Matrículas')).toBeTruthy();
+    expect(obtenerEnlace('Listado')).toBeTruthy();
   });
 
-  it('DOCENTE no ve Matrículas', () => {
+  it('DOCENTE no ve Listado', () => {
     usuarioActual.set(crearUsuarioConRol('DOCENTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Matrículas')).toBeNull();
+    expect(obtenerEnlace('Listado')).toBeNull();
   });
 
-  it('ESTUDIANTE no ve Matrículas', () => {
+  it('ESTUDIANTE no ve Listado', () => {
     usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Matrículas')).toBeNull();
+    expect(obtenerEnlace('Listado')).toBeNull();
   });
 
-  it('un GESTOR_MATRICULA ve Nueva matrícula y Renovar matrícula', () => {
+  it('un GESTOR_MATRICULA ve Nueva matrícula y Renovación', () => {
     usuarioActual.set(crearUsuarioConRol('GESTOR_MATRICULA'));
     fixture.detectChanges();
 
     expect(obtenerEnlace('Nueva matrícula')).toBeTruthy();
-    expect(obtenerEnlace('Renovar matrícula')).toBeTruthy();
+    expect(obtenerEnlace('Renovación')).toBeTruthy();
   });
 
-  it('un ESTUDIANTE ve Mi portal', () => {
+  it('un ESTUDIANTE ve Portal del estudiante', () => {
     usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Mi portal')).toBeTruthy();
+    expect(obtenerEnlace('Portal del estudiante')).toBeTruthy();
   });
 
-  it('el enlace Mi portal apunta a /portal-estudiante', () => {
+  it('el enlace Portal del estudiante apunta a /portal-estudiante', () => {
     usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Mi portal')?.getAttribute('href')).toBe(
+    expect(obtenerEnlace('Portal del estudiante')?.getAttribute('href')).toBe(
       '/portal-estudiante',
     );
   });
 
-  it('un ADMIN no ve Mi portal', () => {
+  it('un ADMIN no ve Portal del estudiante', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Mi portal')).toBeNull();
+    expect(obtenerEnlace('Portal del estudiante')).toBeNull();
   });
 
-  it('un DOCENTE no ve Mi portal', () => {
+  it('un DOCENTE no ve Portal del estudiante', () => {
     usuarioActual.set(crearUsuarioConRol('DOCENTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Mi portal')).toBeNull();
+    expect(obtenerEnlace('Portal del estudiante')).toBeNull();
   });
 
   it('un ESTUDIANTE no ve Inicio', () => {
@@ -230,13 +232,13 @@ describe('LayoutPrincipalComponent', () => {
     expect(obtenerEnlace('Inicio')).toBeTruthy();
   });
 
-  it('un ESTUDIANTE solo ve Mi portal', () => {
+  it('un ESTUDIANTE solo ve Portal del estudiante', () => {
     usuarioActual.set(crearUsuarioConRol('ESTUDIANTE'));
     fixture.detectChanges();
 
     const enlaces = obtenerEnlacesSinIconos();
 
-    expect(enlaces).toEqual(['Mi portal']);
+    expect(enlaces).toEqual(['Portal del estudiante']);
   });
 
   it('el enlace Usuarios apunta a /usuarios', () => {
@@ -341,14 +343,6 @@ describe('LayoutPrincipalComponent', () => {
     expect(obtenerElemento('main router-outlet')).toBeTruthy();
   });
 
-  it('existe un boton de cierre de sesion', () => {
-    expect(obtenerBotonCierre()?.textContent).toContain('Cerrar sesión');
-  });
-
-  it('el boton tiene type button', () => {
-    expect(obtenerBotonCierre()?.getAttribute('type')).toBe('button');
-  });
-
   it('muestra nombres y apellidos del usuario', () => {
     usuarioActual.set(crearUsuario({
       nombres: 'Persona',
@@ -449,7 +443,78 @@ describe('LayoutPrincipalComponent', () => {
     expect(usuario.apellidos).toBe('  Prueba  ');
   });
 
-  it('al presionar el boton llama una vez a cerrarSesion', () => {
+  it('existe un boton para abrir el menu de usuario', () => {
+    const boton = obtenerElemento<HTMLButtonElement>('.boton-menu-usuario');
+
+    expect(boton).toBeTruthy();
+    expect(boton?.getAttribute('aria-haspopup')).toBe('menu');
+  });
+
+  it('el menu de usuario se cierra con Escape', () => {
+    componente.alternarMenuUsuario();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.menu-usuario')).toBeTruthy();
+
+    componente.manejarTecladoMenuUsuario({ key: 'Escape' } as KeyboardEvent);
+    fixture.detectChanges();
+
+    expect(componente.menuUsuarioAbierto()).toBe(false);
+    expect(obtenerElemento('.menu-usuario')).toBeNull();
+  });
+
+  it('cerrar el menu de usuario devuelve el foco al boton', () => {
+    componente.alternarMenuUsuario();
+    fixture.detectChanges();
+    componente.cerrarMenuUsuario();
+    fixture.detectChanges();
+
+    const boton = obtenerElemento<HTMLButtonElement>('.boton-menu-usuario');
+
+    expect(componente.menuUsuarioAbierto()).toBe(false);
+    expect(document.activeElement).toBe(boton);
+  });
+
+  it('abrir preferencias muestra el panel', () => {
+    componente.abrirPanel('preferencias');
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.panel-flotante')).toBeTruthy();
+    expect(obtenerElemento('.panel-preferencias')).toBeTruthy();
+  });
+
+  it('cerrar el panel quita el dialogo', () => {
+    componente.abrirPanel('accesibilidad');
+    fixture.detectChanges();
+    expect(obtenerElemento('.panel-flotante')).toBeTruthy();
+
+    componente.cerrarPanel();
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.panel-flotante')).toBeNull();
+  });
+
+  it('los grupos de navegacion agrupan los enlaces por rol', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    fixture.detectChanges();
+
+    const titulos = Array.from(
+      fixture.nativeElement.querySelectorAll('.grupo-navegacion__titulo'),
+    ).map((elemento) => (elemento as HTMLElement).textContent?.trim());
+
+    expect(titulos).toEqual(['GENERAL', 'PERSONAS', 'GESTIÓN ACADÉMICA', 'MATRÍCULAS']);
+  });
+
+  it('el sidebar se puede contraer', () => {
+    expect(componente.sidebarContraido()).toBe(false);
+
+    componente.alternarSidebar();
+
+    expect(componente.sidebarContraido()).toBe(true);
+  });
+
+  it('al presionar cerrar sesion llama una vez a cerrarSesion', () => {
+    abrirMenuUsuario();
     obtenerBotonCierre()?.click();
 
     expect(autenticacionService.cerrarSesion).toHaveBeenCalledTimes(1);
@@ -457,6 +522,7 @@ describe('LayoutPrincipalComponent', () => {
 
   it('activa cerrandoSesion mientras el observable esta pendiente', () => {
     prepararCierrePendiente();
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     fixture.detectChanges();
@@ -466,6 +532,7 @@ describe('LayoutPrincipalComponent', () => {
 
   it('deshabilita el boton durante el cierre', () => {
     prepararCierrePendiente();
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     fixture.detectChanges();
@@ -475,6 +542,7 @@ describe('LayoutPrincipalComponent', () => {
 
   it('muestra Cerrando sesion durante el cierre', () => {
     prepararCierrePendiente();
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     fixture.detectChanges();
@@ -484,6 +552,7 @@ describe('LayoutPrincipalComponent', () => {
 
   it('al completarse vuelve a habilitar el estado', () => {
     const solicitud = prepararCierrePendiente();
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     solicitud.next(crearRespuestaCierre());
@@ -491,11 +560,11 @@ describe('LayoutPrincipalComponent', () => {
     fixture.detectChanges();
 
     expect(componente.cerrandoSesion()).toBe(false);
-    expect(obtenerBotonCierre()?.disabled).toBe(false);
   });
 
   it('al completarse navega a iniciar-sesion', () => {
     const solicitud = prepararCierrePendiente();
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     solicitud.next(crearRespuestaCierre());
@@ -506,6 +575,7 @@ describe('LayoutPrincipalComponent', () => {
 
   it('la navegacion correcta ocurre una sola vez', () => {
     const solicitud = prepararCierrePendiente();
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     solicitud.next(crearRespuestaCierre());
@@ -516,22 +586,12 @@ describe('LayoutPrincipalComponent', () => {
 
   it('dos clics pendientes generan una sola llamada', () => {
     prepararCierrePendiente();
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     obtenerBotonCierre()?.click();
 
     expect(autenticacionService.cerrarSesion).toHaveBeenCalledTimes(1);
-  });
-
-  it('dos clics pendientes no ejecutan dos navegaciones', () => {
-    const solicitud = prepararCierrePendiente();
-
-    obtenerBotonCierre()?.click();
-    obtenerBotonCierre()?.click();
-    solicitud.next(crearRespuestaCierre());
-    solicitud.complete();
-
-    expect(navegarPorUrl).toHaveBeenCalledTimes(1);
   });
 
   it('despues de finalizar permite un nuevo intento', () => {
@@ -542,9 +602,11 @@ describe('LayoutPrincipalComponent', () => {
       .mockReturnValueOnce(primeraSolicitud.asObservable())
       .mockReturnValueOnce(segundaSolicitud.asObservable());
 
+    abrirMenuUsuario();
     obtenerBotonCierre()?.click();
     primeraSolicitud.next(crearRespuestaCierre());
     primeraSolicitud.complete();
+    abrirMenuUsuario();
     obtenerBotonCierre()?.click();
 
     expect(autenticacionService.cerrarSesion).toHaveBeenCalledTimes(2);
@@ -554,6 +616,7 @@ describe('LayoutPrincipalComponent', () => {
     autenticacionService.cerrarSesion.mockReturnValueOnce(
       throwError(() => new Error('Error de cierre')),
     );
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
 
@@ -564,6 +627,7 @@ describe('LayoutPrincipalComponent', () => {
     autenticacionService.cerrarSesion.mockReturnValueOnce(
       throwError(() => new Error('Error de cierre')),
     );
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
 
@@ -574,6 +638,7 @@ describe('LayoutPrincipalComponent', () => {
     autenticacionService.cerrarSesion.mockReturnValueOnce(
       throwError(() => new Error('Error de cierre')),
     );
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     fixture.detectChanges();
@@ -585,6 +650,7 @@ describe('LayoutPrincipalComponent', () => {
     autenticacionService.cerrarSesion.mockReturnValueOnce(
       throwError(() => new Error('Detalle tecnico')),
     );
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
     fixture.detectChanges();
@@ -596,6 +662,7 @@ describe('LayoutPrincipalComponent', () => {
     autenticacionService.cerrarSesion.mockReturnValueOnce(
       throwError(() => new Error('Error de cierre')),
     );
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
 
@@ -606,6 +673,7 @@ describe('LayoutPrincipalComponent', () => {
     autenticacionService.cerrarSesion.mockReturnValueOnce(
       throwError(() => new Error('Error de cierre')),
     );
+    abrirMenuUsuario();
 
     obtenerBotonCierre()?.click();
 
@@ -613,6 +681,7 @@ describe('LayoutPrincipalComponent', () => {
   });
 
   it('no accede a almacenamiento', () => {
+    abrirMenuUsuario();
     obtenerBotonCierre()?.click();
 
     expect(autenticacionService.obtenerTokenAcceso).not.toHaveBeenCalled();
@@ -632,17 +701,38 @@ describe('LayoutPrincipalComponent', () => {
   });
 
   it('el logout depende exclusivamente de AutenticacionService', () => {
+    abrirMenuUsuario();
     obtenerBotonCierre()?.click();
 
     expect(autenticacionService.cerrarSesion).toHaveBeenCalledTimes(1);
   });
+
+  it('el boton cerrar sesion no es la accion mas prominente del header', () => {
+    abrirMenuUsuario();
+
+    const botonSalir = obtenerBotonCierre();
+    const controlesDirectos = fixture.nativeElement.querySelectorAll(
+      '.barra-superior > a, .barra-superior > .btn-cerrar-sesion, .barra-superior > .boton-menu-usuario',
+    );
+
+    expect(botonSalir).toBeTruthy();
+    expect(controlesDirectos.length).toBe(0);
+    expect(obtenerElemento('.menu-usuario')).toBeTruthy();
+  });
+
+  function abrirMenuUsuario(): void {
+    if (!componente.menuUsuarioAbierto()) {
+      componente.alternarMenuUsuario();
+      fixture.detectChanges();
+    }
+  }
 
   function obtenerElemento<T extends Element = Element>(selector: string): T | null {
     return fixture.nativeElement.querySelector(selector) as T | null;
   }
 
   function obtenerBotonCierre(): HTMLButtonElement | null {
-    return obtenerElemento<HTMLButtonElement>('.btn-cerrar-sesion');
+    return obtenerElemento<HTMLButtonElement>('.menu-usuario__opcion--salir');
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {

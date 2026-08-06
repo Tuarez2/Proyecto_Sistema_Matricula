@@ -22,6 +22,11 @@
   padding: var(--espacio-6) var(--espacio-4);
 }
 
+.tarjeta-iniciar-sesion__logo {
+  display: block;
+  margin-bottom: var(--espacio-5);
+}
+
 .tarjeta-iniciar-sesion h1 {
   margin: 0 0 var(--espacio-2);
   font-size: var(--font-size-xl);
@@ -33,6 +38,72 @@
   margin: 0 0 var(--espacio-5);
   color: var(--color-text-muted);
 }
+
+/* ---- Selector de perfil (orientación visual) ------- */
+
+.selector-perfil {
+  display: grid;
+  gap: var(--espacio-2);
+  margin-bottom: var(--espacio-5);
+  padding: var(--espacio-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.selector-perfil__etiqueta {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.selector-perfil__opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: var(--espacio-2);
+}
+
+.selector-perfil__opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-height: 2.5rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+}
+
+.selector-perfil__opcion:hover {
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+}
+
+.selector-perfil__opcion--activa {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.selector-perfil__icono {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.selector-perfil__nota {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ---- Formulario ------- */
 
 .formulario-iniciar-sesion {
   display: flex;
@@ -49,6 +120,60 @@
 .campo-iniciar-sesion label {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
+}
+
+.campo-contrasena {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.campo-contrasena input {
+  padding-right: 3rem;
+}
+
+.boton-mostrar-contrasena {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.boton-mostrar-contrasena:hover {
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+}
+
+.boton-mostrar-contrasena svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.aviso-bloq-mayus {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin: 0;
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+}
+
+.aviso-bloq-mayus svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .errores-campo p {
@@ -90,6 +215,26 @@
   opacity: 0.7;
 }
 
+.spinner--boton {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-width: 2px;
+  border-color: rgb(255 255 255 / 0.4);
+  border-top-color: var(--color-surface);
+}
+
+.ayuda-acceso {
+  margin: 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.ayuda-acceso a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
 /* ==========================================================================
    Identidad institucional en pantallas amplias
    ========================================================================== */
@@ -112,32 +257,9 @@
     max-width: 26rem;
   }
 
-  .marca-institucional {
-    display: flex;
-    align-items: center;
-    gap: var(--espacio-3);
+  .panel-marca__logo {
+    display: block;
     margin-bottom: var(--espacio-6);
-  }
-
-  .marca-institucional__sigla {
-    display: grid;
-    place-items: center;
-    width: 3rem;
-    height: 3rem;
-    border: 1px solid rgb(255 255 255 / 0.4);
-    border-radius: var(--radius-lg);
-    background: rgb(255 255 255 / 0.12);
-    color: var(--color-surface);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-  }
-
-  .marca-institucional__nombre {
-    margin: 0;
-    font-family: var(--font-family-display);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-surface);
   }
 
   .panel-marca__titulo {
@@ -158,8 +280,8 @@
     padding: 0;
     list-style: none;
     display: grid;
-    gap: var(--espacio-2);
-    color: rgb(255 255 255 / 0.9);
+    gap: var(--espacio-3);
+    color: rgb(255 255 255 / 0.92);
   }
 
   .panel-marca__lista li {
@@ -169,18 +291,13 @@
     font-size: var(--font-size-sm);
   }
 
-  .panel-marca__lista li::before {
-    content: "";
-    width: 0.4rem;
-    height: 0.4rem;
-    border-radius: 50%;
-    background: var(--color-secondary);
-    flex: none;
-  }
-
   .tarjeta-iniciar-sesion {
     width: min(100%, 24rem);
     padding: var(--espacio-7);
+  }
+
+  .tarjeta-iniciar-sesion__logo {
+    display: none;
   }
 }
 

@@ -1,0 +1,130 @@
+<section class="panel-preferencias" aria-labelledby="titulo-preferencias">
+  <header class="panel-preferencias__cabecera">
+    <h2 id="titulo-preferencias">Preferencias</h2>
+    <button
+      type="button"
+      class="panel-preferencias__cerrar"
+      aria-label="Cerrar preferencias"
+      (click)="cerrado.emit()"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    </button>
+  </header>
+
+  <div class="panel-preferencias__cuerpo">
+    <section class="grupo-preferencia" aria-labelledby="grupo-apariencia">
+      <h3 id="grupo-apariencia">Apariencia</h3>
+
+      <div class="preferencia">
+        <p class="preferencia__etiqueta">Tema</p>
+        <div class="segmentador" role="group" aria-label="Tema de la aplicación">
+          @for (opcion of opcionesTema; track opcion.valor) {
+            <button
+              type="button"
+              class="segmentador__opcion"
+              [class.segmentador__opcion--activa]="temaPreferido() === opcion.valor"
+              [attr.aria-pressed]="temaPreferido() === opcion.valor"
+              (click)="seleccionarTema(opcion.valor)"
+            >
+              {{ opcion.etiqueta }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="preferencia">
+        <p class="preferencia__etiqueta">Tamaño de texto</p>
+        <div class="segmentador" role="group" aria-label="Tamaño de texto">
+          @for (opcion of opcionesTamano; track opcion.valor) {
+            <button
+              type="button"
+              class="segmentador__opcion"
+              [class.segmentador__opcion--activa]="tamanoTexto() === opcion.valor"
+              [attr.aria-pressed]="tamanoTexto() === opcion.valor"
+              (click)="seleccionarTamano(opcion.valor)"
+            >
+              {{ opcion.etiqueta }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="preferencia">
+        <p class="preferencia__etiqueta">Densidad</p>
+        <div class="segmentador" role="group" aria-label="Densidad de la interfaz">
+          @for (opcion of opcionesDensidad; track opcion.valor) {
+            <button
+              type="button"
+              class="segmentador__opcion"
+              [class.segmentador__opcion--activa]="densidad() === opcion.valor"
+              [attr.aria-pressed]="densidad() === opcion.valor"
+              (click)="seleccionarDensidad(opcion.valor)"
+            >
+              {{ opcion.etiqueta }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="preferencia">
+        <p class="preferencia__etiqueta">Movimiento</p>
+        <div class="segmentador" role="group" aria-label="Movimiento de la interfaz">
+          @for (opcion of opcionesMovimiento; track opcion.valor) {
+            <button
+              type="button"
+              class="segmentador__opcion"
+              [class.segmentador__opcion--activa]="movimiento() === opcion.valor"
+              [attr.aria-pressed]="movimiento() === opcion.valor"
+              (click)="seleccionarMovimiento(opcion.valor)"
+            >
+              {{ opcion.etiqueta }}
+            </button>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="grupo-preferencia" aria-labelledby="grupo-accesibilidad">
+      <h3 id="grupo-accesibilidad">Accesibilidad</h3>
+
+      <label class="interruptor">
+        <input
+          type="checkbox"
+          [checked]="contrasteReforzado()"
+          (change)="alternarContraste()"
+        />
+        <span>Contraste reforzado</span>
+      </label>
+
+      <label class="interruptor">
+        <input
+          type="checkbox"
+          [checked]="focoReforzado()"
+          (change)="alternarFoco()"
+        />
+        <span>Foco visible reforzado</span>
+      </label>
+
+      <label class="interruptor">
+        <input
+          type="checkbox"
+          [checked]="movimientoReducido()"
+          (change)="alternarMovimientoReducido()"
+        />
+        <span>Reducir movimiento</span>
+      </label>
+    </section>
+
+    <footer class="panel-preferencias__pie">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="restablecerPreferencias()"
+      >
+        Restablecer preferencias
+      </button>
+    </footer>
+  </div>
+</section>

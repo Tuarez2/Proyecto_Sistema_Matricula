@@ -715,7 +715,7 @@ describe('InicioSesionComponent', () => {
   });
 
   it('el boton es de tipo submit', () => {
-    expect(obtenerElemento('button').getAttribute('type')).toBe('submit');
+    expect(obtenerElemento('.boton-iniciar-sesion').getAttribute('type')).toBe('submit');
   });
 
   it('el boton se deshabilita durante el envio', () => {
@@ -725,9 +725,95 @@ describe('InicioSesionComponent', () => {
     componente.enviarFormulario();
     fixture.detectChanges();
 
-    expect((obtenerElemento('button') as HTMLButtonElement).disabled).toBe(true);
+    expect((obtenerElemento('.boton-iniciar-sesion') as HTMLButtonElement).disabled).toBe(true);
 
     solicitud.complete();
+  });
+
+  it('existe un boton para mostrar u ocultar la contrasena', () => {
+    expect(obtenerElemento('.boton-mostrar-contrasena').getAttribute('type')).toBe(
+      'button',
+    );
+  });
+
+  it('mostrar la contrasena cambia el tipo del campo a text', () => {
+    expect(obtenerInput('#contrasena').type).toBe('password');
+
+    componente.alternarVisibilidadContrasena();
+    fixture.detectChanges();
+
+    expect(obtenerInput('#contrasena').type).toBe('text');
+  });
+
+  it('ocultar la contrasena vuelve el tipo a password', () => {
+    componente.alternarVisibilidadContrasena();
+    componente.alternarVisibilidadContrasena();
+    fixture.detectChanges();
+
+    expect(obtenerInput('#contrasena').type).toBe('password');
+  });
+
+  it('alternar la contrasena no modifica su valor', () => {
+    completarFormularioValido();
+    componente.alternarVisibilidadContrasena();
+
+    expect(componente.controlContrasena.value).toBe('clave-ficticia');
+  });
+
+  it('el selector de perfil no forma parte del request', () => {
+    const solicitud = prepararSolicitudPendiente();
+
+    componente.seleccionarPerfil('ESTUDIANTE');
+    completarFormularioValido();
+    componente.enviarFormulario();
+
+    const credenciales = obtenerCredencialesEnviadas();
+
+    expect(credenciales).toEqual({
+      correo: 'persona.prueba@universidad.edu',
+      password: 'clave-ficticia',
+    });
+    expect('perfil' in credenciales).toBe(false);
+    expect('tipo' in credenciales).toBe(false);
+
+    solicitud.complete();
+  });
+
+  it('seleccionar el mismo perfil nuevamente lo deselecciona', () => {
+    componente.seleccionarPerfil('GESTOR');
+    expect(componente.perfilSeleccionado()).toBe('GESTOR');
+
+    componente.seleccionarPerfil('GESTOR');
+    expect(componente.perfilSeleccionado()).toBeNull();
+  });
+
+  it('el selector de perfil incluye la nota de deteccion automatica', () => {
+    expect(obtenerTexto()).toContain(
+      'El sistema identificará automáticamente su perfil',
+    );
+  });
+
+  it('el campo contrasena detecta el bloqueo de mayusculas', () => {
+    const evento = new KeyboardEvent('keydown', { key: 'a' });
+
+    Object.defineProperty(evento, 'getModifierState', {
+      value: () => true,
+    });
+
+    componente.detectarBloqMayus(evento);
+
+    expect(componente.bloqMayusActivo()).toBe(true);
+  });
+
+  it('el aviso de bloqueo de mayusculas se muestra cuando esta activo', () => {
+    componente.bloqMayusActivo.set(true);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('bloqueo de mayúsculas está activado');
+  });
+
+  it('la pagina incluye ayuda para problemas de acceso', () => {
+    expect(obtenerTexto()).toContain('¿Problemas para acceder?');
   });
 
   it('el error general utiliza role alert', () => {
