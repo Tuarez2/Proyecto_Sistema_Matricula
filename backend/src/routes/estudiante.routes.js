@@ -23,8 +23,8 @@ import {
 const router = Router();
 const adminOnly = authorizeRoles(ROLE_CODES.ADMIN);
 const rolesGestionEstudiantes = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER);
-const rolesConsultaEstudiantes = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER, ROLE_CODES.TEACHER);
-const rolesConsultaDetalleEstudiante = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER, ROLE_CODES.TEACHER, ROLE_CODES.STUDENT);
+const rolesConsultaEstudiantes = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER);
+const rolesConsultaDetalleEstudiante = authorizeRoles(ROLE_CODES.ADMIN, ROLE_CODES.ENROLLMENT_MANAGER, ROLE_CODES.STUDENT);
 
 router.use(authenticate);
 router.get('/', rolesConsultaEstudiantes, validarListadoEstudiantes, validarSolicitud, obtenerEstudiantes);

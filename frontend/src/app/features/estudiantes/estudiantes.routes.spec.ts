@@ -35,7 +35,6 @@ describe('ESTUDIANTES_ROUTES', () => {
     expect(obtenerRutaListado().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
       CODIGOS_ROL.ADMIN,
       CODIGOS_ROL.GESTOR_MATRICULA,
-      CODIGOS_ROL.DOCENTE,
     ]);
   });
 
@@ -51,12 +50,11 @@ describe('ESTUDIANTES_ROUTES', () => {
     expect(componente).toBe(VerEstudianteComponent);
   });
 
-  it('el detalle permite consulta de admin, gestor y docente', () => {
+  it('el detalle permite consulta de admin y gestor', () => {
     expect(obtenerRutaDetalle().canActivate).toEqual([guardRoles]);
     expect(obtenerRutaDetalle().data?.[CLAVE_ROLES_PERMITIDOS]).toEqual([
       CODIGOS_ROL.ADMIN,
       CODIGOS_ROL.GESTOR_MATRICULA,
-      CODIGOS_ROL.DOCENTE,
     ]);
   });
 
@@ -92,13 +90,11 @@ describe('ESTUDIANTES_ROUTES', () => {
     expectDenegado(obtenerRutaEditar(), '/estudiantes/editar/15');
   });
 
-  it('DOCENTE puede listar y ver pero no crear ni editar', () => {
+  it('DOCENTE no puede listar ni ver estudiantes', () => {
     configurarAutenticacion(CODIGOS_ROL.DOCENTE);
 
-    expect(ejecutarGuard(obtenerRutaListado(), '/estudiantes')).toBe(true);
-    expect(ejecutarGuard(obtenerRutaDetalle(), '/estudiantes/15')).toBe(true);
-    expectDenegado(obtenerRutaCrear(), '/estudiantes/crear');
-    expectDenegado(obtenerRutaEditar(), '/estudiantes/editar/15');
+    expectDenegado(obtenerRutaListado(), '/estudiantes');
+    expectDenegado(obtenerRutaDetalle(), '/estudiantes/15');
   });
 
   it('ESTUDIANTE no puede listar ni ver estudiantes', () => {

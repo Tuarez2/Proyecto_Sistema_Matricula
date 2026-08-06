@@ -376,7 +376,7 @@ describe('Estudiantes', () => {
     expect(respuesta.status).toBe(401);
   });
 
-  it('permite al docente consultar el listado y el detalle', async () => {
+  it('niega al docente el listado y el detalle de estudiantes', async () => {
     const docente = await obtenerTokenUsuarioPrueba({
       sufijo: `${sufijo}.docente`,
       codigoRol: ROLE_CODES.TEACHER
@@ -390,9 +390,8 @@ describe('Estudiantes', () => {
       .get(`/api/v1/estudiantes/${estudiante.id}`)
       .set('Authorization', `Bearer ${docente.token}`);
 
-    expect(listado.status).toBe(200);
-    expect(detalle.status).toBe(200);
-    expect(detalle.body.data.id).toBe(estudiante.id);
+    expect(listado.status).toBe(403);
+    expect(detalle.status).toBe(403);
   });
 
   it('permite al gestor consultar el listado y el detalle', async () => {

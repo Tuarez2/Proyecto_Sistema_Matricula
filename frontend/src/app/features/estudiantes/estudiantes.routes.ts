@@ -17,7 +17,6 @@ export const ESTUDIANTES_ROUTES: Routes = [
       [CLAVE_ROLES_PERMITIDOS]: [
         CODIGOS_ROL.ADMIN,
         CODIGOS_ROL.GESTOR_MATRICULA,
-        CODIGOS_ROL.DOCENTE,
       ],
     },
     title: 'Estudiantes',
@@ -32,7 +31,6 @@ export const ESTUDIANTES_ROUTES: Routes = [
       [CLAVE_ROLES_PERMITIDOS]: [
         CODIGOS_ROL.ADMIN,
         CODIGOS_ROL.GESTOR_MATRICULA,
-        CODIGOS_ROL.DOCENTE,
       ],
     },
     title: 'Detalle de estudiante',

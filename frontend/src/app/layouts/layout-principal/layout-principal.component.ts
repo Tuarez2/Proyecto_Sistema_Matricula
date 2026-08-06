@@ -104,7 +104,7 @@ export class LayoutPrincipalComponent {
     { ruta: '/asignaturas', etiqueta: 'Asignaturas', icono: 'M12 7c-2-2-4-2-6-2H3v13h3c2 0 4 0 6 2 2-2 4-2 6-2h3V5h-3c-2 0-4 0-6 2ZM12 7v13', roles: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE] },
     { ruta: '/malla-curricular', etiqueta: 'Malla curricular', icono: 'm12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5', roles: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE] },
     { ruta: '/cursos', etiqueta: 'Cursos', icono: 'M12 2 2 7l10 5 10-5-10-5ZM2 17l10 5 10-5M2 12l10 5 10-5', roles: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.GESTOR_MATRICULA, CODIGOS_ROL.DOCENTE] },
-    { ruta: '/estudiantes', etiqueta: 'Estudiantes', icono: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75', roles: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.GESTOR_MATRICULA, CODIGOS_ROL.DOCENTE] },
+    { ruta: '/estudiantes', etiqueta: 'Estudiantes', icono: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75', roles: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.GESTOR_MATRICULA] },
     { ruta: '/docentes', etiqueta: 'Docentes', icono: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', roles: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.DOCENTE] },
     { ruta: '/matriculas', etiqueta: 'Matrículas', icono: 'M9 11l2 2 4-4M12 3l9 5-9 5-9-5 9-5ZM3 17l9 5 9-5', roles: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.GESTOR_MATRICULA] },
     { ruta: '/matriculas/nueva', etiqueta: 'Nueva matrícula', icono: 'M12 5v14M5 12h14', roles: [CODIGOS_ROL.ADMIN, CODIGOS_ROL.GESTOR_MATRICULA] },
