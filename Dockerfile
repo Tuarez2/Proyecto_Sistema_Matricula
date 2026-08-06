@@ -19,6 +19,7 @@ COPY backend/ backend/
 
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV TRUST_PROXY=1
 EXPOSE 8080
 
 CMD ["sh", "-c", "cd backend && npm run db:migrate && npm run db:seed && node src/server.js"]
