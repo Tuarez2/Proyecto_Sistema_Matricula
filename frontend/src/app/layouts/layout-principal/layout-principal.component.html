@@ -76,29 +76,14 @@
             type="button"
             class="menu-usuario__opcion"
             role="menuitem"
-            [class.menu-usuario__opcion--activa]="panelAbierto() === 'preferencias'"
-            (click)="alternarPanel('preferencias')"
+            [class.menu-usuario__opcion--activa]="panelAbierto() !== null"
+            (click)="alternarPanel()"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M19 14.5a2 2 0 0 0 1.6-3.2L19.8 10a2 2 0 0 0-1.4-.8l-1-.1a2 2 0 0 1-1.4-.8l-.5-.9a2 2 0 0 1-.2-1.5l.3-1a2 2 0 0 0-1-2.3L13.8 2a2 2 0 0 0-2.2.3l-1 .8a2 2 0 0 1-1.5.4l-1-.2a2 2 0 0 0-2 1l-.7 1.3a2 2 0 0 0 .4 2.2l.7.7a2 2 0 0 1 .5 1.5v.9a2 2 0 0 1-.5 1.5l-.7.7a2 2 0 0 0-.4 2.2l.7 1.3a2 2 0 0 0 2 1l1-.2a2 2 0 0 1 1.5.4l1 .8a2 2 0 0 0 2.2.3l.8-.3a2 2 0 0 0 1-2.3l-.3-1a2 2 0 0 1 .2-1.5l.5-.9a2 2 0 0 1 1.4-.8l1-.1a2 2 0 0 0 1.4-.8l.8-1.3a2 2 0 0 0-1.6-3.2Z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
             Preferencias
-          </button>
-
-          <button
-            type="button"
-            class="menu-usuario__opcion"
-            role="menuitem"
-            [class.menu-usuario__opcion--activa]="panelAbierto() === 'accesibilidad'"
-            (click)="alternarPanel('accesibilidad')"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 7h.01" />
-              <path d="M9 10h2l.5 9h1l.5-9h2" />
-            </svg>
-            Accesibilidad
           </button>
 
           <button
@@ -120,8 +105,8 @@
         </div>
       }
 
-      @if (panelAbierto(); as pestania) {
-        <div class="panel-flotante" role="dialog" aria-modal="false" aria-label="Panel de {{ pestania }}">
+      @if (panelAbierto()) {
+        <div class="panel-flotante" role="dialog" aria-modal="false" aria-label="Panel de preferencias">
           <app-preferencias-panel (cerrado)="cerrarPanel()" />
         </div>
       }

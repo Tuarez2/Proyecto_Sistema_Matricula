@@ -98,7 +98,7 @@ export class LayoutPrincipalComponent {
   private readonly estadoMenuMovil = signal(false);
   private readonly estadoSidebarContraido = signal(false);
   private readonly estadoMenuUsuario = signal(false);
-  private readonly estadoPanelAbierto = signal<'preferencias' | 'accesibilidad' | null>(null);
+  private readonly estadoPanelAbierto = signal(false);
   private readonly estadoTituloPagina = signal('Inicio');
 
   readonly usuarioActual = this.autenticacionService.usuarioActual;
@@ -201,22 +201,22 @@ export class LayoutPrincipalComponent {
     });
   }
 
-  abrirPanel(pestania: 'preferencias' | 'accesibilidad'): void {
-    this.estadoPanelAbierto.set(pestania);
+  abrirPanel(): void {
+    this.estadoPanelAbierto.set(true);
   }
 
   cerrarPanel(): void {
-    this.estadoPanelAbierto.set(null);
+    this.estadoPanelAbierto.set(false);
   }
 
-  alternarPanel(pestania: 'preferencias' | 'accesibilidad'): void {
-    if (this.panelAbierto() === pestania) {
-      this.estadoPanelAbierto.set(null);
+  alternarPanel(): void {
+    if (this.panelAbierto()) {
+      this.estadoPanelAbierto.set(false);
       this.devolverFocoAlBotonUsuario();
       return;
     }
 
-    this.estadoPanelAbierto.set(pestania);
+    this.estadoPanelAbierto.set(true);
   }
 
   cerrarMenuUsuario(): void {

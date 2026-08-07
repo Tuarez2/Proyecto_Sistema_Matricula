@@ -23,6 +23,13 @@
   font-size: var(--font-size-md);
 }
 
+.panel-preferencias__descripcion {
+  margin: 0;
+  padding: var(--espacio-3) var(--espacio-4) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
 .panel-preferencias__cerrar {
   display: inline-flex;
   align-items: center;
@@ -76,6 +83,12 @@
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text);
+}
+
+.preferencia__descripcion {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .segmentador {

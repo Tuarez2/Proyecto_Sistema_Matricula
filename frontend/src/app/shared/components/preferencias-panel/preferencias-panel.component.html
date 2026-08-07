@@ -13,6 +13,11 @@
     </button>
   </header>
 
+  <p class="panel-preferencias__descripcion">
+    Los cambios se aplican de inmediato a este dispositivo y se conservan al
+    recargar la página.
+  </p>
+
   <div class="panel-preferencias__cuerpo">
     <section class="grupo-preferencia" aria-labelledby="grupo-apariencia">
       <h3 id="grupo-apariencia">Apariencia</h3>
@@ -27,23 +32,6 @@
               [class.segmentador__opcion--activa]="temaPreferido() === opcion.valor"
               [attr.aria-pressed]="temaPreferido() === opcion.valor"
               (click)="seleccionarTema(opcion.valor)"
-            >
-              {{ opcion.etiqueta }}
-            </button>
-          }
-        </div>
-      </div>
-
-      <div class="preferencia">
-        <p class="preferencia__etiqueta">Tamaño de texto</p>
-        <div class="segmentador" role="group" aria-label="Tamaño de texto">
-          @for (opcion of opcionesTamano; track opcion.valor) {
-            <button
-              type="button"
-              class="segmentador__opcion"
-              [class.segmentador__opcion--activa]="tamanoTexto() === opcion.valor"
-              [attr.aria-pressed]="tamanoTexto() === opcion.valor"
-              (click)="seleccionarTamano(opcion.valor)"
             >
               {{ opcion.etiqueta }}
             </button>
@@ -67,27 +55,30 @@
           }
         </div>
       </div>
+    </section>
+
+    <section class="grupo-preferencia" aria-labelledby="grupo-accesibilidad">
+      <h3 id="grupo-accesibilidad">Accesibilidad</h3>
 
       <div class="preferencia">
-        <p class="preferencia__etiqueta">Movimiento</p>
-        <div class="segmentador" role="group" aria-label="Movimiento de la interfaz">
-          @for (opcion of opcionesMovimiento; track opcion.valor) {
+        <p class="preferencia__etiqueta">Tamaño de texto</p>
+        <div class="segmentador" role="group" aria-label="Tamaño de texto">
+          @for (opcion of opcionesTamano; track opcion.valor) {
             <button
               type="button"
               class="segmentador__opcion"
-              [class.segmentador__opcion--activa]="movimiento() === opcion.valor"
-              [attr.aria-pressed]="movimiento() === opcion.valor"
-              (click)="seleccionarMovimiento(opcion.valor)"
+              [class.segmentador__opcion--activa]="tamanoTexto() === opcion.valor"
+              [attr.aria-pressed]="tamanoTexto() === opcion.valor"
+              (click)="seleccionarTamano(opcion.valor)"
             >
               {{ opcion.etiqueta }}
             </button>
           }
         </div>
+        <p class="preferencia__descripcion">
+          Aplica globalmente un tamaño de texto mayor a toda la aplicación.
+        </p>
       </div>
-    </section>
-
-    <section class="grupo-preferencia" aria-labelledby="grupo-accesibilidad">
-      <h3 id="grupo-accesibilidad">Accesibilidad</h3>
 
       <label class="interruptor">
         <input

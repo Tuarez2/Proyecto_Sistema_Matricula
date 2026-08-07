@@ -3,13 +3,11 @@ import { computed, Injectable, signal } from '@angular/core';
 export type TemaPreferido = 'claro' | 'oscuro' | 'sistema';
 export type TamanoTexto = 'normal' | 'grande';
 export type Densidad = 'comoda' | 'compacta';
-export type Movimiento = 'normal' | 'reducido';
 
 export interface EstadoPreferencias {
   tema: TemaPreferido;
   tamanoTexto: TamanoTexto;
   densidad: Densidad;
-  movimiento: Movimiento;
 }
 
 export interface EstadoAccesibilidad {
@@ -21,15 +19,14 @@ export interface EstadoAccesibilidad {
 const CLAVE_TEMA = 'preferencias.apariencia.tema';
 const CLAVE_TAMANO = 'preferencias.apariencia.tamano-texto';
 const CLAVE_DENSIDAD = 'preferencias.apariencia.densidad';
-const CLAVE_MOVIMIENTO = 'preferencias.apariencia.movimiento';
 const CLAVE_CONTRASTE = 'preferencias.accesibilidad.contraste';
 const CLAVE_FOCO = 'preferencias.accesibilidad.foco';
 const CLAVE_MOVIMIENTO_REDUCIDO = 'preferencias.accesibilidad.movimiento-reducido';
+const CLAVE_MOVIMIENTO_LEGADA = 'preferencias.apariencia.movimiento';
 
 const TEMA_POR_DEFECTO: TemaPreferido = 'sistema';
 const TAMANO_POR_DEFECTO: TamanoTexto = 'normal';
 const DENSIDAD_POR_DEFECTO: Densidad = 'comoda';
-const MOVIMIENTO_POR_DEFECTO: Movimiento = 'normal';
 
 @Injectable({
   providedIn: 'root',
@@ -45,9 +42,6 @@ export class PreferenciasService {
     this.preferenciasIniciales.tamanoTexto,
   );
   readonly densidad = signal<Densidad>(this.preferenciasIniciales.densidad);
-  readonly movimiento = signal<Movimiento>(
-    this.preferenciasIniciales.movimiento,
-  );
 
   readonly contrasteReforzado = signal<boolean>(
     this.accesibilidadInicial.contrasteReforzado,
@@ -91,12 +85,6 @@ export class PreferenciasService {
     this.aplicarDensidad();
   }
 
-  establecerMovimiento(movimiento: Movimiento): void {
-    this.movimiento.set(movimiento);
-    this.guardar(CLAVE_MOVIMIENTO, movimiento);
-    this.aplicarMovimiento();
-  }
-
   establecerContrasteReforzado(activado: boolean): void {
     this.contrasteReforzado.set(activado);
     this.guardarBoolean(CLAVE_CONTRASTE, activado);
@@ -119,7 +107,7 @@ export class PreferenciasService {
     this.establecerTema(TEMA_POR_DEFECTO);
     this.establecerTamanoTexto(TAMANO_POR_DEFECTO);
     this.establecerDensidad(DENSIDAD_POR_DEFECTO);
-    this.establecerMovimiento(MOVIMIENTO_POR_DEFECTO);
+    this.eliminarClave(CLAVE_MOVIMIENTO_LEGADA);
   }
 
   restablecerAccesibilidad(): void {
@@ -160,7 +148,6 @@ export class PreferenciasService {
     this.aplicarTema();
     this.aplicarTamanoTexto();
     this.aplicarDensidad();
-    this.aplicarMovimiento();
     this.aplicarContraste();
     this.aplicarFoco();
     this.aplicarMovimientoReducido();
@@ -197,36 +184,39 @@ export class PreferenciasService {
     }
   }
 
-  private aplicarMovimiento(): void {
-    this.aplicarAtributoCondicional(
-      'data-movimiento',
-      this.movimiento() === 'reducido',
-    );
-  }
-
   private aplicarContraste(): void {
     this.aplicarAtributoCondicional(
       'data-contraste',
+      'reforzado',
       this.contrasteReforzado(),
     );
   }
 
   private aplicarFoco(): void {
-    this.aplicarAtributoCondicional('data-foco', this.focoReforzado());
+    this.aplicarAtributoCondicional(
+      'data-foco',
+      'reforzado',
+      this.focoReforzado(),
+    );
   }
 
   private aplicarMovimientoReducido(): void {
     this.aplicarAtributoCondicional(
       'data-movimiento-reducido',
+      'true',
       this.movimientoReducido(),
     );
   }
 
-  private aplicarAtributoCondicional(atributo: string, activado: boolean): void {
+  private aplicarAtributoCondicional(
+    atributo: string,
+    valorActivo: string,
+    activado: boolean,
+  ): void {
     const documento = document.documentElement;
 
     if (activado) {
-      documento.setAttribute(atributo, 'true');
+      documento.setAttribute(atributo, valorActivo);
     } else {
       documento.removeAttribute(atributo);
     }
@@ -244,20 +234,31 @@ export class PreferenciasService {
     this.guardar(clave, valor ? '1' : '0');
   }
 
+  private eliminarClave(clave: string): void {
+    try {
+      window.localStorage.removeItem(clave);
+    } catch {
+      // El almacenamiento puede no estar disponible.
+    }
+  }
+
   private obtenerPreferenciasIniciales(): EstadoPreferencias {
     return {
       tema: this.leerPreferencia(CLAVE_TEMA, TEMA_POR_DEFECTO),
       tamanoTexto: this.leerPreferencia(CLAVE_TAMANO, TAMANO_POR_DEFECTO),
       densidad: this.leerPreferencia(CLAVE_DENSIDAD, DENSIDAD_POR_DEFECTO),
-      movimiento: this.leerPreferencia(CLAVE_MOVIMIENTO, MOVIMIENTO_POR_DEFECTO),
     };
   }
 
   private obtenerAccesibilidadInicial(): EstadoAccesibilidad {
+    const movimientoLegado = this.leer(CLAVE_MOVIMIENTO_LEGADA);
+
     return {
       contrasteReforzado: this.leerBoolean(CLAVE_CONTRASTE),
       focoReforzado: this.leerBoolean(CLAVE_FOCO),
-      movimientoReducido: this.leerBoolean(CLAVE_MOVIMIENTO_REDUCIDO),
+      movimientoReducido:
+        this.leerBoolean(CLAVE_MOVIMIENTO_REDUCIDO) ||
+        movimientoLegado === 'reducido',
     };
   }
 
@@ -301,6 +302,6 @@ export class PreferenciasService {
       return ['comoda', 'compacta'] as T[];
     }
 
-    return ['normal', 'reducido'] as T[];
+    return [] as T[];
   }
 }

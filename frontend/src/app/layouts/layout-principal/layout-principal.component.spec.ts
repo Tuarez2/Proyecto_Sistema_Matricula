@@ -488,7 +488,7 @@ describe('LayoutPrincipalComponent', () => {
   });
 
   it('abrir preferencias muestra el panel', () => {
-    componente.abrirPanel('preferencias');
+    componente.abrirPanel();
     fixture.detectChanges();
 
     expect(obtenerElemento('.panel-flotante')).toBeTruthy();
@@ -496,7 +496,7 @@ describe('LayoutPrincipalComponent', () => {
   });
 
   it('cerrar el panel quita el dialogo', () => {
-    componente.abrirPanel('accesibilidad');
+    componente.abrirPanel();
     fixture.detectChanges();
     expect(obtenerElemento('.panel-flotante')).toBeTruthy();
 
@@ -732,6 +732,43 @@ describe('LayoutPrincipalComponent', () => {
     expect(obtenerElemento('.menu-usuario')).toBeTruthy();
   });
 
+  it('el menu de usuario muestra la opcion Preferencias', () => {
+    abrirMenuUsuario();
+
+    const opciones = obtenerOpcionesMenu();
+
+    expect(opciones.map((opcion) => opcion.textContent?.trim())).toContain(
+      'Preferencias',
+    );
+  });
+
+  it('el menu de usuario no muestra una opcion independiente Accesibilidad', () => {
+    abrirMenuUsuario();
+
+    const opciones = obtenerOpcionesMenu();
+
+    expect(
+      opciones.some((opcion) => opcion.textContent?.trim() === 'Accesibilidad'),
+    ).toBe(false);
+  });
+
+  it('existe una unica opcion de preferencias en el menu', () => {
+    abrirMenuUsuario();
+
+    const opciones = obtenerOpcionesMenu();
+    const preferencias = opciones.filter((opcion) =>
+      opcion.textContent?.includes('Preferencias'),
+    );
+
+    expect(preferencias).toHaveLength(1);
+  });
+
+  it('el sinonimo accesibilidad no aparece como enlace del menu de usuario', () => {
+    abrirMenuUsuario();
+
+    expect(obtenerTexto()).not.toContain('Accesibilidad');
+  });
+
   function abrirMenuUsuario(): void {
     if (!componente.menuUsuarioAbierto()) {
       componente.alternarMenuUsuario();
@@ -749,6 +786,12 @@ describe('LayoutPrincipalComponent', () => {
 
   function obtenerBotonCierre(): HTMLButtonElement | null {
     return obtenerElemento<HTMLButtonElement>('.menu-usuario__opcion--salir');
+  }
+
+  function obtenerOpcionesMenu(): HTMLButtonElement[] {
+    return Array.from(
+      fixture.nativeElement.querySelectorAll('.menu-usuario__opcion'),
+    ) as HTMLButtonElement[];
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {

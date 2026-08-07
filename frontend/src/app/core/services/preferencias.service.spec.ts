@@ -7,7 +7,6 @@ import {
 const CLAVE_TEMA = 'preferencias.apariencia.tema';
 const CLAVE_TAMANO = 'preferencias.apariencia.tamano-texto';
 const CLAVE_DENSIDAD = 'preferencias.apariencia.densidad';
-const CLAVE_MOVIMIENTO = 'preferencias.apariencia.movimiento';
 const CLAVE_CONTRASTE = 'preferencias.accesibilidad.contraste';
 const CLAVE_FOCO = 'preferencias.accesibilidad.foco';
 const CLAVE_MOVIMIENTO_REDUCIDO = 'preferencias.accesibilidad.movimiento-reducido';
@@ -116,38 +115,54 @@ describe('PreferenciasService', () => {
     );
   });
 
-  it('movimiento normal por defecto', () => {
-    expect(servicio.movimiento()).toBe('normal');
+  it('densidad compacta se aplica al documento', () => {
+    servicio.establecerDensidad('compacta');
+
+    expect(servicio.densidad()).toBe('compacta');
+    expect(document.documentElement.getAttribute('data-densidad')).toBe(
+      'compacta',
+    );
   });
 
-  it('establece movimiento reducido', () => {
-    servicio.establecerMovimiento('reducido');
+  it('descarta un tamano de texto invalido y usa el predeterminado', () => {
+    setItemClave(CLAVE_TAMANO, 'enorme');
 
-    expect(servicio.movimiento()).toBe('reducido');
-    expect(document.documentElement.getAttribute('data-movimiento')).toBe(
-      'true',
-    );
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [PreferenciasService],
+    });
+
+    const nuevoServicio = TestBed.inject(PreferenciasService);
+
+    expect(nuevoServicio.tamanoTexto()).toBe('normal');
   });
 
   it('contraste reforzado desactivado por defecto', () => {
     expect(servicio.contrasteReforzado()).toBe(false);
   });
 
-  it('activa contraste reforzado y lo aplica', () => {
+  it('activa contraste reforzado y lo aplica globalmente', () => {
     servicio.establecerContrasteReforzado(true);
 
     expect(servicio.contrasteReforzado()).toBe(true);
     expect(document.documentElement.getAttribute('data-contraste')).toBe(
-      'true',
+      'reforzado',
     );
     expect(window.localStorage.getItem(CLAVE_CONTRASTE)).toBe('1');
   });
 
-  it('foco reforzado se activa', () => {
+  it('desactiva el atributo de contraste cuando se apaga', () => {
+    servicio.establecerContrasteReforzado(true);
+    servicio.establecerContrasteReforzado(false);
+
+    expect(document.documentElement.hasAttribute('data-contraste')).toBe(false);
+  });
+
+  it('foco reforzado se activa y se aplica globalmente', () => {
     servicio.establecerFocoReforzado(true);
 
     expect(servicio.focoReforzado()).toBe(true);
-    expect(document.documentElement.getAttribute('data-foco')).toBe('true');
+    expect(document.documentElement.getAttribute('data-foco')).toBe('reforzado');
   });
 
   it('movimiento reducido por accesibilidad se activa', () => {
@@ -160,18 +175,29 @@ describe('PreferenciasService', () => {
     expect(window.localStorage.getItem(CLAVE_MOVIMIENTO_REDUCIDO)).toBe('1');
   });
 
+  it('migra el movimiento reducido antiguo de apariencia a accesibilidad', () => {
+    setItemClave('preferencias.apariencia.movimiento', 'reducido');
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [PreferenciasService],
+    });
+
+    const nuevoServicio = TestBed.inject(PreferenciasService);
+
+    expect(nuevoServicio.movimientoReducido()).toBe(true);
+  });
+
   it('restablecerPreferencias vuelve a los valores por defecto', () => {
     servicio.establecerTema('oscuro');
     servicio.establecerTamanoTexto('grande');
     servicio.establecerDensidad('compacta');
-    servicio.establecerMovimiento('reducido');
 
     servicio.restablecerPreferencias();
 
     expect(servicio.temaPreferido()).toBe('sistema');
     expect(servicio.tamanoTexto()).toBe('normal');
     expect(servicio.densidad()).toBe('comoda');
-    expect(servicio.movimiento()).toBe('normal');
   });
 
   it('restablecerAccesibilidad apaga las opciones de accesibilidad', () => {
@@ -232,5 +258,9 @@ describe('PreferenciasService', () => {
       configurable: true,
       value: almacenamiento,
     });
+  }
+
+  function setItemClave(clave: string, valor: string): void {
+    window.localStorage.setItem(clave, valor);
   }
 });

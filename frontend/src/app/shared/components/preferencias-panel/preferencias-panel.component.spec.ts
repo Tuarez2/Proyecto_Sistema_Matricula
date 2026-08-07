@@ -55,22 +55,28 @@ describe('PreferenciasPanelComponent', () => {
     expect(preferenciasService.tamanoTexto()).toBe('grande');
   });
 
+  it('la opcion de texto ampliado se aplica globalmente', () => {
+    componente.seleccionarTamano('grande');
+    fixture.detectChanges();
+
+    expect(document.documentElement.getAttribute('data-tamano-texto')).toBe(
+      'grande',
+    );
+  });
+
   it('seleccionar densidad compacta actualiza el servicio', () => {
     componente.seleccionarDensidad('compacta');
 
     expect(preferenciasService.densidad()).toBe('compacta');
   });
 
-  it('seleccionar movimiento reducido actualiza el servicio', () => {
-    componente.seleccionarMovimiento('reducido');
-
-    expect(preferenciasService.movimiento()).toBe('reducido');
-  });
-
   it('alternar contraste reforzado cambia el estado', () => {
     componente.alternarContraste();
 
     expect(preferenciasService.contrasteReforzado()).toBe(true);
+    expect(document.documentElement.getAttribute('data-contraste')).toBe(
+      'reforzado',
+    );
 
     componente.alternarContraste();
 
@@ -87,20 +93,27 @@ describe('PreferenciasPanelComponent', () => {
     componente.alternarMovimientoReducido();
 
     expect(preferenciasService.movimientoReducido()).toBe(true);
+    expect(
+      document.documentElement.getAttribute('data-movimiento-reducido'),
+    ).toBe('true');
   });
 
-  it('restablecerPreferencias restablece apariencia', () => {
+  it('restablecerPreferencias restablece apariencia y accesibilidad', () => {
     componente.seleccionarTema('oscuro');
     componente.seleccionarTamano('grande');
     componente.seleccionarDensidad('compacta');
-    componente.seleccionarMovimiento('reducido');
+    componente.alternarContraste();
+    componente.alternarFoco();
+    componente.alternarMovimientoReducido();
 
     componente.restablecerPreferencias();
 
     expect(preferenciasService.temaPreferido()).toBe('sistema');
     expect(preferenciasService.tamanoTexto()).toBe('normal');
     expect(preferenciasService.densidad()).toBe('comoda');
-    expect(preferenciasService.movimiento()).toBe('normal');
+    expect(preferenciasService.contrasteReforzado()).toBe(false);
+    expect(preferenciasService.focoReforzado()).toBe(false);
+    expect(preferenciasService.movimientoReducido()).toBe(false);
   });
 
   it('existe un boton para restablecer preferencias', () => {
@@ -121,6 +134,47 @@ describe('PreferenciasPanelComponent', () => {
 
   it('incluye opcion de contraste reforzado', () => {
     expect(obtenerTexto()).toContain('Contraste reforzado');
+  });
+
+  it('incluye opcion de reduccion de movimiento', () => {
+    expect(obtenerTexto()).toContain('Reducir movimiento');
+  });
+
+  it('incluye el control de tamano de texto dentro de accesibilidad', () => {
+    const seccionAccesibilidad = fixture.nativeElement.querySelector(
+      '#grupo-accesibilidad',
+    )?.parentElement;
+
+    expect(seccionAccesibilidad?.textContent).toContain('Tamaño de texto');
+    expect(seccionAccesibilidad?.textContent).toContain('Ampliado');
+  });
+
+  it('indica que los cambios se aplican en este dispositivo', () => {
+    expect(obtenerTexto()).toContain('Los cambios se aplican de inmediato');
+  });
+
+  it('los interruptores tienen etiquetas asociadas', () => {
+    const interruptores = fixture.nativeElement.querySelectorAll(
+      '.interruptor input[type="checkbox"]',
+    );
+
+    expect(interruptores.length).toBeGreaterThanOrEqual(3);
+
+    for (const interruptor of Array.from(interruptores)) {
+      const etiqueta = (interruptor as HTMLInputElement).closest('label');
+      const texto = etiqueta?.textContent?.trim();
+
+      expect(texto).toBeTruthy();
+    }
+  });
+
+  it('refleja los valores restaurados desde el servicio', () => {
+    preferenciasService.establecerTamanoTexto('grande');
+    preferenciasService.establecerContrasteReforzado(true);
+    preferenciasService.establecerMovimientoReducido(true);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('Ampliado');
   });
 
   function limpiarAlmacenamiento(): void {

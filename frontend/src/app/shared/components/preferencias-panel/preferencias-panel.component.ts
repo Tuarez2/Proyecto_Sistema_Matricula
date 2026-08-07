@@ -8,7 +8,6 @@ import {
 
 import {
   Densidad,
-  Movimiento,
   PreferenciasService,
   TamanoTexto,
   TemaPreferido,
@@ -34,7 +33,6 @@ export class PreferenciasPanelComponent {
   readonly temaPreferido = this.preferenciasService.temaPreferido;
   readonly tamanoTexto = this.preferenciasService.tamanoTexto;
   readonly densidad = this.preferenciasService.densidad;
-  readonly movimiento = this.preferenciasService.movimiento;
   readonly contrasteReforzado = this.preferenciasService.contrasteReforzado;
   readonly focoReforzado = this.preferenciasService.focoReforzado;
   readonly movimientoReducido = this.preferenciasService.movimientoReducido;
@@ -47,17 +45,12 @@ export class PreferenciasPanelComponent {
 
   readonly opcionesTamano: OpcionSegmentada<TamanoTexto>[] = [
     { valor: 'normal', etiqueta: 'Normal' },
-    { valor: 'grande', etiqueta: 'Grande' },
+    { valor: 'grande', etiqueta: 'Ampliado' },
   ];
 
   readonly opcionesDensidad: OpcionSegmentada<Densidad>[] = [
     { valor: 'comoda', etiqueta: 'Cómoda' },
     { valor: 'compacta', etiqueta: 'Compacta' },
-  ];
-
-  readonly opcionesMovimiento: OpcionSegmentada<Movimiento>[] = [
-    { valor: 'normal', etiqueta: 'Animaciones normales' },
-    { valor: 'reducido', etiqueta: 'Reducir movimiento' },
   ];
 
   seleccionarTema(tema: TemaPreferido): void {
@@ -70,10 +63,6 @@ export class PreferenciasPanelComponent {
 
   seleccionarDensidad(densidad: Densidad): void {
     this.preferenciasService.establecerDensidad(densidad);
-  }
-
-  seleccionarMovimiento(movimiento: Movimiento): void {
-    this.preferenciasService.establecerMovimiento(movimiento);
   }
 
   alternarContraste(): void {

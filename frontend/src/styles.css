@@ -1254,8 +1254,18 @@ tbody tr {
     border-color: var(--color-border-fuerte, var(--color-text-secondary));
   }
 
+  .btn-secondary,
   .estado-badge--neutral {
     border-color: var(--color-text-secondary);
+    color: var(--color-text);
+  }
+
+  a:not(.enlace-navegacion) {
+    text-decoration: underline;
+  }
+
+  .menu-usuario__opcion {
+    color: var(--color-text);
   }
 }
 
@@ -1275,7 +1285,6 @@ tbody tr {
    Movimiento reducido por preferencia del usuario
    ========================================================================== */
 
-:root[data-movimiento="reducido"],
 :root[data-movimiento-reducido="true"] {
   *,
   *::before,
