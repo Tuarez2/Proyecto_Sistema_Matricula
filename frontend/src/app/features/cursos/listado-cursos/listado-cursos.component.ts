@@ -34,6 +34,7 @@ import {
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import type { Asignatura } from '../../asignaturas/models/asignatura.model';
 import { AsignaturasService } from '../../asignaturas/services/asignaturas.service';
@@ -68,7 +69,13 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
 @Component({
   selector: 'app-listado-cursos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    PaginationComponent,
+    ConfirmModalComponent,
+  ],
   templateUrl: './listado-cursos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -90,6 +97,12 @@ export class ListadoCursosComponent implements OnInit {
   private readonly estadoTotalPaginas = signal(1);
   private readonly estadoTotalRegistros = signal(0);
   private readonly estadoCursoProcesando = signal<number | null>(null);
+  private readonly estadoCursoSeleccionado = signal<Curso | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
   private readonly estadoFiltrosAplicados = signal<FiltrosCursos>({});
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
@@ -104,6 +117,11 @@ export class ListadoCursosComponent implements OnInit {
   readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly totalRegistros = this.estadoTotalRegistros.asReadonly();
   readonly cursoProcesando = this.estadoCursoProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
   readonly esAdministrador = computed(
     () =>
       this.autenticacionService.usuarioActual()?.rol?.codigo ===
@@ -185,34 +203,56 @@ export class ListadoCursosComponent implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoCursoSeleccionado.set(curso);
+    this.estadoDialogoTitulo.set('Cancelar curso');
+    this.estadoDialogoMensaje.set(
       `¿Desea cancelar el curso ${this.obtenerNombreAsignatura(curso)} (${curso.paralelo})? Los estudiantes matriculados se conservan, pero no se permitirán matrículas nuevas ni modificaciones.`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarCancelacion(): void {
+    const curso = this.estadoCursoSeleccionado();
+
+    if (!curso) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoCursoProcesando.set(curso.id);
+    this.estadoDialogoProcesando.set(true);
     this.servicio
       .cancelarCurso(curso.id)
       .pipe(
         takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoCursoProcesando.set(null)),
+        finalize(() => {
+          this.estadoCursoProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Curso cancelado correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
           this.cargarCursos();
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoCursoSeleccionado.set(null);
   }
 
   obtenerNombreAsignatura(curso: Curso): string {

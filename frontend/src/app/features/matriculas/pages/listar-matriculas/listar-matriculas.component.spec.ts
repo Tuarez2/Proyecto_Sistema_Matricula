@@ -315,8 +315,6 @@ describe('ListarMatriculasComponent', () => {
   });
 
   it('confirma antes de cambiar estado y actualiza la fila después de respuesta', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     iniciarYCompletar();
     componente.solicitarCambioEstado(
       componente.matriculas()[0],
@@ -324,7 +322,10 @@ describe('ListarMatriculasComponent', () => {
     );
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(matriculasService.cambiarEstadoMatricula).toHaveBeenCalledWith(1, {
       estado: ESTADOS_MATRICULA.retirada,
     });
@@ -335,13 +336,15 @@ describe('ListarMatriculasComponent', () => {
   });
 
   it('no cambia estado si el usuario cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     iniciarYCompletar();
     componente.solicitarCambioEstado(
       componente.matriculas()[0],
       ESTADOS_MATRICULA.anulada,
     );
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(matriculasService.cambiarEstadoMatricula).not.toHaveBeenCalled();
   });
@@ -352,17 +355,16 @@ describe('ListarMatriculasComponent', () => {
     matriculasService.cambiarEstadoMatricula.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     iniciarYCompletar();
     componente.solicitarCambioEstado(
       componente.matriculas()[0],
       ESTADOS_MATRICULA.retirada,
     );
-    componente.solicitarCambioEstado(
-      componente.matriculas()[1],
-      ESTADOS_MATRICULA.anulada,
-    );
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(matriculasService.cambiarEstadoMatricula).toHaveBeenCalledTimes(1);
   });
@@ -387,13 +389,15 @@ describe('ListarMatriculasComponent', () => {
         },
       })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     iniciarYCompletar();
     componente.solicitarCambioEstado(
       componente.matriculas()[0],
       ESTADOS_MATRICULA.retirada,
     );
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe(
       'La transición de estado de la matrícula no está permitida.',

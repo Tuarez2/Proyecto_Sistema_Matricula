@@ -15,6 +15,7 @@ import { EMPTY, Observable, Subject, catchError, finalize, switchMap, tap } from
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
+import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal/confirm-modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { DocenteFilterComponent } from '../../components/docente-filter/docente-filter.component';
 import { DocenteTableComponent } from '../../components/docente-table/docente-table.component';
@@ -34,7 +35,13 @@ const LIMITE_POR_PAGINA = 10;
 @Component({
   selector: 'app-listar-docentes',
   standalone: true,
-  imports: [DocenteFilterComponent, DocenteTableComponent, PaginationComponent, RouterLink],
+  imports: [
+    DocenteFilterComponent,
+    DocenteTableComponent,
+    PaginationComponent,
+    ConfirmModalComponent,
+    RouterLink,
+  ],
   templateUrl: './listar-docentes.component.html',
   styleUrl: './listar-docentes.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,6 +60,12 @@ export class ListarDocentesComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoDocenteProcesando = signal<number | null>(null);
+  private readonly estadoDocenteSeleccionado = signal<Docente | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly docentes = this.estadoDocentes.asReadonly();
@@ -63,6 +76,11 @@ export class ListarDocentesComponent implements OnInit {
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly paginaActual = this.estadoPaginaActual.asReadonly();
   readonly docenteProcesando = this.estadoDocenteProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
   readonly esAdministrador = computed(
     () =>
       this.autenticacionService.usuarioActual()
@@ -128,21 +146,35 @@ export class ListarDocentesComponent implements OnInit {
     }
 
     const accion = docente.activo ? 'inactivar' : 'activar';
-    const confirmado = window.confirm(
+    this.estadoDocenteSeleccionado.set(docente);
+    this.estadoDialogoTitulo.set(
+      docente.activo ? 'Inactivar docente' : 'Activar docente',
+    );
+    this.estadoDialogoMensaje.set(
       `¿Desea ${accion} a ${this.obtenerNombreCompleto(docente)}?`,
     );
+    this.estadoDialogoPeligroso.set(!docente.activo);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarCambioEstado(): void {
+    const docente = this.estadoDocenteSeleccionado();
+
+    if (!docente) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoDocenteProcesando.set(docente.id);
+    this.estadoDialogoProcesando.set(true);
     this.docentesService.cambiarEstadoDocente(docente.id, !docente.activo)
       .pipe(
         takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoDocenteProcesando.set(null)),
+        finalize(() => {
+          this.estadoDocenteProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
@@ -152,12 +184,22 @@ export class ListarDocentesComponent implements OnInit {
                 ? 'Docente inactivado correctamente.'
                 : 'Docente activado correctamente.'),
           );
+          this.estadoDialogoAbierto.set(false);
           this.consultaFiltros$.next({ reiniciarPagina: false });
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoDocenteSeleccionado.set(null);
   }
 
   obtenerNombreCompleto(docente: Docente): string {

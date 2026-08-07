@@ -35,6 +35,7 @@ import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal/confirm-modal.component';
 import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
 import {
   ESTADOS_MATRICULA,
@@ -82,7 +83,7 @@ const CLAVES_FILTROS_MATRICULAS: (keyof FiltrosMatriculas)[] = [
 @Component({
   selector: 'app-listar-matriculas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe, ConfirmModalComponent],
   templateUrl: './listar-matriculas.component.html',
   styleUrl: './listar-matriculas.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -100,6 +101,15 @@ export class ListarMatriculasComponent implements OnInit {
   private readonly estadoTotalMatriculas = signal(0);
   private readonly estadoTotalPaginas = signal(1);
   private readonly estadoMatriculaProcesando = signal<number | null>(null);
+  private readonly estadoMatriculaSeleccionada = signal<{
+    matricula: Matricula;
+    estado: EstadoMatricula;
+  } | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
   private readonly estadoFiltrosAplicados = signal<FiltrosMatriculas>({});
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
@@ -113,6 +123,11 @@ export class ListarMatriculasComponent implements OnInit {
   readonly totalMatriculas = this.estadoTotalMatriculas.asReadonly();
   readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly matriculaProcesando = this.estadoMatriculaProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
   readonly filtrosActivos = computed(() =>
     this.contarFiltros(this.estadoFiltrosAplicados()),
   );
@@ -215,23 +230,40 @@ export class ListarMatriculasComponent implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoMatriculaSeleccionada.set({
+      matricula,
+      estado: estadoSiguiente,
+    });
+    this.estadoDialogoTitulo.set(
+      `Cambiar matrícula a ${this.obtenerEtiquetaEstado(estadoSiguiente)}`,
+    );
+    this.estadoDialogoMensaje.set(
       `¿Desea cambiar la matrícula ${matricula.id} a ${this.obtenerEtiquetaEstado(estadoSiguiente)}?`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarCambio(): void {
+    const seleccion = this.estadoMatriculaSeleccionada();
+
+    if (!seleccion) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
-    this.estadoMatriculaProcesando.set(matricula.id);
-    this.matriculasService.cambiarEstadoMatricula(matricula.id, {
-      estado: estadoSiguiente,
+    this.estadoMatriculaProcesando.set(seleccion.matricula.id);
+    this.estadoDialogoProcesando.set(true);
+    this.matriculasService.cambiarEstadoMatricula(seleccion.matricula.id, {
+      estado: seleccion.estado,
     })
       .pipe(
         takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoMatriculaProcesando.set(null)),
+        finalize(() => {
+          this.estadoMatriculaProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
@@ -241,11 +273,21 @@ export class ListarMatriculasComponent implements OnInit {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Estado de matrícula actualizado correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoMatriculaSeleccionada.set(null);
   }
 
   obtenerNombreEstudiante(matricula: Matricula): string {

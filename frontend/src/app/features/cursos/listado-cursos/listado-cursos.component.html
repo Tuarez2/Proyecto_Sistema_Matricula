@@ -182,3 +182,13 @@
     (pageChange)="cambiarPagina($event)"
   />
 </section>
+
+<app-confirm-modal
+  [oAbierto]="dialogoAbierto()"
+  [titulo]="dialogoTitulo()"
+  [mensaje]="dialogoMensaje()"
+  [peligroso]="dialogoPeligroso()"
+  [procesando]="dialogoProcesando()"
+  (confirmado)="confirmarCancelacion()"
+  (cancelado)="cerrarDialogo()"
+/>

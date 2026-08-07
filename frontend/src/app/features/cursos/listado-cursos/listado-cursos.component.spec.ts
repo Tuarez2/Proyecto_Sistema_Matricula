@@ -462,23 +462,27 @@ describe('ListadoCursosComponent', () => {
   });
 
   it('confirma antes de cancelar un curso y recarga el listado', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.cancelarCurso(componente.cursos()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(cursosService.cancelarCurso).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Curso cancelado correctamente.');
     expect(cursosService.listar).toHaveBeenCalledTimes(2);
   });
 
   it('no cancela si se cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.cancelarCurso(componente.cursos()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(cursosService.cancelarCurso).not.toHaveBeenCalled();
   });
@@ -490,11 +494,13 @@ describe('ListadoCursosComponent', () => {
     cursosService.cancelarCurso.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cancelarCurso(componente.cursos()[0]);
-    componente.cancelarCurso(componente.cursos()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(cursosService.cancelarCurso).toHaveBeenCalledTimes(1);
   });
@@ -512,10 +518,12 @@ describe('ListadoCursosComponent', () => {
         }),
       ),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cancelarCurso(componente.cursos()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe(
       'Ya existe un curso con el mismo período, asignatura y paralelo.',

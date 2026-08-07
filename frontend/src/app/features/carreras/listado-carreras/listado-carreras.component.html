@@ -176,4 +176,14 @@
     [deshabilitado]="cargando()"
     (pageChange)="cambiarPagina($event)"
   />
+
+  <app-confirm-modal
+    [oAbierto]="dialogoAbierto()"
+    [titulo]="dialogoTitulo()"
+    [mensaje]="dialogoMensaje()"
+    [peligroso]="dialogoPeligroso()"
+    [procesando]="dialogoProcesando()"
+    (confirmado)="confirmarInactivacion()"
+    (cancelado)="cerrarDialogo()"
+  />
 </section>

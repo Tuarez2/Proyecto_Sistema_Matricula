@@ -36,6 +36,7 @@ import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import { FacultadesService } from '../../facultades/services/facultades.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type { Facultad } from '../../facultades/models/facultad.model';
 import type {
@@ -62,7 +63,14 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
 @Component({
   selector: 'app-listado-carreras',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    PaginationComponent,
+    ConfirmModalComponent,
+    FechaPipe,
+  ],
   templateUrl: './listado-carreras.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -82,6 +90,12 @@ export class ListadoCarrerasComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoCarreraProcesando = signal<number | null>(null);
+  private readonly estadoCarreraSeleccionado = signal<Carrera | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly carreras = this.estadoCarreras.asReadonly();
@@ -94,6 +108,11 @@ export class ListadoCarrerasComponent implements OnInit {
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly paginaActual = this.estadoPaginaActual.asReadonly();
   readonly carreraProcesando = this.estadoCarreraProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
   readonly cargando = computed(
     () => this.cargandoCarreras() || this.cargandoFacultades(),
   );
@@ -203,33 +222,55 @@ export class ListadoCarrerasComponent implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoCarreraSeleccionado.set(carrera);
+    this.estadoDialogoTitulo.set('Inactivar carrera');
+    this.estadoDialogoMensaje.set(
       `¿Desea inactivar la carrera ${carrera.nombre}?`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarInactivacion(): void {
+    const carrera = this.estadoCarreraSeleccionado();
+
+    if (!carrera) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoCarreraProcesando.set(carrera.id);
+    this.estadoDialogoProcesando.set(true);
     this.servicio.inactivarCarrera(carrera.id)
       .pipe(
         takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoCarreraProcesando.set(null)),
+        finalize(() => {
+          this.estadoCarreraProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Carrera inactivada correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
           this.cargarCarreras();
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoCarreraSeleccionado.set(null);
   }
 
   obtenerEtiquetaEstado(carrera: Carrera): string {

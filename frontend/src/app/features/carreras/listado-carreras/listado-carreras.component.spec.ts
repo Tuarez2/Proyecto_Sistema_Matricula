@@ -332,13 +332,15 @@ describe('ListadoCarrerasComponent', () => {
   });
 
   it('confirma antes de inactivar una carrera y recarga la página actual', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.inactivarCarrera(componente.carreras()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(carrerasService.inactivarCarrera).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Carrera inactivada correctamente.');
     expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(2);
@@ -349,10 +351,12 @@ describe('ListadoCarrerasComponent', () => {
   });
 
   it('no inactiva si se cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.inactivarCarrera(componente.carreras()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(carrerasService.inactivarCarrera).not.toHaveBeenCalled();
   });
@@ -363,11 +367,13 @@ describe('ListadoCarrerasComponent', () => {
     carrerasService.inactivarCarrera.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarCarrera(componente.carreras()[0]);
-    componente.inactivarCarrera(componente.carreras()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(carrerasService.inactivarCarrera).toHaveBeenCalledTimes(1);
   });
@@ -383,10 +389,12 @@ describe('ListadoCarrerasComponent', () => {
         },
       })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarCarrera(componente.carreras()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe('La carrera tiene relaciones activas.');
   });

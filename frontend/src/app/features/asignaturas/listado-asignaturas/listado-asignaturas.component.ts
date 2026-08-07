@@ -34,6 +34,7 @@ import {
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type {
@@ -67,6 +68,7 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
     RouterLink,
     PaginationComponent,
     FechaPipe,
+    ConfirmModalComponent,
   ],
   templateUrl: './listado-asignaturas.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,6 +86,12 @@ export class ListadoAsignaturasComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoAsignaturaProcesando = signal<number | null>(null);
+  private readonly estadoAsignaturaSeleccionado = signal<Asignatura | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly asignaturas = this.estadoAsignaturas.asReadonly();
@@ -94,6 +102,11 @@ export class ListadoAsignaturasComponent implements OnInit {
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly paginaActual = this.estadoPaginaActual.asReadonly();
   readonly asignaturaProcesando = this.estadoAsignaturaProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
   readonly esAdministrador = computed(
     () =>
       this.autenticacionService.usuarioActual()?.rol?.codigo ===
@@ -180,34 +193,56 @@ export class ListadoAsignaturasComponent implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoAsignaturaSeleccionado.set(asignatura);
+    this.estadoDialogoTitulo.set('Inactivar asignatura');
+    this.estadoDialogoMensaje.set(
       `¿Desea inactivar la asignatura ${asignatura.nombre}?`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarInactivacion(): void {
+    const asignatura = this.estadoAsignaturaSeleccionado();
+
+    if (!asignatura) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoAsignaturaProcesando.set(asignatura.id);
+    this.estadoDialogoProcesando.set(true);
     this.servicio
       .inactivarAsignatura(asignatura.id)
       .pipe(
         takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoAsignaturaProcesando.set(null)),
+        finalize(() => {
+          this.estadoAsignaturaProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Asignatura inactivada correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
           this.consultaFiltros$.next({ reiniciarPagina: false });
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoAsignaturaSeleccionado.set(null);
   }
 
   obtenerEtiquetaEstado(asignatura: Asignatura): string {

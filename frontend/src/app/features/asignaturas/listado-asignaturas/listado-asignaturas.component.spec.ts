@@ -318,13 +318,14 @@ describe('ListadoAsignaturasComponent', () => {
   });
 
   it('confirma antes de inactivar una asignatura y recarga la página actual', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.inactivarAsignatura(componente.asignaturas()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(asignaturasService.inactivarAsignatura).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Asignatura inactivada correctamente.');
     expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(2);
@@ -335,10 +336,12 @@ describe('ListadoAsignaturasComponent', () => {
   });
 
   it('no inactiva si se cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.inactivarAsignatura(componente.asignaturas()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(asignaturasService.inactivarAsignatura).not.toHaveBeenCalled();
   });
@@ -350,11 +353,13 @@ describe('ListadoAsignaturasComponent', () => {
     asignaturasService.inactivarAsignatura.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarAsignatura(componente.asignaturas()[0]);
-    componente.inactivarAsignatura(componente.asignaturas()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(asignaturasService.inactivarAsignatura).toHaveBeenCalledTimes(1);
   });
@@ -372,10 +377,12 @@ describe('ListadoAsignaturasComponent', () => {
         }),
       ),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarAsignatura(componente.asignaturas()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe(
       'El código de asignatura ya está registrado.',

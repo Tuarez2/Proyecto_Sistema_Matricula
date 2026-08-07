@@ -35,6 +35,7 @@ import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type {
   Facultad,
@@ -59,7 +60,7 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
 @Component({
   selector: 'app-listado-facultades',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, ConfirmModalComponent, FechaPipe],
   templateUrl: './listado-facultades.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -76,6 +77,12 @@ export class ListadoFacultadesComponent implements OnInit {
   private readonly estadoTotalFacultades = signal(0);
   private readonly estadoTotalPaginas = signal(1);
   private readonly estadoFacultadProcesando = signal<number | null>(null);
+  private readonly estadoFacultadSeleccionada = signal<Facultad | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
   private readonly estadoFiltrosAplicados = signal<FiltrosFacultades>({});
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
@@ -88,6 +95,11 @@ export class ListadoFacultadesComponent implements OnInit {
   readonly totalFacultades = this.estadoTotalFacultades.asReadonly();
   readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly facultadProcesando = this.estadoFacultadProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
   readonly filtrosActivos = computed(() =>
     this.contarFiltros(this.estadoFiltrosAplicados()),
   );
@@ -165,21 +177,38 @@ export class ListadoFacultadesComponent implements OnInit {
 
     const activar = !facultad.activo;
     const accion = activar ? 'activar' : 'desactivar';
-    const confirmado = window.confirm(
+
+    this.estadoFacultadSeleccionada.set(facultad);
+    this.estadoDialogoTitulo.set(
+      activar ? 'Activar facultad' : 'Desactivar facultad',
+    );
+    this.estadoDialogoMensaje.set(
       `¿Desea ${accion} la facultad ${facultad.nombre}?`,
     );
+    this.estadoDialogoPeligroso.set(!activar);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarCambioEstado(): void {
+    const facultad = this.estadoFacultadSeleccionada();
+
+    if (!facultad) {
       return;
     }
+
+    const activar = !facultad.activo;
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoFacultadProcesando.set(facultad.id);
+    this.estadoDialogoProcesando.set(true);
     this.servicio.cambiarEstadoFacultad(facultad.id, { activo: activar })
       .pipe(
         takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoFacultadProcesando.set(null)),
+        finalize(() => {
+          this.estadoFacultadProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
@@ -189,11 +218,21 @@ export class ListadoFacultadesComponent implements OnInit {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Estado de facultad actualizado correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoFacultadSeleccionada.set(null);
   }
 
   obtenerEtiquetaEstado(facultad: Facultad): string {

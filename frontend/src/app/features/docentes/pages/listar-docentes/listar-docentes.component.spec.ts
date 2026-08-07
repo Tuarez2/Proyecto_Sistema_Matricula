@@ -358,13 +358,15 @@ describe('ListarDocentesComponent', () => {
   });
 
   it('confirma antes de inactivar y recarga la página actual', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.cambiarEstadoDocente(componente.docentes()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledWith(1, false);
     expect(obtenerTexto()).toContain('Operación completada.');
     expect(docentesService.listarDocentes).toHaveBeenCalledTimes(2);
@@ -378,19 +380,24 @@ describe('ListarDocentesComponent', () => {
     docentesService.cambiarEstadoDocente.mockReturnValueOnce(
       respuestaObservable(crearRespuestaDocente({ activo: true })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cambiarEstadoDocente(crearDocente({ id: 3, activo: false }));
+    fixture.detectChanges();
+
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledWith(3, true);
   });
 
   it('no cambia estado si el usuario cancela la confirmacion', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.cambiarEstadoDocente(componente.docentes()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(docentesService.cambiarEstadoDocente).not.toHaveBeenCalled();
   });
@@ -401,11 +408,13 @@ describe('ListarDocentesComponent', () => {
     docentesService.cambiarEstadoDocente.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cambiarEstadoDocente(componente.docentes()[0]);
-    componente.cambiarEstadoDocente(componente.docentes()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledTimes(1);
   });
@@ -443,10 +452,13 @@ describe('ListarDocentesComponent', () => {
     docentesService.cambiarEstadoDocente.mockReturnValueOnce(
       errorObservable(new HttpErrorResponse({ status: 403 })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cambiarEstadoDocente(componente.docentes()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe(
       'No tiene permisos para gestionar docentes.',

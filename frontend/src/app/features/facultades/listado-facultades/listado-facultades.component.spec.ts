@@ -209,13 +209,14 @@ describe('ListadoFacultadesComponent', () => {
   });
 
   it('confirma antes de cambiar estado y actualiza la fila', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     iniciarYCompletar();
     componente.cambiarEstado(componente.facultades()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(facultadesService.cambiarEstadoFacultad).toHaveBeenCalledWith(1, {
       activo: false,
     });
@@ -226,10 +227,12 @@ describe('ListadoFacultadesComponent', () => {
   });
 
   it('no cambia estado si se cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     iniciarYCompletar();
     componente.cambiarEstado(componente.facultades()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(facultadesService.cambiarEstadoFacultad).not.toHaveBeenCalled();
   });
@@ -240,11 +243,13 @@ describe('ListadoFacultadesComponent', () => {
     facultadesService.cambiarEstadoFacultad.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     iniciarYCompletar();
     componente.cambiarEstado(componente.facultades()[0]);
-    componente.cambiarEstado(componente.facultades()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(facultadesService.cambiarEstadoFacultad).toHaveBeenCalledTimes(1);
   });
@@ -260,10 +265,12 @@ describe('ListadoFacultadesComponent', () => {
         },
       })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     iniciarYCompletar();
     componente.cambiarEstado(componente.facultades()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe(
       'No puede desactivar una facultad con carreras activas.',

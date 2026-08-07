@@ -36,6 +36,7 @@ import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal/confirm-modal.component';
 import type { Carrera } from '../../../carreras/models/carrera.model';
 import { CarrerasService } from '../../../carreras/services/carreras.service';
 import {
@@ -67,7 +68,13 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
 @Component({
   selector: 'app-listar-estudiantes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    PaginationComponent,
+    ConfirmModalComponent,
+  ],
   templateUrl: './listar-estudiantes.component.html',
   styleUrl: './listar-estudiantes.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -87,6 +94,14 @@ export class ListarEstudiantesComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoEstudianteProcesando = signal<number | null>(null);
+  private readonly estadoEstudianteSeleccionado = signal<Estudiante | null>(
+    null,
+  );
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_ACADEMICOS_ESTUDIANTE = ESTADOS_ACADEMICOS_ESTUDIANTE;
@@ -99,6 +114,11 @@ export class ListarEstudiantesComponent implements OnInit {
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly paginaActual = this.estadoPaginaActual.asReadonly();
   readonly estudianteProcesando = this.estadoEstudianteProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
   readonly esAdministrador = computed(
     () =>
       this.autenticacionService.usuarioActual()
@@ -183,39 +203,61 @@ export class ListarEstudiantesComponent implements OnInit {
   inactivarEstudiante(estudiante: Estudiante): void {
     if (
       !this.esAdministrador() ||
-      estudiante.estado_academico === ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO ||
-      this.estudianteProcesando() !== null
+      estudiante.estado_academico === ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO
     ) {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoEstudianteSeleccionado.set(estudiante);
+    this.estadoDialogoTitulo.set('Inactivar estudiante');
+    this.estadoDialogoMensaje.set(
       `¿Desea inactivar a ${this.obtenerNombreCompleto(estudiante)}?`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarInactivacion(): void {
+    const estudiante = this.estadoEstudianteSeleccionado();
+
+    if (!estudiante) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoEstudianteProcesando.set(estudiante.id);
-    this.estudiantesService.cambiarEstadoEstudiante(estudiante.id)
+    this.estadoDialogoProcesando.set(true);
+    this.estudiantesService
+      .cambiarEstadoEstudiante(estudiante.id)
       .pipe(
         takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoEstudianteProcesando.set(null)),
+        finalize(() => {
+          this.estadoEstudianteProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Estudiante inactivado correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
           this.consultaFiltros$.next({ reiniciarPagina: false });
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoEstudianteSeleccionado.set(null);
   }
 
   obtenerNombreCompleto(estudiante: Estudiante): string {

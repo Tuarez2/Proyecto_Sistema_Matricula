@@ -19,6 +19,7 @@ import { finalize } from 'rxjs';
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import type { Asignatura } from '../../asignaturas/models/asignatura.model';
 import { AsignaturasService } from '../../asignaturas/services/asignaturas.service';
@@ -42,7 +43,7 @@ const LIMITE_POR_PAGINA = 100;
 @Component({
   selector: 'app-gestion-malla',
   standalone: true,
-  imports: [ReactiveFormsModule, PaginationComponent],
+  imports: [ReactiveFormsModule, PaginationComponent, ConfirmModalComponent],
   templateUrl: './gestion-malla.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -70,6 +71,13 @@ export class GestionMallaComponent implements OnInit {
   private readonly estadoProcesando = signal<string | null>(null);
   private readonly estadoRelacionEnEdicion =
     signal<RelacionEnEdicion | null>(null);
+  private readonly estadoAsignaturaMallaSeleccionada =
+    signal<Asignatura | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
 
   readonly carreras = this.estadoCarreras.asReadonly();
   readonly catalogos = this.estadoCatalogoAsignaturas.asReadonly();
@@ -85,6 +93,11 @@ export class GestionMallaComponent implements OnInit {
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly procesando = this.estadoProcesando.asReadonly();
   readonly relacionEnEdicion = this.estadoRelacionEnEdicion.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
 
   readonly esAdministrador = computed(
     () =>
@@ -346,13 +359,22 @@ export class GestionMallaComponent implements OnInit {
     }
 
     const nombreCarrera = this.estadoCarreraMalla()?.nombre ?? '';
-    const confirmado = window.confirm(
+    this.estadoAsignaturaMallaSeleccionada.set(asignatura);
+    this.estadoDialogoTitulo.set('Quitar asignatura');
+    this.estadoDialogoMensaje.set(
       `¿Desea quitar la asignatura ${asignatura.nombre} de la carrera `
         + `${nombreCarrera}? Esta acción solo elimina la relación; no borra `
         + 'la asignatura del catálogo.',
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarQuitarAsignatura(): void {
+    const asignatura = this.estadoAsignaturaMallaSeleccionada();
+    const idCarrera = this.estadoCarreraSeleccionada();
+
+    if (!asignatura || !idCarrera) {
       return;
     }
 
@@ -364,16 +386,21 @@ export class GestionMallaComponent implements OnInit {
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoProcesando.set('quitar');
+    this.estadoDialogoProcesando.set(true);
     this.servicio.quitarAsignatura(idAsignacion)
       .pipe(
         takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoProcesando.set(null)),
+        finalize(() => {
+          this.estadoProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Asignatura quitada correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
           this.recargarMallaActual();
         },
         error: (error: unknown) => {
@@ -382,6 +409,15 @@ export class GestionMallaComponent implements OnInit {
           );
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoAsignaturaMallaSeleccionada.set(null);
   }
 
   estaEditando(asignatura: Asignatura): boolean {

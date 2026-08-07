@@ -354,13 +354,15 @@ describe('ListarEstudiantesComponent', () => {
   });
 
   it('confirma antes de inactivar y recarga la página actual', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.inactivarEstudiante(componente.estudiantes()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(estudiantesService.cambiarEstadoEstudiante).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Estudiante inactivado correctamente.');
     expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(2);
@@ -371,10 +373,12 @@ describe('ListarEstudiantesComponent', () => {
   });
 
   it('no inactiva si el usuario cancela la confirmacion', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.inactivarEstudiante(componente.estudiantes()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(estudiantesService.cambiarEstadoEstudiante).not.toHaveBeenCalled();
   });
@@ -385,11 +389,13 @@ describe('ListarEstudiantesComponent', () => {
     estudiantesService.cambiarEstadoEstudiante.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarEstudiante(componente.estudiantes()[0]);
-    componente.inactivarEstudiante(componente.estudiantes()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(estudiantesService.cambiarEstadoEstudiante).toHaveBeenCalledTimes(1);
   });
