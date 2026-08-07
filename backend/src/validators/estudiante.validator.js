@@ -1,11 +1,19 @@
 import { body, query } from 'express-validator';
 
-import { ACADEMIC_STATUS } from '../constants/domain.constants.js';
+import { ACADEMIC_STATUS, EDAD_MINIMA_ESTUDIANTE } from '../constants/domain.constants.js';
 import {
   validarCamposPermitidos,
   validarFiltrosPermitidos,
   validarIdParam
 } from './common.validator.js';
+import {
+  reglaCorreoOpcional,
+  reglaFechaNacimientoOpcional,
+  reglaIdentificacionOpcional,
+  reglaNombreOpcional,
+  reglaTelefonoOpcional,
+  reglaTextoOpcional
+} from './reglasComunes.js';
 
 const camposCursosDisponibles = ['periodo_id'];
 
@@ -37,13 +45,13 @@ const camposListado = [
 
 const reglas = [
   body('carrera_id').optional().isInt({ min: 1 }).withMessage('La carrera debe ser valida.').toInt(),
-  body('numero_matricula').optional().isLength({ min: 1, max: 30 }).withMessage('El numero de matricula es invalido.'),
-  body('identificacion').optional().isLength({ min: 1, max: 20 }).withMessage('La identificacion es invalida.'),
-  body('nombres').optional().isLength({ min: 1, max: 100 }).withMessage('Los nombres son invalidos.'),
-  body('apellidos').optional().isLength({ min: 1, max: 100 }).withMessage('Los apellidos son invalidos.'),
-  body('correo').optional().isEmail().withMessage('El correo debe tener un formato valido.').isLength({ max: 150 }),
-  body('telefono').optional({ nullable: true }).isLength({ max: 20 }).withMessage('El telefono es invalido.'),
-  body('fecha_nacimiento').optional().isISO8601().withMessage('La fecha de nacimiento debe ser valida.'),
+  reglaTextoOpcional('numero_matricula', 'El numero de matricula', { max: 30 }),
+  reglaIdentificacionOpcional(),
+  reglaNombreOpcional('nombres', 'Los nombres'),
+  reglaNombreOpcional('apellidos', 'Los apellidos'),
+  reglaCorreoOpcional(),
+  reglaTelefonoOpcional(),
+  reglaFechaNacimientoOpcional({ edadMinima: EDAD_MINIMA_ESTUDIANTE }),
   body('estado_academico')
     .optional()
     .isIn(Object.values(ACADEMIC_STATUS))

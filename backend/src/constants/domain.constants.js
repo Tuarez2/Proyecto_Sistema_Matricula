@@ -44,3 +44,13 @@ export const ROLE_CODES = Object.freeze({
   STUDENT: 'ESTUDIANTE',
   TEACHER: 'DOCENTE'
 });
+
+export const EDAD_MINIMA_ESTUDIANTE = 15;
+
+export const EDAD_MINIMA_DOCENTE = 22;
+
+export const IDENTIFICACION_PATTERN = /^(?=.*\d)[A-Za-z0-9-]{5,20}$/;
+
+export const TELEFONO_PATTERN = /^(?=.*\d)\+?[0-9\s()-]{7,20}$/;
+
+export const NOMBRES_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M}\s'.-]*$/u;
