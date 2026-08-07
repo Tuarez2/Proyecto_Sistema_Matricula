@@ -16,7 +16,7 @@
   <form
     class="form-card"
     [formGroup]="formularioFiltros"
-    (ngSubmit)="buscarMatriculas()"
+    (ngSubmit)="impedirEnvio($event)"
     novalidate
   >
     <div class="form-grid">
@@ -94,9 +94,6 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary" [disabled]="cargandoMatriculas()">
-        Buscar
-      </button>
       <button
         type="button"
         class="btn btn-neutral"
@@ -107,6 +104,10 @@
       </button>
     </div>
   </form>
+
+  <p class="filtros-activos" role="status" aria-live="polite">
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
 
   @if (cargandoMatriculas()) {
     <div class="loading" role="status" aria-live="polite">
@@ -124,9 +125,22 @@
   }
 
   @if (!cargandoMatriculas() && !mensajeError() && matriculas().length === 0) {
-<div class="empty-state">
-      <h2>No se encontraron matrículas.</h2>
-      <p>Ajuste los filtros de búsqueda o registre una nueva matrícula.</p>
+    <div class="empty-state">
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron matrículas con los filtros aplicados.</h2>
+        <div class="empty-actions">
+          <button
+            type="button"
+            class="btn btn-neutral"
+            (click)="limpiarFiltros()"
+          >
+            Limpiar filtros
+          </button>
+        </div>
+      } @else {
+        <h2>No se encontraron matrículas.</h2>
+        <p>Ajuste los filtros de búsqueda o registre una nueva matrícula.</p>
+      }
     </div>
   }
 

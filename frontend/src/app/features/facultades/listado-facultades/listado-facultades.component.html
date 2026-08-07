@@ -11,7 +11,7 @@
     }
   </header>
 
-  <form class="form-card" [formGroup]="filtros" (ngSubmit)="buscarFacultades()" novalidate>
+  <form class="form-card" [formGroup]="filtros" (ngSubmit)="impedirEnvio($event)" novalidate>
     <div class="form-grid">
       <div class="form-field">
         <label for="codigo">Código</label>
@@ -46,12 +46,15 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" [disabled]="cargando()">Buscar</button>
-      <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+      <button type="button" (click)="limpiarFiltros()">
         Limpiar filtros
       </button>
     </div>
   </form>
+
+  <p class="filtros-activos" role="status" aria-live="polite">
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
 
   @if (cargando()) {
     <div class="loading" role="status" aria-live="polite">
@@ -70,13 +73,23 @@
 
   @if (!cargando() && !mensajeError() && facultades().length === 0) {
     <div class="empty-state">
-      <span class="empty-icon" aria-hidden="true">🏛️</span>
-      <h2>No se encontraron facultades</h2>
-      <p>No hay facultades registradas que coincidan con la búsqueda.</p>
-      @if (esAdministrador()) {
+      @if (filtrosActivos() > 0) {
+        <span class="empty-icon" aria-hidden="true">🏛️</span>
+        <h2>No se encontraron facultades con los filtros aplicados.</h2>
         <div class="empty-actions">
-          <a routerLink="/facultades/crear" class="btn btn-primary">Nueva facultad</a>
+          <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
         </div>
+      } @else {
+        <span class="empty-icon" aria-hidden="true">🏛️</span>
+        <h2>No se encontraron facultades</h2>
+        <p>No hay facultades registradas que coincidan con la búsqueda.</p>
+        @if (esAdministrador()) {
+          <div class="empty-actions">
+            <a routerLink="/facultades/crear" class="btn btn-primary">Nueva facultad</a>
+          </div>
+        }
       }
     </div>
   }

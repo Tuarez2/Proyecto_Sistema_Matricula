@@ -382,10 +382,75 @@ describe('ListadoAsignaturasComponent', () => {
     );
   });
 
+  it('la busqueda por texto usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      asignaturasService.listarAsignaturas.mockClear();
+
+      componente.filtros.controls.nombre.setValue('Prog');
+      vi.advanceTimersByTime(100);
+      expect(asignaturasService.listarAsignaturas).not.toHaveBeenCalled();
+
+      componente.filtros.controls.nombre.setValue('Programación');
+      vi.advanceTimersByTime(400);
+
+      expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        nombre: 'Programación',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('al cambiar el filtro activo consulta de inmediato', () => {
+    crearComponente();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.filtros.controls.activo.setValue('false');
+
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      activo: false,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('cuenta los filtros activos', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtros.controls.activo.setValue('false');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListadoAsignaturasComponent);
     componente = fixture.componentInstance;
     fixture.detectChanges();
+  }
+
+  function obtenerUltimosFiltros(): FiltrosAsignaturas | undefined {
+    const llamadas = asignaturasService.listarAsignaturas.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
   }
 
   function obtenerTexto(): string {

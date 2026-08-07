@@ -37,25 +37,19 @@ describe('ListarMatriculasComponent', () => {
   let componente: ListarMatriculasComponent;
   let matriculasService: MatriculasServiceMock;
   let usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
+  let solicitudesMatriculas: Subject<RespuestaListadoMatriculas>[];
 
   beforeEach(async () => {
+    solicitudesMatriculas = [];
     usuarioActual = signal<UsuarioAutenticado | null>(
       crearUsuario(CODIGOS_ROL.ADMIN),
     );
     matriculasService = {
-      listarMatriculas: vi.fn(() =>
-        respuestaObservable(crearRespuestaListado([
-          crearMatricula({ id: 1 }),
-          crearMatricula({
-            id: 2,
-            estudiante: {
-              ...crearMatricula().estudiante!,
-              nombres: 'Luis',
-              identificacion: '222',
-            },
-          }),
-        ])),
-      ),
+      listarMatriculas: vi.fn(() => {
+        const solicitud = new Subject<RespuestaListadoMatriculas>();
+        solicitudesMatriculas.push(solicitud);
+        return solicitud.asObservable();
+      }),
       cambiarEstadoMatricula: vi.fn(() =>
         respuestaObservable(crearRespuestaCambioEstado({
           estado: ESTADOS_MATRICULA.retirada,
@@ -81,40 +75,95 @@ describe('ListarMatriculasComponent', () => {
     }).compileComponents();
   });
 
-  it('carga matrículas al iniciar', () => {
+  it('crea el componente', () => {
     crearComponente();
 
-    expect(matriculasService.listarMatriculas).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
+    expect(componente).toBeTruthy();
+  });
+
+  it('consulta matrículas al iniciar', () => {
+    crearComponente();
+
+    expect(matriculasService.listarMatriculas).toHaveBeenCalledTimes(1);
+  });
+
+  it('usa pagina 1 al iniciar', () => {
+    iniciarYCompletar();
+
+    expect(obtenerUltimosFiltros()?.page).toBe(1);
+  });
+
+  it('usa limite 10 al iniciar', () => {
+    iniciarYCompletar();
+
+    expect(obtenerUltimosFiltros()?.limit).toBe(10);
+  });
+
+  it('el formulario inicia vacio', () => {
+    crearComponente();
+
+    expect(componente.formularioFiltros.getRawValue()).toEqual({
+      estudiante_id: '',
+      curso_id: '',
+      periodo_id: '',
+      asignatura_id: '',
+      carrera_id: '',
+      estado: '',
+      fecha_desde: '',
+      fecha_hasta: '',
     });
+  });
+
+  it('carga matrículas al iniciar', () => {
+    iniciarYCompletar(crearRespuestaListado([
+      crearMatricula({ id: 1 }),
+      crearMatricula({
+        id: 2,
+        estudiante: {
+          ...crearMatricula().estudiante!,
+          nombres: 'Luis',
+          identificacion: '222',
+        },
+      }),
+    ]));
+
     expect(obtenerTexto()).toContain('Ana Vera');
     expect(obtenerTexto()).toContain('Luis Vera');
     expect(obtenerTexto()).toContain('MAT101 - Matemática I');
   });
 
   it('muestra estado vacío', () => {
-    matriculasService.listarMatriculas.mockReturnValueOnce(
-      respuestaObservable(crearRespuestaListado([])),
-    );
-
-    crearComponente();
+    iniciarYCompletar(crearRespuestaListado([]));
 
     expect(obtenerTexto()).toContain('No se encontraron matrículas.');
   });
 
-  it('muestra error de API', () => {
-    matriculasService.listarMatriculas.mockReturnValueOnce(
-      errorObservable(new HttpErrorResponse({ status: 0 })),
-    );
+  it('muestra estado vacío con filtros aplicados y botón limpiar', () => {
+    iniciarYCompletar(crearRespuestaListado([]));
 
+    componente.formularioFiltros.controls.estado.setValue(
+      ESTADOS_MATRICULA.aprobada,
+    );
+    completarMatriculas(crearRespuestaListado([]));
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain(
+      'No se encontraron matrículas con los filtros aplicados.',
+    );
+    expect(obtenerBoton('Limpiar filtros')).toBeTruthy();
+  });
+
+  it('muestra error de API', () => {
     crearComponente();
+    solicitudesMatriculas[0].error(new HttpErrorResponse({ status: 0 }));
+    fixture.detectChanges();
 
     expect(obtenerTexto()).toContain('No fue posible conectar con el servidor.');
   });
 
   it('envía filtros compatibles con el backend', () => {
-    crearComponente();
+    iniciarYCompletar();
+    matriculasService.listarMatriculas.mockClear();
 
     componente.formularioFiltros.controls.estudiante_id.setValue('2');
     componente.formularioFiltros.controls.curso_id.setValue('7');
@@ -142,8 +191,20 @@ describe('ListarMatriculasComponent', () => {
     });
   });
 
+  it('omite ids vacios y no numericos', () => {
+    iniciarYCompletar();
+    matriculasService.listarMatriculas.mockClear();
+
+    componente.formularioFiltros.controls.estudiante_id.setValue('');
+    componente.formularioFiltros.controls.curso_id.setValue('   ');
+    componente.formularioFiltros.controls.periodo_id.setValue('');
+    componente.buscarMatriculas();
+
+    expect(obtenerUltimosFiltros()).toEqual({ page: 1, limit: 10 });
+  });
+
   it('rechaza rango de fechas inválido antes de llamar la API', () => {
-    crearComponente();
+    iniciarYCompletar();
     matriculasService.listarMatriculas.mockClear();
 
     componente.formularioFiltros.controls.fecha_desde.setValue('2026-02-01');
@@ -158,7 +219,7 @@ describe('ListarMatriculasComponent', () => {
   });
 
   it('restablece filtros y vuelve a la primera página', () => {
-    crearComponente();
+    iniciarYCompletar();
 
     componente.formularioFiltros.controls.estado.setValue(
       ESTADOS_MATRICULA.anulada,
@@ -173,7 +234,7 @@ describe('ListarMatriculasComponent', () => {
   });
 
   it('cambia de página con el componente compartido', () => {
-    crearComponente();
+    iniciarYCompletar();
 
     componente.cambiarPagina(2);
 
@@ -183,8 +244,26 @@ describe('ListarMatriculasComponent', () => {
     });
   });
 
+  it('conserva los filtros al cambiar de página', () => {
+    iniciarYCompletar();
+
+    componente.formularioFiltros.controls.estado.setValue(
+      ESTADOS_MATRICULA.aprobada,
+    );
+    completarMatriculas(crearRespuestaListado());
+    fixture.detectChanges();
+    matriculasService.listarMatriculas.mockClear();
+    componente.cambiarPagina(2);
+
+    expect(matriculasService.listarMatriculas).toHaveBeenLastCalledWith({
+      estado: ESTADOS_MATRICULA.aprobada,
+      page: 2,
+      limit: 10,
+    });
+  });
+
   it('muestra acciones administrativas para ADMIN y GESTOR_MATRICULA', () => {
-    crearComponente();
+    iniciarYCompletar();
 
     expect(obtenerEnlace('Crear matrícula')).toBeTruthy();
     expect(obtenerBoton('Anular')).toBeTruthy();
@@ -199,7 +278,7 @@ describe('ListarMatriculasComponent', () => {
   it('oculta acciones administrativas para roles sin gestión', () => {
     usuarioActual.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
 
-    crearComponente();
+    iniciarYCompletar();
 
     expect(obtenerEnlace('Crear matrícula')).toBeNull();
     expect(obtenerBoton('Anular')).toBeNull();
@@ -208,7 +287,7 @@ describe('ListarMatriculasComponent', () => {
   it('oculta la columna de identificación para roles sin gestión', () => {
     usuarioActual.set(crearUsuario(CODIGOS_ROL.ESTUDIANTE));
 
-    crearComponente();
+    iniciarYCompletar();
 
     const encabezados = Array.from(
       fixture.nativeElement.querySelectorAll('th') as NodeListOf<HTMLTableCellElement>,
@@ -218,7 +297,7 @@ describe('ListarMatriculasComponent', () => {
   });
 
   it('muestra la columna de identificación para roles de gestión', () => {
-    crearComponente();
+    iniciarYCompletar();
 
     const encabezados = Array.from(
       fixture.nativeElement.querySelectorAll('th') as NodeListOf<HTMLTableCellElement>,
@@ -228,7 +307,7 @@ describe('ListarMatriculasComponent', () => {
   });
 
   it('enlaza cada matrícula con su ruta de detalle', () => {
-    crearComponente();
+    iniciarYCompletar();
 
     const enlaceDetalle = obtenerEnlace('#1');
 
@@ -238,7 +317,7 @@ describe('ListarMatriculasComponent', () => {
   it('confirma antes de cambiar estado y actualiza la fila después de respuesta', () => {
     const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    crearComponente();
+    iniciarYCompletar();
     componente.solicitarCambioEstado(
       componente.matriculas()[0],
       ESTADOS_MATRICULA.retirada,
@@ -258,7 +337,7 @@ describe('ListarMatriculasComponent', () => {
   it('no cambia estado si el usuario cancela la confirmación', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-    crearComponente();
+    iniciarYCompletar();
     componente.solicitarCambioEstado(
       componente.matriculas()[0],
       ESTADOS_MATRICULA.anulada,
@@ -275,7 +354,7 @@ describe('ListarMatriculasComponent', () => {
     );
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    crearComponente();
+    iniciarYCompletar();
     componente.solicitarCambioEstado(
       componente.matriculas()[0],
       ESTADOS_MATRICULA.retirada,
@@ -289,13 +368,9 @@ describe('ListarMatriculasComponent', () => {
   });
 
   it('no muestra acciones de estado para matrículas terminales', () => {
-    matriculasService.listarMatriculas.mockReturnValueOnce(
-      respuestaObservable(crearRespuestaListado([
-        crearMatricula({ estado: ESTADOS_MATRICULA.aprobada }),
-      ])),
-    );
-
-    crearComponente();
+    iniciarYCompletar(crearRespuestaListado([
+      crearMatricula({ estado: ESTADOS_MATRICULA.aprobada }),
+    ]));
 
     expect(obtenerBoton('Retirar')).toBeNull();
     expect(obtenerTexto()).toContain('Sin acciones');
@@ -314,7 +389,7 @@ describe('ListarMatriculasComponent', () => {
     );
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    crearComponente();
+    iniciarYCompletar();
     componente.solicitarCambioEstado(
       componente.matriculas()[0],
       ESTADOS_MATRICULA.retirada,
@@ -325,10 +400,122 @@ describe('ListarMatriculasComponent', () => {
     );
   });
 
+  it('ignora resultados de una consulta anterior', () => {
+    crearComponente();
+    const consultaAnterior = solicitudesMatriculas[0];
+    const consultaNueva = new Subject<RespuestaListadoMatriculas>();
+    matriculasService.listarMatriculas.mockImplementationOnce(
+      () => consultaNueva.asObservable(),
+    );
+
+    componente.cargarMatriculas();
+
+    expect(matriculasService.listarMatriculas).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(crearRespuestaListado([crearMatricula({ id: 77 })]));
+    consultaNueva.complete();
+    consultaAnterior.next(crearRespuestaListado([crearMatricula({ id: 1 })]));
+    consultaAnterior.complete();
+
+    expect(componente.matriculas()[0]?.id).toBe(77);
+  });
+
+  it('al cambiar estado consulta de inmediato', () => {
+    iniciarYCompletar();
+    matriculasService.listarMatriculas.mockClear();
+
+    componente.formularioFiltros.controls.estado.setValue(
+      ESTADOS_MATRICULA.aprobada,
+    );
+
+    expect(matriculasService.listarMatriculas).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      estado: ESTADOS_MATRICULA.aprobada,
+      page: 1,
+      limit: 10,
+    });
+  });
+
+  it('la busqueda por texto usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      iniciarYCompletar();
+      matriculasService.listarMatriculas.mockClear();
+
+      componente.formularioFiltros.controls.curso_id.setValue('7');
+      vi.advanceTimersByTime(100);
+      expect(matriculasService.listarMatriculas).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(400);
+
+      expect(matriculasService.listarMatriculas).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        curso_id: 7,
+        page: 1,
+        limit: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cuenta los filtros activos', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.formularioFiltros.controls.estado.setValue(
+      ESTADOS_MATRICULA.anulada,
+    );
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
+  it('el formulario impide el envio nativo', () => {
+    crearComponente();
+
+    const evento = new Event('submit', { cancelable: true });
+    componente.impedirEnvio(evento);
+
+    expect(evento.defaultPrevented).toBe(true);
+  });
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListarMatriculasComponent);
     componente = fixture.componentInstance;
     fixture.detectChanges();
+  }
+
+  function iniciarYCompletar(
+    respuesta = crearRespuestaListado(),
+  ): void {
+    crearComponente();
+    completarMatriculas(respuesta);
+    fixture.detectChanges();
+  }
+
+  function completarMatriculas(
+    respuesta = crearRespuestaListado(),
+  ): void {
+    solicitudesMatriculas[solicitudesMatriculas.length - 1].next(respuesta);
+    solicitudesMatriculas[solicitudesMatriculas.length - 1].complete();
+  }
+
+  function obtenerUltimosFiltros(): FiltrosMatriculas | undefined {
+    const llamadas = matriculasService.listarMatriculas.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
   }
 
   function obtenerTexto(): string {
@@ -445,7 +632,7 @@ function crearMatricula(cambios: Partial<Matricula> = {}): Matricula {
 }
 
 function crearRespuestaListado(
-  matriculas: Matricula[],
+  matriculas: Matricula[] = [crearMatricula()],
 ): RespuestaListadoMatriculas {
   return {
     success: true,

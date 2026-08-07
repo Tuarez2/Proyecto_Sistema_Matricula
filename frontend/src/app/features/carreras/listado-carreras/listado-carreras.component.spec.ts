@@ -163,8 +163,8 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.codigo.setValue('SOF');
-    componente.filtros.controls.nombre.setValue('Software');
+    componente.filtros.controls.codigo.setValue('SOF', { emitEvent: false });
+    componente.filtros.controls.nombre.setValue('Software', { emitEvent: false });
     componente.buscarCarreras();
     fixture.detectChanges();
 
@@ -181,7 +181,7 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.facultad_id.setValue('2');
+    componente.filtros.controls.facultad_id.setValue('2', { emitEvent: false });
     componente.buscarCarreras();
     fixture.detectChanges();
 
@@ -196,7 +196,7 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.activo.setValue('false');
+    componente.filtros.controls.activo.setValue('false', { emitEvent: false });
     componente.buscarCarreras();
     fixture.detectChanges();
 
@@ -211,7 +211,7 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.nombre.setValue('x'.repeat(151));
+    componente.filtros.controls.nombre.setValue('x'.repeat(151), { emitEvent: false });
     componente.buscarCarreras();
     fixture.detectChanges();
 
@@ -223,7 +223,7 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.nombre.setValue('Software');
+    componente.filtros.controls.nombre.setValue('Software', { emitEvent: false });
     componente.buscarCarreras();
     carrerasService.listarCarreras.mockClear();
 
@@ -391,6 +391,89 @@ describe('ListadoCarrerasComponent', () => {
     expect(componente.mensajeError()).toBe('La carrera tiene relaciones activas.');
   });
 
+  it('ignora resultados de una consulta anterior', () => {
+    const consultaAnterior = new Subject<RespuestaListadoCarreras>();
+    const consultaNueva = new Subject<RespuestaListadoCarreras>();
+
+    carrerasService.listarCarreras
+      .mockReturnValueOnce(consultaAnterior.asObservable())
+      .mockReturnValueOnce(consultaNueva.asObservable());
+
+    crearComponente();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+
+    componente.cargarCarreras();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(crearRespuestaCarreras([crearCarrera({ id: 77 })]));
+    consultaNueva.complete();
+    consultaAnterior.next(crearRespuestaCarreras([crearCarrera({ id: 1 })]));
+    consultaAnterior.complete();
+
+    expect(componente.carreras()[0]?.id).toBe(77);
+  });
+
+  it('al cambiar el filtro de facultad consulta de inmediato', () => {
+    crearComponente();
+    carrerasService.listarCarreras.mockClear();
+
+    componente.filtros.controls.facultad_id.setValue('2');
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      facultad_id: 2,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('la busqueda por texto usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      carrerasService.listarCarreras.mockClear();
+
+      componente.filtros.controls.nombre.setValue('So');
+      vi.advanceTimersByTime(100);
+      expect(carrerasService.listarCarreras).not.toHaveBeenCalled();
+
+      componente.filtros.controls.nombre.setValue('Soft');
+      vi.advanceTimersByTime(400);
+
+      expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        nombre: 'Soft',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cuenta los filtros activos', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtros.controls.facultad_id.setValue('2');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListadoCarrerasComponent);
     componente = fixture.componentInstance;
@@ -399,6 +482,12 @@ describe('ListadoCarrerasComponent', () => {
 
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
+  }
+
+  function obtenerUltimosFiltros(): FiltrosCarreras | undefined {
+    const llamadas = carrerasService.listarCarreras.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {

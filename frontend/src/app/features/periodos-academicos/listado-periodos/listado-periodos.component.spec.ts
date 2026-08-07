@@ -105,7 +105,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia codigo', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ codigo: '2026-1' });
+    componente.formularioFiltros.patchValue({ codigo: '2026-1' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -115,7 +115,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia nombre', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ nombre: 'Primer periodo' });
+    componente.formularioFiltros.patchValue({ nombre: 'Primer periodo' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -125,7 +125,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia estado', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ estado: 'en_curso' });
+    componente.formularioFiltros.patchValue({ estado: 'en_curso' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -135,7 +135,7 @@ describe('ListadoPeriodosComponent', () => {
   it('convierte anio a numero', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ anio: '2026' });
+    componente.formularioFiltros.patchValue({ anio: '2026' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -145,7 +145,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia fecha inicial', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ fechaInicio: '2026-01-05' });
+    componente.formularioFiltros.patchValue({ fechaInicio: '2026-01-05' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -155,7 +155,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia fecha final', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ fechaFin: '2026-06-30' });
+    componente.formularioFiltros.patchValue({ fechaFin: '2026-06-30' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -172,7 +172,7 @@ describe('ListadoPeriodosComponent', () => {
       anio: '',
       fechaInicio: '',
       fechaFin: '',
-    });
+    }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -192,31 +192,31 @@ describe('ListadoPeriodosComponent', () => {
   });
 
   it('codigo maximo 20', () => {
-    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) });
+    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.codigo.invalid).toBe(true);
   });
 
   it('nombre maximo 100', () => {
-    componente.formularioFiltros.patchValue({ nombre: 'a'.repeat(101) });
+    componente.formularioFiltros.patchValue({ nombre: 'a'.repeat(101) }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.nombre.invalid).toBe(true);
   });
 
   it('anio minimo 1900', () => {
-    componente.formularioFiltros.patchValue({ anio: '1899' });
+    componente.formularioFiltros.patchValue({ anio: '1899' }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.anio.hasError('min')).toBe(true);
   });
 
   it('anio maximo 2200', () => {
-    componente.formularioFiltros.patchValue({ anio: '2201' });
+    componente.formularioFiltros.patchValue({ anio: '2201' }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.anio.hasError('max')).toBe(true);
   });
 
   it('rechaza decimales', () => {
-    componente.formularioFiltros.patchValue({ anio: '2026.5' });
+    componente.formularioFiltros.patchValue({ anio: '2026.5' }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.anio.hasError('anioDecimal'))
       .toBe(true);
@@ -226,7 +226,7 @@ describe('ListadoPeriodosComponent', () => {
     componente.formularioFiltros.patchValue({
       fechaInicio: '2026-06-30',
       fechaFin: '2026-01-05',
-    });
+    }, { emitEvent: false });
 
     expect(componente.formularioFiltros.hasError('rangoFechasInvalido'))
       .toBe(true);
@@ -235,7 +235,7 @@ describe('ListadoPeriodosComponent', () => {
   it('formulario invalido no consulta', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) });
+    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -430,12 +430,85 @@ describe('ListadoPeriodosComponent', () => {
     expect(componente.cargandoPeriodos()).toBe(false);
   });
 
-  it('evita consultas duplicadas', () => {
+it('ignora resultados de una consulta anterior', () => {
     iniciarComponente();
+    const consultaAnterior = solicitudesPeriodos[0];
+    const consultaNueva = new Subject<RespuestaListadoPeriodos>();
+    periodosAcademicosService.listarPeriodos.mockImplementationOnce(
+      () => consultaNueva.asObservable(),
+    );
 
     componente.cargarPeriodos();
 
+    expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(
+      crearRespuestaListado({ data: [crearPeriodo({ id: 77 })] }),
+    );
+    consultaNueva.complete();
+    consultaAnterior.next(crearRespuestaListado({ data: [crearPeriodo({ id: 1 })] }));
+    consultaAnterior.complete();
+
+    expect(componente.periodos()[0]?.id).toBe(77);
+  });
+
+  it('al cambiar el estado consulta de inmediato', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.formularioFiltros.controls.estado.setValue('cerrado');
+
     expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      estado: 'cerrado',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('la busqueda por texto usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      iniciarYCompletar();
+      periodosAcademicosService.listarPeriodos.mockClear();
+
+      componente.formularioFiltros.controls.nombre.setValue('Pri');
+      vi.advanceTimersByTime(100);
+      expect(periodosAcademicosService.listarPeriodos).not.toHaveBeenCalled();
+
+      componente.formularioFiltros.controls.nombre.setValue('Primer');
+      vi.advanceTimersByTime(400);
+
+      expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        nombre: 'Primer',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cuenta los filtros activos', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.formularioFiltros.controls.estado.setValue('cerrado');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
   });
 
   it.each([
@@ -473,7 +546,7 @@ describe('ListadoPeriodosComponent', () => {
 
   it('no elimina filtros ante error', () => {
     iniciarYCompletar();
-    componente.formularioFiltros.patchValue({ codigo: '2026-1' });
+    componente.formularioFiltros.patchValue({ codigo: '2026-1' }, { emitEvent: false });
     componente.buscarPeriodos();
     solicitudesPeriodos[solicitudesPeriodos.length - 1].error(
       new HttpErrorResponse({ status: 500 }),
@@ -911,7 +984,7 @@ describe('ListadoPeriodosComponent', () => {
     iniciarComponente();
     fixture.detectChanges();
 
-    expect(obtenerElemento('[role="status"]')?.textContent).toContain(
+    expect(obtenerElemento('.loading')?.textContent).toContain(
       'Consultando periodos académicos...',
     );
   });

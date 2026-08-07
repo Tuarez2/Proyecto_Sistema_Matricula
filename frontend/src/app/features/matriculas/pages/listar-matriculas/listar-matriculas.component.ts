@@ -17,7 +17,19 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  debounceTime,
+  filter,
+  finalize,
+  map,
+  merge,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
@@ -29,6 +41,7 @@ import {
   type EstadoMatricula,
   type FiltrosMatriculas,
   type Matricula,
+  type RespuestaListadoMatriculas,
 } from '../../models/matricula.model';
 import { MatriculasService } from '../../services/matriculas.service';
 
@@ -48,7 +61,23 @@ interface AccionEstadoMatricula {
   etiqueta: string;
 }
 
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
+
 const LIMITE_POR_PAGINA = 10;
+const DEBOUNCE_BUSQUEDA_MS = 350;
+
+const CLAVES_FILTROS_MATRICULAS: (keyof FiltrosMatriculas)[] = [
+  'estudiante_id',
+  'curso_id',
+  'periodo_id',
+  'asignatura_id',
+  'carrera_id',
+  'estado',
+  'fecha_desde',
+  'fecha_hasta',
+];
 
 @Component({
   selector: 'app-listar-matriculas',
@@ -71,6 +100,8 @@ export class ListarMatriculasComponent implements OnInit {
   private readonly estadoTotalMatriculas = signal(0);
   private readonly estadoTotalPaginas = signal(1);
   private readonly estadoMatriculaProcesando = signal<number | null>(null);
+  private readonly estadoFiltrosAplicados = signal<FiltrosMatriculas>({});
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_MATRICULA = ESTADOS_MATRICULA;
   readonly matriculas = this.estadoMatriculas.asReadonly();
@@ -82,6 +113,9 @@ export class ListarMatriculasComponent implements OnInit {
   readonly totalMatriculas = this.estadoTotalMatriculas.asReadonly();
   readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly matriculaProcesando = this.estadoMatriculaProcesando.asReadonly();
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
+  );
   readonly puedeGestionarMatriculas = computed(() => {
     const codigoRol = this.autenticacionService.usuarioActual()?.rol?.codigo;
 
@@ -118,67 +152,46 @@ export class ListarMatriculasComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.cargarMatriculas();
+    this.configurarFiltrosDinamicos();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
   cargarMatriculas(): void {
-    if (this.cargandoMatriculas()) {
-      return;
-    }
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
 
+  buscarMatriculas(): void {
     if (!this.validarFiltros()) {
       return;
     }
 
     this.estadoMensajeError.set(null);
-    this.estadoMensajeExito.set(null);
-    this.estadoCargandoMatriculas.set(true);
-    this.matriculasService.listarMatriculas(this.obtenerFiltrosActuales())
-      .pipe(
-        takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoCargandoMatriculas.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoMatriculas.set(respuesta.data ?? []);
-          this.estadoPaginaActual.set(respuesta.page);
-          this.estadoLimitePorPagina.set(respuesta.limit);
-          this.estadoTotalMatriculas.set(respuesta.total);
-          this.estadoTotalPaginas.set(Math.max(respuesta.totalPages, 1));
-        },
-        error: (error: unknown) => {
-          this.estadoMatriculas.set([]);
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
-  buscarMatriculas(): void {
-    if (this.cargandoMatriculas()) {
-      return;
-    }
-
-    this.estadoPaginaActual.set(1);
-    this.cargarMatriculas();
+  impedirEnvio($event: Event): void {
+    $event.preventDefault();
   }
 
   limpiarFiltros(): void {
-    if (this.cargandoMatriculas()) {
-      return;
-    }
-
-    this.formularioFiltros.reset({
-      estudiante_id: '',
-      curso_id: '',
-      periodo_id: '',
-      asignatura_id: '',
-      carrera_id: '',
-      estado: '',
-      fecha_desde: '',
-      fecha_hasta: '',
-    });
+    this.estadoMensajeError.set(null);
+    this.estadoMensajeExito.set(null);
+    this.estadoFiltrosAplicados.set({});
     this.estadoPaginaActual.set(1);
-    this.cargarMatriculas();
+    this.formularioFiltros.reset(
+      {
+        estudiante_id: '',
+        curso_id: '',
+        periodo_id: '',
+        asignatura_id: '',
+        carrera_id: '',
+        estado: '',
+        fecha_desde: '',
+        fecha_hasta: '',
+      },
+      { emitEvent: false },
+    );
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cambiarPagina(pagina: number): void {
@@ -187,7 +200,7 @@ export class ListarMatriculasComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
-    this.cargarMatriculas();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   solicitarCambioEstado(
@@ -319,21 +332,129 @@ export class ListarMatriculasComponent implements OnInit {
       .some((accion) => accion.estado === estadoSiguiente);
   }
 
-  private obtenerFiltrosActuales(): FiltrosMatriculas {
-    const valores = this.formularioFiltros.getRawValue();
+  private configurarFiltrosDinamicos(): void {
+    const textoDebounced = merge(
+      this.formularioFiltros.controls.estudiante_id.valueChanges,
+      this.formularioFiltros.controls.curso_id.valueChanges,
+      this.formularioFiltros.controls.periodo_id.valueChanges,
+      this.formularioFiltros.controls.asignatura_id.valueChanges,
+      this.formularioFiltros.controls.carrera_id.valueChanges,
+      this.formularioFiltros.controls.fecha_desde.valueChanges,
+      this.formularioFiltros.controls.fecha_hasta.valueChanges,
+    ).pipe(
+      debounceTime(DEBOUNCE_BUSQUEDA_MS),
+      map(() => true),
+    );
 
-    return {
-      estudiante_id: this.obtenerEnteroPositivo(valores.estudiante_id),
-      curso_id: this.obtenerEnteroPositivo(valores.curso_id),
-      periodo_id: this.obtenerEnteroPositivo(valores.periodo_id),
-      asignatura_id: this.obtenerEnteroPositivo(valores.asignatura_id),
-      carrera_id: this.obtenerEnteroPositivo(valores.carrera_id),
-      estado: valores.estado || undefined,
-      fecha_desde: valores.fecha_desde || undefined,
-      fecha_hasta: valores.fecha_hasta || undefined,
-      page: this.paginaActual(),
-      limit: this.limitePorPagina(),
-    };
+    const selectoresInmediatos = this.formularioFiltros.controls.estado.valueChanges.pipe(
+      map(() => true),
+    );
+
+    merge(textoDebounced, selectoresInmediatos)
+      .pipe(
+        filter(() => this.formularioFiltros.valid && !this.criteriosIgualesAplicados()),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe(() => this.consultaFiltros$.next({ reiniciarPagina: true }));
+
+    this.consultaFiltros$
+      .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.consultarMatriculas();
+        }),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe();
+  }
+
+  private criteriosIgualesAplicados(): boolean {
+    return (
+      JSON.stringify(this.obtenerFiltrosAplicables()) ===
+      JSON.stringify(this.estadoFiltrosAplicados())
+    );
+  }
+
+  private contarFiltros(filtros: FiltrosMatriculas): number {
+    return CLAVES_FILTROS_MATRICULAS.filter(
+      (clave) => filtros[clave] !== undefined,
+    ).length;
+  }
+
+  private consultarMatriculas(): Observable<RespuestaListadoMatriculas> {
+    const filtros = this.obtenerFiltrosAplicables();
+    this.estadoFiltrosAplicados.set(filtros);
+    this.estadoMensajeError.set(null);
+    this.estadoCargandoMatriculas.set(true);
+    return this.matriculasService.listarMatriculas({
+      ...filtros,
+      page: this.estadoPaginaActual(),
+      limit: this.estadoLimitePorPagina(),
+    }).pipe(
+      finalize(() => this.estadoCargandoMatriculas.set(false)),
+      tap({
+        next: (respuesta) => {
+          this.estadoMensajeError.set(null);
+          this.estadoMatriculas.set(respuesta.data ?? []);
+          this.estadoPaginaActual.set(respuesta.page);
+          this.estadoLimitePorPagina.set(respuesta.limit);
+          this.estadoTotalMatriculas.set(respuesta.total);
+          this.estadoTotalPaginas.set(Math.max(respuesta.totalPages, 1));
+        },
+      }),
+      catchError((error: unknown) => {
+        this.estadoMatriculas.set([]);
+        this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        return EMPTY;
+      }),
+    );
+  }
+
+  private obtenerFiltrosAplicables(): FiltrosMatriculas {
+    const valores = this.formularioFiltros.getRawValue();
+    const filtros: FiltrosMatriculas = {};
+
+    const estudiante_id = this.obtenerEnteroPositivo(valores.estudiante_id);
+    const curso_id = this.obtenerEnteroPositivo(valores.curso_id);
+    const periodo_id = this.obtenerEnteroPositivo(valores.periodo_id);
+    const asignatura_id = this.obtenerEnteroPositivo(valores.asignatura_id);
+    const carrera_id = this.obtenerEnteroPositivo(valores.carrera_id);
+
+    if (estudiante_id !== undefined) {
+      filtros.estudiante_id = estudiante_id;
+    }
+
+    if (curso_id !== undefined) {
+      filtros.curso_id = curso_id;
+    }
+
+    if (periodo_id !== undefined) {
+      filtros.periodo_id = periodo_id;
+    }
+
+    if (asignatura_id !== undefined) {
+      filtros.asignatura_id = asignatura_id;
+    }
+
+    if (carrera_id !== undefined) {
+      filtros.carrera_id = carrera_id;
+    }
+
+    if (this.esEstadoMatricula(valores.estado)) {
+      filtros.estado = valores.estado;
+    }
+
+    if (valores.fecha_desde) {
+      filtros.fecha_desde = valores.fecha_desde;
+    }
+
+    if (valores.fecha_hasta) {
+      filtros.fecha_hasta = valores.fecha_hasta;
+    }
+
+    return filtros;
   }
 
   private obtenerEnteroPositivo(valor: string): number | undefined {
@@ -344,6 +465,14 @@ export class ListarMatriculasComponent implements OnInit {
     }
 
     return valorNumerico;
+  }
+
+  private esEstadoMatricula(
+    valor: string,
+  ): valor is EstadoMatricula {
+    return Object.values(ESTADOS_MATRICULA).some(
+      (estado) => estado === valor,
+    );
   }
 
   private validarFiltros(): boolean {

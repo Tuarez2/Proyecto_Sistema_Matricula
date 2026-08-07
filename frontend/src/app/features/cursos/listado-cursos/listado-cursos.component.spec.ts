@@ -318,6 +318,110 @@ describe('ListadoCursosComponent', () => {
     );
   });
 
+  it('conserva los filtros al cambiar de página', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso()], { page: 1, total: 15, totalPages: 2 }),
+      ),
+    );
+
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.controls.estado.setValue('cerrado');
+    cursosService.listar.mockClear();
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso({ id: 3 })], { page: 2, total: 15, totalPages: 2 }),
+      ),
+    );
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(cursosService.listar).toHaveBeenLastCalledWith(
+      expect.objectContaining({ estado: 'cerrado', pagina: 2, limite: 10 }),
+    );
+  });
+
+  it('ignora resultados de una consulta anterior', () => {
+    const consultaAnterior = new Subject<RespuestaListadoCursos>();
+    cursosService.listar.mockReturnValueOnce(consultaAnterior.asObservable());
+    crearComponente();
+
+    const consultaNueva = new Subject<RespuestaListadoCursos>();
+    cursosService.listar.mockReturnValueOnce(consultaNueva.asObservable());
+    componente.cargarCursos();
+
+    expect(cursosService.listar).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(crearRespuestaCursos([crearCurso({ id: 77 })]));
+    consultaNueva.complete();
+    consultaAnterior.next(crearRespuestaCursos([crearCurso({ id: 1 })]));
+    consultaAnterior.complete();
+
+    expect(componente.cursos()[0]?.id).toBe(77);
+  });
+
+  it('la búsqueda por paralelo usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      cursosService.listar.mockClear();
+
+      componente.filtros.controls.paralelo.setValue('A');
+      vi.advanceTimersByTime(100);
+      expect(cursosService.listar).not.toHaveBeenCalled();
+
+      componente.filtros.controls.paralelo.setValue('AB');
+      vi.advanceTimersByTime(400);
+
+      expect(cursosService.listar).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        paralelo: 'AB',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('al cambiar el select de estado consulta de inmediato', () => {
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.controls.estado.setValue('cerrado');
+
+    expect(cursosService.listar).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      estado: 'cerrado',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('cuenta los filtros activos', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtros.controls.estado.setValue('cerrado');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe botón Buscar', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
@@ -422,6 +526,12 @@ describe('ListadoCursosComponent', () => {
     fixture = TestBed.createComponent(ListadoCursosComponent);
     componente = fixture.componentInstance;
     fixture.detectChanges();
+  }
+
+  function obtenerUltimosFiltros(): FiltrosCursos | undefined {
+    const llamadas = cursosService.listar.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
   }
 
   function obtenerTexto(): string {

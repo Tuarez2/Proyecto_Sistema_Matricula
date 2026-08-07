@@ -11,7 +11,7 @@
     }
   </header>
 
-  <form class="form-card" [formGroup]="filtros" (ngSubmit)="buscar()" novalidate>
+  <form class="form-card" [formGroup]="filtros" (ngSubmit)="impedirEnvio($event)" novalidate>
     <div class="form-grid">
       <div class="form-field">
         <label for="periodo_id">Período</label>
@@ -64,12 +64,15 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" [disabled]="cargando()">Buscar</button>
-      <button type="button" [disabled]="cargando()" (click)="limpiarFiltros()">
+      <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
         Limpiar filtros
       </button>
     </div>
   </form>
+
+  <p class="filtros-activos" role="status" aria-live="polite">
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
 
   @if (cargando()) {
     <div class="loading" role="status" aria-live="polite">
@@ -89,12 +92,22 @@
   @if (!cargando() && !mensajeError() && cursos().length === 0) {
     <div class="empty-state">
       <span class="empty-icon" aria-hidden="true">🏫</span>
-      <h2>No se encontraron cursos</h2>
-      <p>No hay cursos registrados que coincidan con la búsqueda.</p>
-      @if (esAdministrador()) {
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron cursos con los filtros aplicados.</h2>
+        <p>Prueba con otros criterios o limpia los filtros.</p>
         <div class="empty-actions">
-          <a routerLink="/cursos/crear" class="btn btn-primary">Nuevo curso</a>
+          <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
         </div>
+      } @else {
+        <h2>No se encontraron cursos</h2>
+        <p>No hay cursos registrados que coincidan con la búsqueda.</p>
+        @if (esAdministrador()) {
+          <div class="empty-actions">
+            <a routerLink="/cursos/crear" class="btn btn-primary">Nuevo curso</a>
+          </div>
+        }
       }
     </div>
   }

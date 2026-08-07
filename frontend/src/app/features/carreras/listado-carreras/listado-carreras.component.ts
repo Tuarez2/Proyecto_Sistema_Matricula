@@ -17,7 +17,19 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  debounceTime,
+  filter,
+  finalize,
+  map,
+  merge,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
@@ -26,7 +38,11 @@ import { FacultadesService } from '../../facultades/services/facultades.service'
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type { Facultad } from '../../facultades/models/facultad.model';
-import type { Carrera, FiltrosCarreras } from '../models/carrera.model';
+import type {
+  Carrera,
+  FiltrosCarreras,
+  RespuestaListadoCarreras,
+} from '../models/carrera.model';
 import { CarrerasService } from '../services/carreras.service';
 
 interface ControlesFiltrosCarreras {
@@ -36,7 +52,12 @@ interface ControlesFiltrosCarreras {
   activo: FormControl<string>;
 }
 
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
+
 const LIMITE_POR_PAGINA = 10;
+const DEBOUNCE_BUSQUEDA_MS = 350;
 
 @Component({
   selector: 'app-listado-carreras',
@@ -61,6 +82,7 @@ export class ListadoCarrerasComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoCarreraProcesando = signal<number | null>(null);
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly carreras = this.estadoCarreras.asReadonly();
   readonly facultades = this.estadoFacultades.asReadonly();
@@ -80,6 +102,9 @@ export class ListadoCarrerasComponent implements OnInit {
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
   );
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
+  );
 
   readonly filtros = new FormGroup<ControlesFiltrosCarreras>({
     codigo: new FormControl('', {
@@ -95,7 +120,8 @@ export class ListadoCarrerasComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.cargarCarreras();
+    this.configurarFiltrosDinamicos();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
     this.cargarFacultades();
   }
 
@@ -107,22 +133,28 @@ export class ListadoCarrerasComponent implements OnInit {
     }
 
     this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
-    this.estadoFiltrosAplicados.set(this.obtenerFiltrosActuales());
-    this.cargarCarreras();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
+  }
+
+  impedirEnvio(evento: Event): void {
+    evento.preventDefault();
   }
 
   limpiarFiltros(): void {
-    this.filtros.reset({
-      codigo: '',
-      nombre: '',
-      facultad_id: '',
-      activo: '',
-    });
     this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
+    this.estadoMensajeExito.set(null);
     this.estadoFiltrosAplicados.set({});
-    this.cargarCarreras();
+    this.estadoPaginaActual.set(1);
+    this.filtros.reset(
+      {
+        codigo: '',
+        nombre: '',
+        facultad_id: '',
+        activo: '',
+      },
+      { emitEvent: false },
+    );
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cambiarPagina(pagina: number): void {
@@ -131,8 +163,11 @@ export class ListadoCarrerasComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
-    this.estadoMensajeError.set(null);
-    this.cargarCarreras();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  cargarCarreras(): void {
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cargarFacultades(): void {
@@ -155,38 +190,6 @@ export class ListadoCarrerasComponent implements OnInit {
           this.estadoMensajeError.set(
             'No fue posible cargar el catálogo de facultades.',
           );
-        },
-      });
-  }
-
-  private cargarCarreras(): void {
-    if (this.cargandoCarreras()) {
-      return;
-    }
-
-    this.estadoCargandoCarreras.set(true);
-    this.estadoMensajeError.set(null);
-    this.servicio.listarCarreras({
-      ...this.estadoFiltrosAplicados(),
-      pagina: this.estadoPaginaActual(),
-      limite: LIMITE_POR_PAGINA,
-    })
-      .pipe(
-        takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoCargandoCarreras.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoCarreras.set(respuesta.data ?? []);
-          this.estadoTotalCarreras.set(respuesta.total);
-          this.estadoTotalPaginas.set(respuesta.totalPages);
-          this.estadoPaginaActual.set(respuesta.page);
-        },
-        error: (error: unknown) => {
-          this.estadoCarreras.set([]);
-          this.estadoTotalCarreras.set(0);
-          this.estadoTotalPaginas.set(1);
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
   }
@@ -249,6 +252,81 @@ export class ListadoCarrerasComponent implements OnInit {
     const codigo = facultad.codigo ? `${facultad.codigo} - ` : '';
     const estado = facultad.activo === false ? ' (inactiva)' : '';
     return `${codigo}${facultad.nombre}${estado}`;
+  }
+
+  private configurarFiltrosDinamicos(): void {
+    const textoDebounced = merge(
+      this.filtros.controls.codigo.valueChanges,
+      this.filtros.controls.nombre.valueChanges,
+    ).pipe(
+      debounceTime(DEBOUNCE_BUSQUEDA_MS),
+      map(() => true),
+    );
+
+    const selectoresInmediatos = merge(
+      this.filtros.controls.facultad_id.valueChanges,
+      this.filtros.controls.activo.valueChanges,
+    ).pipe(map(() => true));
+
+    merge(textoDebounced, selectoresInmediatos)
+      .pipe(
+        filter(() => this.filtros.valid && !this.criteriosIgualesAplicados()),
+        takeUntilDestroyed(this.destruccion),
+      )
+      .subscribe(() => this.consultaFiltros$.next({ reiniciarPagina: true }));
+
+    this.consultaFiltros$
+      .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.consultarCarreras();
+        }),
+        takeUntilDestroyed(this.destruccion),
+      )
+      .subscribe();
+  }
+
+  private criteriosIgualesAplicados(): boolean {
+    return (
+      JSON.stringify(this.obtenerFiltrosActuales()) ===
+      JSON.stringify(this.estadoFiltrosAplicados())
+    );
+  }
+
+  private contarFiltros(filtros: FiltrosCarreras): number {
+    return Object.values(filtros).filter((valor) => valor !== undefined).length;
+  }
+
+  private consultarCarreras(): Observable<RespuestaListadoCarreras> {
+    const filtros = this.obtenerFiltrosActuales();
+    this.estadoFiltrosAplicados.set(filtros);
+    this.estadoMensajeError.set(null);
+    this.estadoCargandoCarreras.set(true);
+    return this.servicio.listarCarreras({
+      ...filtros,
+      pagina: this.estadoPaginaActual(),
+      limite: LIMITE_POR_PAGINA,
+    }).pipe(
+      finalize(() => this.estadoCargandoCarreras.set(false)),
+      tap({
+        next: (respuesta) => {
+          this.estadoMensajeError.set(null);
+          this.estadoCarreras.set(respuesta.data ?? []);
+          this.estadoTotalCarreras.set(respuesta.total);
+          this.estadoTotalPaginas.set(respuesta.totalPages);
+          this.estadoPaginaActual.set(respuesta.page);
+        },
+      }),
+      catchError((error: unknown) => {
+        this.estadoCarreras.set([]);
+        this.estadoTotalCarreras.set(0);
+        this.estadoTotalPaginas.set(1);
+        this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        return EMPTY;
+      }),
+    );
   }
 
   private obtenerFiltrosActuales(): FiltrosCarreras {

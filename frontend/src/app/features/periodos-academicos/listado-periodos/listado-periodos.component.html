@@ -16,7 +16,7 @@
   <form
     class="form-card"
     [formGroup]="formularioFiltros"
-    (ngSubmit)="buscarPeriodos()"
+    (ngSubmit)="impedirEnvio($event)"
     novalidate
   >
     <div class="form-grid">
@@ -133,16 +133,19 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" [disabled]="cargandoPeriodos()">Buscar</button>
       <button
         type="button"
-        [disabled]="cargandoPeriodos()"
+        class="btn btn-neutral"
         (click)="limpiarFiltros()"
       >
         Limpiar filtros
       </button>
     </div>
   </form>
+
+  <p class="filtros-activos" role="status" aria-live="polite">
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
 
   @if (cargandoPeriodos()) {
     <div class="loading" role="status" aria-live="polite">
@@ -158,14 +161,24 @@
   @if (!cargandoPeriodos() && !mensajeError() && periodos().length === 0) {
     <div class="empty-state">
       <span class="empty-icon" aria-hidden="true">📅</span>
-      <h2>No se encontraron periodos académicos</h2>
-      <p>No hay periodos académicos que coincidan con la búsqueda.</p>
-      @if (esAdministrador()) {
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron periodos académicos con los filtros aplicados.</h2>
+        <p>Prueba con otros criterios o limpia los filtros.</p>
         <div class="empty-actions">
-          <a routerLink="/periodos-academicos/nuevo" class="btn btn-primary">
-            Nuevo periodo
-          </a>
+          <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
         </div>
+      } @else {
+        <h2>No se encontraron periodos académicos</h2>
+        <p>No hay periodos académicos que coincidan con la búsqueda.</p>
+        @if (esAdministrador()) {
+          <div class="empty-actions">
+            <a routerLink="/periodos-academicos/nuevo" class="btn btn-primary">
+              Nuevo periodo
+            </a>
+          </div>
+        }
       }
     </div>
   }

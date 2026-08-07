@@ -18,7 +18,19 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  debounceTime,
+  filter,
+  finalize,
+  map,
+  merge,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
@@ -30,8 +42,16 @@ import {
   type EstadoPeriodoAcademico,
   type FiltrosListadoPeriodos,
   type PeriodoAcademico,
+  type RespuestaListadoPeriodos,
 } from '../models/periodo-academico.model';
 import { PeriodosAcademicosService } from '../services/periodos-academicos.service';
+
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
+
+const LIMITE_POR_PAGINA = 10;
+const DEBOUNCE_BUSQUEDA_MS = 350;
 
 @Component({
   selector: 'app-listado-periodos',
@@ -56,6 +76,8 @@ export class ListadoPeriodosComponent implements OnInit {
   private readonly estadoLimitePorPagina = signal(10);
   private readonly estadoTotalPeriodos = signal(0);
   private readonly estadoTotalPaginas = signal(0);
+  private readonly estadoFiltrosAplicados = signal<FiltrosListadoPeriodos>({});
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_PERIODO_ACADEMICO = ESTADOS_PERIODO_ACADEMICO;
   readonly periodos = this.estadoPeriodos.asReadonly();
@@ -79,6 +101,9 @@ export class ListadoPeriodosComponent implements OnInit {
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
   );
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
+  );
   readonly formularioFiltros = this.constructorFormulario.nonNullable.group(
     {
       codigo: ['', [Validators.maxLength(20)]],
@@ -94,38 +119,42 @@ export class ListadoPeriodosComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    this.cargarPeriodos();
+    this.configurarFiltrosDinamicos();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
   buscarPeriodos(): void {
-    if (this.cargandoPeriodos()) {
-      return;
-    }
-
     if (this.formularioFiltros.invalid) {
       this.formularioFiltros.markAllAsTouched();
       return;
     }
 
+    this.estadoMensajeError.set(null);
+    this.estadoFiltrosAplicados.set(this.obtenerFiltrosAplicables());
     this.estadoPaginaActual.set(1);
-    this.cargarPeriodos();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  impedirEnvio(evento: Event): void {
+    evento.preventDefault();
   }
 
   limpiarFiltros(): void {
-    if (this.cargandoPeriodos()) {
-      return;
-    }
-
-    this.formularioFiltros.reset({
-      codigo: '',
-      nombre: '',
-      estado: '',
-      anio: '',
-      fechaInicio: '',
-      fechaFin: '',
-    });
+    this.estadoMensajeError.set(null);
+    this.estadoFiltrosAplicados.set({});
     this.estadoPaginaActual.set(1);
-    this.cargarPeriodos();
+    this.formularioFiltros.reset(
+      {
+        codigo: '',
+        nombre: '',
+        estado: '',
+        anio: '',
+        fechaInicio: '',
+        fechaFin: '',
+      },
+      { emitEvent: false },
+    );
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   paginaAnterior(): void {
@@ -134,7 +163,7 @@ export class ListadoPeriodosComponent implements OnInit {
     }
 
     this.estadoPaginaActual.update((paginaActual) => paginaActual - 1);
-    this.cargarPeriodos();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   paginaSiguiente(): void {
@@ -143,7 +172,7 @@ export class ListadoPeriodosComponent implements OnInit {
     }
 
     this.estadoPaginaActual.update((paginaActual) => paginaActual + 1);
-    this.cargarPeriodos();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cambiarPagina(pagina: number): void {
@@ -152,33 +181,11 @@ export class ListadoPeriodosComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
-    this.cargarPeriodos();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cargarPeriodos(): void {
-    if (this.cargandoPeriodos()) {
-      return;
-    }
-
-    this.estadoMensajeError.set(null);
-    this.estadoCargandoPeriodos.set(true);
-    this.periodosAcademicosService.listarPeriodos(this.obtenerFiltrosPeriodos())
-      .pipe(
-        takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoCargandoPeriodos.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoPeriodos.set(respuesta.data ?? []);
-          this.estadoPaginaActual.set(respuesta.page);
-          this.estadoLimitePorPagina.set(respuesta.limit);
-          this.estadoTotalPeriodos.set(respuesta.total);
-          this.estadoTotalPaginas.set(respuesta.totalPages);
-        },
-        error: (error: unknown) => {
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   obtenerEtiquetaEstado(estado: EstadoPeriodoAcademico): string {
@@ -221,12 +228,92 @@ export class ListadoPeriodosComponent implements OnInit {
     return TRANSICIONES_PERIODO_ACADEMICO[estado].length > 0;
   }
 
-  private obtenerFiltrosPeriodos(): FiltrosListadoPeriodos {
+  private configurarFiltrosDinamicos(): void {
+    const textoDebounced = merge(
+      this.formularioFiltros.controls.codigo.valueChanges,
+      this.formularioFiltros.controls.nombre.valueChanges,
+      this.formularioFiltros.controls.anio.valueChanges,
+      this.formularioFiltros.controls.fechaInicio.valueChanges,
+      this.formularioFiltros.controls.fechaFin.valueChanges,
+    ).pipe(
+      debounceTime(DEBOUNCE_BUSQUEDA_MS),
+      map(() => true),
+    );
+
+    const selectoresInmediatos = this.formularioFiltros.controls.estado.valueChanges.pipe(
+      map(() => true),
+    );
+
+    merge(textoDebounced, selectoresInmediatos)
+      .pipe(
+        filter(() => this.formularioFiltros.valid && !this.criteriosIgualesAplicados()),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe(() => this.consultaFiltros$.next({ reiniciarPagina: true }));
+
+    this.consultaFiltros$
+      .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.consultarPeriodos();
+        }),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe();
+  }
+
+  private criteriosIgualesAplicados(): boolean {
+    return (
+      JSON.stringify(this.obtenerFiltrosAplicables()) ===
+      JSON.stringify(this.estadoFiltrosAplicados())
+    );
+  }
+
+  private contarFiltros(filtros: FiltrosListadoPeriodos): number {
+    return (
+      ['codigo', 'nombre', 'estado', 'anio', 'fechaInicio', 'fechaFin'].filter(
+        (clave) =>
+          filtros[clave as keyof FiltrosListadoPeriodos] !== undefined,
+      ).length
+    );
+  }
+
+  private consultarPeriodos(): Observable<RespuestaListadoPeriodos> {
+    const filtros = this.obtenerFiltrosAplicables();
+    this.estadoFiltrosAplicados.set(filtros);
+    this.estadoMensajeError.set(null);
+    this.estadoCargandoPeriodos.set(true);
+    return this.periodosAcademicosService.listarPeriodos({
+      ...filtros,
+      pagina: this.estadoPaginaActual(),
+      limite: LIMITE_POR_PAGINA,
+    }).pipe(
+      finalize(() => this.estadoCargandoPeriodos.set(false)),
+      tap({
+        next: (respuesta) => {
+          this.estadoMensajeError.set(null);
+          this.estadoPeriodos.set(respuesta.data ?? []);
+          this.estadoPaginaActual.set(respuesta.page);
+          this.estadoLimitePorPagina.set(respuesta.limit);
+          this.estadoTotalPeriodos.set(respuesta.total);
+          this.estadoTotalPaginas.set(respuesta.totalPages);
+        },
+      }),
+      catchError((error: unknown) => {
+        this.estadoPeriodos.set([]);
+        this.estadoTotalPeriodos.set(0);
+        this.estadoTotalPaginas.set(0);
+        this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        return EMPTY;
+      }),
+    );
+  }
+
+  private obtenerFiltrosAplicables(): FiltrosListadoPeriodos {
     const valoresFormulario = this.formularioFiltros.getRawValue();
-    const filtros: FiltrosListadoPeriodos = {
-      pagina: this.paginaActual(),
-      limite: this.limitePorPagina(),
-    };
+    const filtros: FiltrosListadoPeriodos = {};
     const codigo = valoresFormulario.codigo.trim();
     const nombre = valoresFormulario.nombre.trim();
     const anio = Number(valoresFormulario.anio);

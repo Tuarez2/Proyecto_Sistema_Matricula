@@ -3,3 +3,9 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
+
+.filtros-activos {
+  margin: 0 0 1rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
