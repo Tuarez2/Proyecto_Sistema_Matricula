@@ -1,0 +1,113 @@
+<section class="page" aria-labelledby="titulo-detalle-carrera">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-detalle-carrera">Detalle de carrera</h1>
+      <p class="page-subtitle">Información de la carrera y sus asociaciones.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/carreras" class="btn btn-neutral">Volver al listado</a>
+      @if (esAdministrador()) {
+        @if (carrera(); as carreraActual) {
+          <a [routerLink]="['/carreras/editar', carreraActual.id]" class="btn btn-primary">Editar</a>
+        }
+      }
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando carrera...
+    </div>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (carrera(); as carreraActual) {
+    <div class="detail-card">
+      <p class="detail-line"><strong>Código:</strong> {{ carreraActual.codigo }}</p>
+      <p class="detail-line"><strong>Nombre:</strong> {{ carreraActual.nombre }}</p>
+      <p class="detail-line"><strong>Facultad:</strong> {{ obtenerNombreFacultad(carreraActual.facultad) }}</p>
+      <p class="detail-line"><strong>Duración:</strong> {{ carreraActual.duracion_semestres }} semestres</p>
+      <p class="detail-line"><strong>Estado:</strong> <span class="estado-badge {{ obtenerClaseEstado(carreraActual) }}">{{ obtenerEtiquetaEstado(carreraActual) }}</span></p>
+      <p class="detail-line"><strong>Fecha de creación:</strong> {{ carreraActual.created_at | fecha }}</p>
+    </div>
+
+    <section aria-labelledby="titulo-asignaturas-asociadas">
+      <h2 id="titulo-asignaturas-asociadas">Asignaturas asociadas</h2>
+      @if ((carreraActual.asignaturas ?? []).length === 0) {
+        <div class="empty-state">
+          <p>No hay asignaturas asociadas a esta carrera.</p>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <caption>Asignaturas de la carrera</caption>
+            <thead>
+              <tr>
+                <th scope="col">Código</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Créditos</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (asignatura of carreraActual.asignaturas ?? []; track asignatura.id) {
+                <tr>
+                  <td>{{ asignatura.codigo }}</td>
+                  <td>{{ asignatura.nombre }}</td>
+                  <td>{{ asignatura.creditos ?? 'Sin créditos' }}</td>
+                  <td>
+                    <span class="estado-badge {{ asignatura.activo ? 'estado-badge--success' : 'estado-badge--neutral' }}">
+                      {{ asignatura.activo ? 'Activa' : 'Inactiva' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section aria-labelledby="titulo-estudiantes-asociados">
+      <h2 id="titulo-estudiantes-asociados">Estudiantes asociados</h2>
+      @if ((carreraActual.estudiantes ?? []).length === 0) {
+        <div class="empty-state">
+          <p>No hay estudiantes asociados a esta carrera.</p>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <caption>Estudiantes de la carrera</caption>
+            <thead>
+              <tr>
+                <th scope="col">Identificación</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Estado académico</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (estudiante of carreraActual.estudiantes ?? []; track estudiante.id) {
+                <tr>
+                  <td>{{ estudiante.identificacion ?? 'Sin identificación' }}</td>
+                  <td>
+                    {{ estudiante.nombres ?? 'Sin nombres' }}
+                    {{ estudiante.apellidos ?? '' }}
+                  </td>
+                  <td>{{ estudiante.estado_academico ?? 'Sin estado' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  } @else if (!cargando() && !mensajeError()) {
+    <div class="empty-state">
+      <p>No se encontró información de la carrera.</p>
+    </div>
+  }
+</section>

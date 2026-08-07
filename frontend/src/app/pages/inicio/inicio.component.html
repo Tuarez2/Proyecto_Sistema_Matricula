@@ -1,0 +1,38 @@
+<section class="pagina-inicio" aria-labelledby="titulo-inicio">
+  <header class="saludo-inicio">
+    <h1 id="titulo-inicio">Bienvenido@if (nombreUsuario(); as nombre) {, {{ nombre }}}</h1>
+    <div class="saludo-inicio__meta">
+      @if (nombreRolUsuario(); as rol) {
+        <span class="rol-inicio">{{ rol }}</span>
+      }
+      <time class="fecha-inicio" [attr.datetime]="fechaHoyDatetime">
+        {{ fechaHoy | fecha }}
+      </time>
+    </div>
+    <p class="descripcion-inicio">Consulta el estado del sistema y accede rápidamente a las tareas principales.</p>
+  </header>
+
+  <div class="modulos-inicio" aria-label="Módulos del sistema">
+    @for (modulo of modulosVisibles(); track modulo.ruta) {
+      <a [routerLink]="modulo.ruta" class="modulo-acceso">
+        <svg
+          class="modulo-acceso__icono"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path [attr.d]="modulo.icono" />
+        </svg>
+        <div class="modulo-acceso__contenido">
+          <span class="modulo-acceso__titulo">{{ modulo.titulo }}</span>
+          <span class="modulo-acceso__descripcion">{{ modulo.descripcion }}</span>
+        </div>
+      </a>
+    }
+  </div>
+</section>

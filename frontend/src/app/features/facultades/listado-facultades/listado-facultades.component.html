@@ -1,0 +1,192 @@
+<section class="page" aria-labelledby="titulo-facultades">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-facultades">Facultades</h1>
+      <p class="page-subtitle">Consulta y administra las facultades.</p>
+    </div>
+    @if (esAdministrador()) {
+      <div class="page-actions">
+        <a routerLink="/facultades/crear" class="btn btn-primary">Nueva facultad</a>
+      </div>
+    }
+  </header>
+
+  <form class="form-card" [formGroup]="filtros" (ngSubmit)="impedirEnvio($event)" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" maxlength="20" />
+        @if (
+          filtros.controls.codigo.touched &&
+          filtros.controls.codigo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El código no puede superar 20 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" formControlName="nombre" maxlength="120" />
+        @if (
+          filtros.controls.nombre.touched &&
+          filtros.controls.nombre.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El nombre no puede superar 120 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="activo">Estado</label>
+        <select id="activo" formControlName="activo">
+          <option value="">Todos</option>
+          <option value="true">Activas</option>
+          <option value="false">Inactivas</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
+    </div>
+  </form>
+
+  <p class="filtros-activos" role="status" aria-live="polite">
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
+
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando facultades...
+    </div>
+  }
+
+  @if (mensajeExito()) {
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && !mensajeError() && facultades().length === 0) {
+    <div class="empty-state">
+      @if (filtrosActivos() > 0) {
+        <span class="empty-icon" aria-hidden="true">🏛️</span>
+        <h2>No se encontraron facultades con los filtros aplicados.</h2>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+      } @else {
+        <span class="empty-icon" aria-hidden="true">🏛️</span>
+        <h2>No se encontraron facultades</h2>
+        <p>No hay facultades registradas que coincidan con la búsqueda.</p>
+        @if (esAdministrador()) {
+          <div class="empty-actions">
+            <a routerLink="/facultades/crear" class="btn btn-primary">Nueva facultad</a>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  @if (facultades().length > 0) {
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
+      <table>
+        <caption>Listado de facultades</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Fecha de creación</th>
+            <th scope="col">Detalle</th>
+            @if (esAdministrador()) {
+              <th scope="col">Acciones</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (facultad of facultades(); track facultad.id) {
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === facultad.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === facultad.id"
+              (click)="seleccionarFila($event, facultad)"
+              (keydown)="seleccionarFilaTeclado($event, facultad)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === facultad.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(facultad)"
+                  [attr.aria-label]="'Seleccionar a ' + facultad.nombre"
+                />
+              </td>
+              <td>{{ facultad.codigo }}</td>
+              <td>{{ facultad.nombre }}</td>
+              <td>
+                <span class="estado-badge {{ obtenerClaseEstado(facultad) }}">
+                  {{ obtenerEtiquetaEstado(facultad) }}
+                </span>
+              </td>
+              <td>{{ facultad.created_at | fecha }}</td>
+              <td>
+                <a class="btn btn-sm btn-neutral" [routerLink]="['/facultades', facultad.id]">Ver</a>
+              </td>
+              @if (esAdministrador()) {
+                <td>
+                  <div class="row-actions">
+                    <a class="btn btn-sm btn-neutral" [routerLink]="['/facultades/editar', facultad.id]">
+                      Editar
+                    </a>
+                    <button
+                      class="btn btn-sm btn-neutral"
+                      type="button"
+                      [disabled]="facultadProcesando() !== null"
+                      (click)="cambiarEstado(facultad)"
+                    >
+                      {{ facultad.activo ? 'Desactivar' : 'Activar' }}
+                    </button>
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalFacultades()"
+    [deshabilitado]="cargando()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>
+
+<app-confirm-modal
+  [oAbierto]="dialogoAbierto()"
+  [titulo]="dialogoTitulo()"
+  [mensaje]="dialogoMensaje()"
+  [peligroso]="dialogoPeligroso()"
+  [procesando]="dialogoProcesando()"
+  (confirmado)="confirmarCambioEstado()"
+  (cancelado)="cerrarDialogo()"
+/>

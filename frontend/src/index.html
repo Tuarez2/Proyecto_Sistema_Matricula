@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Sistema de Matrícula Universitaria</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#244d3c">
+  <meta name="description" content="Sistema de Matrícula Universitaria: gestión de periodos académicos, facultades, carreras, asignaturas, cursos, estudiantes, docentes y matrículas.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>
+    (function () {
+      var CLAVE_TEMA = 'preferencias.apariencia.tema';
+      var CLAVE_TAMANO = 'preferencias.apariencia.tamano-texto';
+      var CLAVE_DENSIDAD = 'preferencias.apariencia.densidad';
+      var CLAVE_MOVIMIENTO = 'preferencias.apariencia.movimiento';
+      var CLAVE_CONTRASTE = 'preferencias.accesibilidad.contraste';
+      var CLAVE_FOCO = 'preferencias.accesibilidad.foco';
+      var CLAVE_MOVIMIENTO_REDUCIDO = 'preferencias.accesibilidad.movimiento-reducido';
+
+      function obtenerPreferencia(clave) {
+        try {
+          var valor = window.localStorage.getItem(clave);
+          return valor === '1' ? 'true' : valor;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      var temaGuardado = obtenerPreferencia(CLAVE_TEMA);
+      var temaEfectivo = temaGuardado;
+      if (temaGuardado === 'sistema' || temaGuardado === null) {
+        temaEfectivo = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+      }
+
+      if (temaEfectivo === 'oscuro') {
+        document.documentElement.setAttribute('data-tema', 'oscuro');
+      } else {
+        document.documentElement.setAttribute('data-tema', 'claro');
+      }
+
+      if (obtenerPreferencia(CLAVE_TAMANO) === 'grande') {
+        document.documentElement.setAttribute('data-tamano-texto', 'grande');
+      }
+
+      if (obtenerPreferencia(CLAVE_DENSIDAD) === 'compacta') {
+        document.documentElement.setAttribute('data-densidad', 'compacta');
+      }
+
+      if (obtenerPreferencia(CLAVE_MOVIMIENTO) === 'reducido' ||
+          obtenerPreferencia(CLAVE_MOVIMIENTO_REDUCIDO) === 'true') {
+        document.documentElement.setAttribute('data-movimiento', 'reducido');
+      }
+
+      if (obtenerPreferencia(CLAVE_CONTRASTE) === 'true') {
+        document.documentElement.setAttribute('data-contraste', 'reforzado');
+      }
+
+      if (obtenerPreferencia(CLAVE_FOCO) === 'true') {
+        document.documentElement.setAttribute('data-foco', 'reforzado');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

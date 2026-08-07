@@ -1,0 +1,917 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { Observable, Subject } from 'rxjs';
+
+import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
+import type { UsuarioAutenticado } from '../../../core/models/autenticacion.model';
+import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import type {
+  Asignatura,
+  FiltrosAsignaturas,
+  RespuestaListadoAsignaturas,
+} from '../../asignaturas/models/asignatura.model';
+import { AsignaturasService } from '../../asignaturas/services/asignaturas.service';
+import type {
+  Docente,
+  FiltrosDocentes,
+  RespuestaListadoDocentes,
+} from '../../docentes/models/docente.model';
+import { DocentesService } from '../../docentes/services/docentes.service';
+import type {
+  FiltrosListadoPeriodos,
+  PeriodoAcademico,
+  RespuestaListadoPeriodos,
+} from '../../periodos-academicos/models/periodo-academico.model';
+import { PeriodosAcademicosService } from '../../periodos-academicos/services/periodos-academicos.service';
+import type {
+  Curso,
+  FiltrosCursos,
+  RespuestaCambioEstadoCurso,
+  RespuestaListadoCursos,
+} from '../models/curso.model';
+import { CursosService } from '../services/cursos.service';
+import { ListadoCursosComponent } from './listado-cursos.component';
+
+interface CursosServiceMock {
+  listar: ReturnType<
+    typeof vi.fn<(filtros?: FiltrosCursos) => Observable<RespuestaListadoCursos>>
+  >;
+  cancelarCurso: ReturnType<
+    typeof vi.fn<
+      (idCurso: number) => Observable<RespuestaCambioEstadoCurso>
+    >
+  >;
+}
+
+interface PeriodosServiceMock {
+  listarPeriodos: ReturnType<
+    typeof vi.fn<
+      (
+        filtros?: FiltrosListadoPeriodos,
+      ) => Observable<RespuestaListadoPeriodos>
+    >
+  >;
+}
+
+interface AsignaturasServiceMock {
+  listarAsignaturas: ReturnType<
+    typeof vi.fn<
+      (filtros?: FiltrosAsignaturas) => Observable<RespuestaListadoAsignaturas>
+    >
+  >;
+}
+
+interface DocentesServiceMock {
+  listarDocentes: ReturnType<
+    typeof vi.fn<
+      (filtros?: FiltrosDocentes) => Observable<RespuestaListadoDocentes>
+    >
+  >;
+}
+
+describe('ListadoCursosComponent', () => {
+  let fixture: ComponentFixture<ListadoCursosComponent>;
+  let componente: ListadoCursosComponent;
+  let cursosService: CursosServiceMock;
+  let periodosService: PeriodosServiceMock;
+  let asignaturasService: AsignaturasServiceMock;
+  let docentesService: DocentesServiceMock;
+  let usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
+
+  beforeEach(async () => {
+    usuarioActual = signal<UsuarioAutenticado | null>(
+      crearUsuario(CODIGOS_ROL.ADMIN),
+    );
+    cursosService = {
+      listar: vi.fn(() =>
+        respuestaObservable(
+          crearRespuestaCursos([
+            crearCurso({
+              id: 1,
+              asignatura: crearAsignaturaReferencia(),
+              docente: crearDocenteReferencia(),
+              periodoAcademico: crearPeriodoReferencia(),
+            }),
+            crearCurso({
+              id: 2,
+              paralelo: 'B',
+              asignatura: null,
+              docente: null,
+              periodoAcademico: null,
+            }),
+          ]),
+        ),
+      ),
+      cancelarCurso: vi.fn(() =>
+        respuestaObservable(
+          crearRespuestaCambioEstado({ estado: 'cancelado' }),
+        ),
+      ),
+    };
+    periodosService = {
+      listarPeriodos: vi.fn(() =>
+        respuestaObservable(crearRespuestaPeriodos([crearPeriodo()])),
+      ),
+    };
+    asignaturasService = {
+      listarAsignaturas: vi.fn(() =>
+        respuestaObservable(
+          crearRespuestaAsignaturas([
+            crearAsignatura({ id: 100, codigo: 'PRG1', nombre: 'Programación I' }),
+          ]),
+        ),
+      ),
+    };
+    docentesService = {
+      listarDocentes: vi.fn(() =>
+        respuestaObservable(
+          crearRespuestaDocentes([
+            crearDocente({ id: 1000, nombres: 'Ana', apellidos: 'Gómez' }),
+          ]),
+        ),
+      ),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ListadoCursosComponent],
+      providers: [
+        provideRouter([]),
+        { provide: CursosService, useValue: cursosService },
+        { provide: PeriodosAcademicosService, useValue: periodosService },
+        { provide: AsignaturasService, useValue: asignaturasService },
+        { provide: DocentesService, useValue: docentesService },
+        {
+          provide: AutenticacionService,
+          useValue: {
+            usuarioActual: usuarioActual.asReadonly(),
+          },
+        },
+      ],
+    }).compileComponents();
+  });
+
+  it('carga cursos y catálogos al iniciar', () => {
+    crearComponente();
+
+    expect(cursosService.listar).toHaveBeenCalledWith(
+      expect.objectContaining({ pagina: 1, limite: 10 }),
+    );
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledWith({
+      limite: 100,
+    });
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      limite: 100,
+    });
+    expect(obtenerTexto()).toContain('PRG1 - Programación I');
+    expect(obtenerTexto()).toContain('Ana Gómez');
+    expect(obtenerTexto()).toContain('Primer Semestre 2026');
+  });
+
+  it('muestra relaciones legibles y protege relaciones nulas', () => {
+    crearComponente();
+
+    expect(obtenerTexto()).toContain('PRG1 - Programación I');
+    expect(obtenerTexto()).toContain('Curso 2 (B)');
+    expect(obtenerTexto()).toContain('Sin docente');
+    expect(obtenerTexto()).toContain('Sin período');
+  });
+
+  it('aplica clase de badge segun el estado del curso', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([
+          crearCurso({ id: 1, estado: 'abierto' }),
+          crearCurso({ id: 2, estado: 'cerrado' }),
+          crearCurso({ id: 3, estado: 'cancelado' }),
+        ]),
+      ),
+    );
+
+    crearComponente();
+
+    expect(obtenerElemento('.estado-badge--success')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--neutral')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--danger')).toBeTruthy();
+  });
+
+  it('muestra estado vacío cuando no hay resultados', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(crearRespuestaCursos([])),
+    );
+
+    crearComponente();
+
+    expect(obtenerTexto()).toContain('No se encontraron cursos');
+  });
+
+  it('muestra error de red al cargar cursos', () => {
+    cursosService.listar.mockReturnValueOnce(
+      errorObservable(new HttpErrorResponse({ status: 0 })),
+    );
+
+    crearComponente();
+
+    expect(obtenerTexto()).toContain(
+      'No fue posible conectar con el servidor.',
+    );
+  });
+
+  it('aplica filtros consultando la API con la página reiniciada', () => {
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.setValue({
+      periodo_id: '10',
+      asignatura_id: '100',
+      docente_id: '1000',
+      estado: 'abierto',
+      paralelo: 'A',
+    });
+    componente.buscar();
+
+    expect(cursosService.listar).toHaveBeenCalledWith({
+      periodo_id: 10,
+      asignatura_id: 100,
+      docente_id: 1000,
+      estado: 'abierto',
+      paralelo: 'A',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('no envía filtros vacíos al consultar', () => {
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.setValue({
+      periodo_id: '',
+      asignatura_id: '',
+      docente_id: '',
+      estado: '',
+      paralelo: '   ',
+    });
+    componente.buscar();
+
+    expect(cursosService.listar).toHaveBeenCalledWith({
+      periodo_id: undefined,
+      asignatura_id: undefined,
+      docente_id: undefined,
+      estado: undefined,
+      paralelo: undefined,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('limpia filtros y recarga desde la primera página', () => {
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.setValue({
+      periodo_id: '10',
+      asignatura_id: '',
+      docente_id: '',
+      estado: '',
+      paralelo: '',
+    });
+    componente.buscar();
+    componente.limpiarFiltros();
+
+    expect(componente.filtros.getRawValue()).toEqual({
+      periodo_id: '',
+      asignatura_id: '',
+      docente_id: '',
+      estado: '',
+      paralelo: '',
+    });
+    expect(cursosService.listar).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        periodo_id: undefined,
+        pagina: 1,
+      }),
+    );
+  });
+
+  it('cambia de página consultando la API', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso()], { page: 1, total: 15, totalPages: 2 }),
+      ),
+    );
+
+    crearComponente();
+    cursosService.listar.mockClear();
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso({ id: 3 })], { page: 2, total: 15, totalPages: 2 }),
+      ),
+    );
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(cursosService.listar).toHaveBeenCalledWith(
+      expect.objectContaining({ pagina: 2, limite: 10 }),
+    );
+  });
+
+  it('conserva los filtros al cambiar de página', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso()], { page: 1, total: 15, totalPages: 2 }),
+      ),
+    );
+
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.controls.estado.setValue('cerrado');
+    cursosService.listar.mockClear();
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso({ id: 3 })], { page: 2, total: 15, totalPages: 2 }),
+      ),
+    );
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(cursosService.listar).toHaveBeenLastCalledWith(
+      expect.objectContaining({ estado: 'cerrado', pagina: 2, limite: 10 }),
+    );
+  });
+
+  it('ignora resultados de una consulta anterior', () => {
+    const consultaAnterior = new Subject<RespuestaListadoCursos>();
+    cursosService.listar.mockReturnValueOnce(consultaAnterior.asObservable());
+    crearComponente();
+
+    const consultaNueva = new Subject<RespuestaListadoCursos>();
+    cursosService.listar.mockReturnValueOnce(consultaNueva.asObservable());
+    componente.cargarCursos();
+
+    expect(cursosService.listar).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(crearRespuestaCursos([crearCurso({ id: 77 })]));
+    consultaNueva.complete();
+    consultaAnterior.next(crearRespuestaCursos([crearCurso({ id: 1 })]));
+    consultaAnterior.complete();
+
+    expect(componente.cursos()[0]?.id).toBe(77);
+  });
+
+  it('la búsqueda por paralelo usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      cursosService.listar.mockClear();
+
+      componente.filtros.controls.paralelo.setValue('A');
+      vi.advanceTimersByTime(100);
+      expect(cursosService.listar).not.toHaveBeenCalled();
+
+      componente.filtros.controls.paralelo.setValue('AB');
+      vi.advanceTimersByTime(400);
+
+      expect(cursosService.listar).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        paralelo: 'AB',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('al cambiar el select de estado consulta de inmediato', () => {
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.controls.estado.setValue('cerrado');
+
+    expect(cursosService.listar).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      estado: 'cerrado',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('cuenta los filtros activos', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtros.controls.estado.setValue('cerrado');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe botón Buscar', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
+  it('ADMIN ve acciones administrativas', () => {
+    crearComponente();
+
+    expect(obtenerEnlace('Nuevo curso')).toBeTruthy();
+    expect(obtenerEnlace('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cancelar')).toBeTruthy();
+  });
+
+  it('roles no administradores no ven acciones administrativas', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+
+    crearComponente();
+
+    expect(obtenerEnlace('Nuevo curso')).toBeNull();
+    expect(obtenerEnlace('Editar')).toBeNull();
+    expect(obtenerBoton('Cancelar')).toBeNull();
+  });
+
+  it('enlaza cada curso con detalle y edición', () => {
+    crearComponente();
+
+    expect(obtenerEnlace('Ver')?.getAttribute('href')).toBe('/cursos/1');
+    expect(obtenerEnlace('Editar')?.getAttribute('href')).toBe(
+      '/cursos/editar/1',
+    );
+  });
+
+  it('no muestra botón de cancelar para un curso ya cancelado', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso({ estado: 'cancelado' })]),
+      ),
+    );
+
+    crearComponente();
+
+    expect(obtenerBoton('Cancelar')).toBeNull();
+  });
+
+  it('confirma antes de cancelar un curso y recarga el listado', () => {
+    crearComponente();
+    componente.cancelarCurso(componente.cursos()[0]);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
+    expect(cursosService.cancelarCurso).toHaveBeenCalledWith(1);
+    expect(obtenerTexto()).toContain('Curso cancelado correctamente.');
+    expect(cursosService.listar).toHaveBeenCalledTimes(2);
+  });
+
+  it('no cancela si se cancela la confirmación', () => {
+    crearComponente();
+    componente.cancelarCurso(componente.cursos()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
+
+    expect(cursosService.cancelarCurso).not.toHaveBeenCalled();
+  });
+
+  it('evita solicitudes duplicadas al cancelar', () => {
+    const solicitudPendiente =
+      new Subject<RespuestaCambioEstadoCurso>();
+
+    cursosService.cancelarCurso.mockReturnValueOnce(
+      solicitudPendiente.asObservable(),
+    );
+
+    crearComponente();
+    componente.cancelarCurso(componente.cursos()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+
+    expect(cursosService.cancelarCurso).toHaveBeenCalledTimes(1);
+  });
+
+  it('muestra error de conflicto al cancelar', () => {
+    cursosService.cancelarCurso.mockReturnValueOnce(
+      errorObservable(
+        new HttpErrorResponse({
+          status: 409,
+          error: {
+            success: false,
+            code: 'CURSO_DUPLICADO',
+            message: 'Ya existe.',
+          },
+        }),
+      ),
+    );
+
+    crearComponente();
+    componente.cancelarCurso(componente.cursos()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
+    expect(componente.mensajeError()).toBe(
+      'Ya existe un curso con el mismo período, asignatura y paralelo.',
+    );
+  });
+
+  it('selecciona y deselecciona una fila con clic', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    clicEnFila(primero);
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    clicEnFila(primero);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    teclaEnFila(primero, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    teclaEnFila(primero, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace o botón interno', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+    const enlace = obtenerEnlace('Ver');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      primero,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones válidas al seleccionar', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    clicEnFila(primero);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cancelar')).toBeTruthy();
+  });
+
+  it('roles no administradores solo ven Ver en la barra contextual', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    clicEnFila(primero);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Cancelar')).toBeNull();
+  });
+
+  it('no muestra Cancelar en la barra para un curso ya cancelado', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso({ id: 5, estado: 'cancelado' })]),
+      ),
+    );
+
+    crearComponente();
+    const curso = componente.cursos()[0];
+    clicEnFila(curso);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cancelar')).toBeNull();
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    clicEnFila(primero);
+    fixture.detectChanges();
+
+    expect(obtenerFila(primero).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+    clicEnFila(primero);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  function clicEnFila(curso: Curso): void {
+    const celda = obtenerFila(curso).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(curso: Curso, tecla: string): void {
+    obtenerFila(curso).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerFila(curso: Curso): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find((filaEncontrada) =>
+      filaEncontrada.textContent?.includes(`(${curso.paralelo})`),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del curso');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
+  }
+
+  function crearComponente(): void {
+    fixture = TestBed.createComponent(ListadoCursosComponent);
+    componente = fixture.componentInstance;
+    fixture.detectChanges();
+  }
+
+  function obtenerUltimosFiltros(): FiltrosCursos | undefined {
+    const llamadas = cursosService.listar.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
+  }
+
+  function obtenerTexto(): string {
+    return fixture.nativeElement.textContent ?? '';
+  }
+
+  function obtenerElemento(selector: string): HTMLElement | null {
+    return fixture.nativeElement.querySelector(selector) as HTMLElement | null;
+  }
+
+  function obtenerEnlace(texto: string): HTMLAnchorElement | null {
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('a'),
+    ) as HTMLAnchorElement[];
+
+    return (
+      enlaces.find((enlace) => enlace.textContent?.includes(texto)) ?? null
+    );
+  }
+
+  function obtenerBoton(texto: string): HTMLButtonElement | null {
+    const botones = Array.from(
+      fixture.nativeElement.querySelectorAll('button'),
+    ) as HTMLButtonElement[];
+
+    return (
+      botones.find((boton) => boton.textContent?.includes(texto)) ?? null
+    );
+  }
+});
+
+function respuestaObservable<T>(valor: T): Observable<T> {
+  return new Observable<T>((suscriptor) => {
+    suscriptor.next(valor);
+    suscriptor.complete();
+  });
+}
+
+function errorObservable(error: unknown): Observable<never> {
+  return new Observable<never>((suscriptor) => {
+    suscriptor.error(error);
+  });
+}
+
+function crearUsuario(codigoRol: string): UsuarioAutenticado {
+  return {
+    id: 1,
+    nombres: 'Persona',
+    apellidos: 'Prueba',
+    correo: 'persona.prueba@universidad.edu',
+    estado: 'activo',
+    debe_cambiar_password: false,
+    estudiante_id: null,
+    docente_id: null,
+    rol: {
+      id: 1,
+      codigo: codigoRol,
+      nombre: codigoRol,
+    },
+  };
+}
+
+function crearCurso(cambios: Partial<Curso> = {}): Curso {
+  return {
+    id: 1,
+    periodo_id: 10,
+    asignatura_id: 100,
+    docente_id: 1000,
+    paralelo: 'A',
+    aula: 'Aula 101',
+    horario: 'Lunes 08:00',
+    cupo_maximo: 40,
+    estado: 'abierto',
+    cantidad_matriculados: 5,
+    cupos_disponibles: 35,
+    ...cambios,
+  };
+}
+
+function crearAsignaturaReferencia() {
+  return {
+    id: 100,
+    codigo: 'PRG1',
+    nombre: 'Programación I',
+    creditos: 4,
+    nivel_academico: 1,
+    activo: true,
+  };
+}
+
+function crearDocenteReferencia() {
+  return {
+    id: 1000,
+    identificacion: '0102030405',
+    nombres: 'Ana',
+    apellidos: 'Gómez',
+    correo: 'ana.gomez@universidad.edu',
+    especialidad: 'Software',
+    activo: true,
+  };
+}
+
+function crearPeriodoReferencia() {
+  return {
+    id: 10,
+    codigo: '2026-1',
+    nombre: 'Primer Semestre 2026',
+    fecha_inicio: '2026-03-01',
+    fecha_fin: '2026-07-31',
+    fecha_inicio_matricula: '2026-02-15',
+    fecha_fin_matricula: '2026-03-05',
+    estado: 'planificado',
+  };
+}
+
+function crearRespuestaCursos(
+  cursos: Curso[],
+  paginacion: {
+    page?: number;
+    total?: number;
+    totalPages?: number;
+  } = {},
+): RespuestaListadoCursos {
+  return {
+    success: true,
+    data: cursos,
+    page: paginacion.page ?? 1,
+    limit: 10,
+    total: paginacion.total ?? cursos.length,
+    totalPages: paginacion.totalPages ?? 1,
+  };
+}
+
+function crearRespuestaCambioEstado(
+  cambios: Partial<Curso>,
+): RespuestaCambioEstadoCurso {
+  return {
+    success: true,
+    message: 'Curso cancelado correctamente.',
+    data: crearCurso(cambios),
+  };
+}
+
+function crearPeriodo(cambios: Partial<PeriodoAcademico> = {}): PeriodoAcademico {
+  return {
+    id: 10,
+    codigo: '2026-1',
+    nombre: 'Primer Semestre 2026',
+    fecha_inicio: '2026-03-01',
+    fecha_fin: '2026-07-31',
+    fecha_inicio_matricula: '2026-02-15',
+    fecha_fin_matricula: '2026-03-05',
+    estado: 'planificado',
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    ...cambios,
+  };
+}
+
+function crearRespuestaPeriodos(
+  periodos: Array<ReturnType<typeof crearPeriodo>>,
+): RespuestaListadoPeriodos {
+  return {
+    success: true,
+    data: periodos,
+    page: 1,
+    limit: 100,
+    total: periodos.length,
+    totalPages: 1,
+  };
+}
+
+function crearAsignatura(cambios: Partial<Asignatura> = {}): Asignatura {
+  return {
+    id: 100,
+    codigo: 'PRG1',
+    nombre: 'Programación I',
+    creditos: 4,
+    nivel_academico: 1,
+    activo: true,
+    ...cambios,
+  };
+}
+
+function crearRespuestaAsignaturas(
+  asignaturas: Asignatura[],
+): RespuestaListadoAsignaturas {
+  return {
+    success: true,
+    data: asignaturas,
+    page: 1,
+    limit: 100,
+    total: asignaturas.length,
+    totalPages: 1,
+  };
+}
+
+function crearDocente(cambios: Partial<Docente> = {}): Docente {
+  return {
+    id: 1000,
+    identificacion: '0102030405',
+    nombres: 'Ana',
+    apellidos: 'Gómez',
+    correo: 'ana.gomez@universidad.edu',
+    telefono: null,
+    especialidad: 'Software',
+    activo: true,
+    ...cambios,
+  };
+}
+
+function crearRespuestaDocentes(docentes: Docente[]): RespuestaListadoDocentes {
+  return {
+    success: true,
+    data: docentes,
+    page: 1,
+    limit: 100,
+    total: docentes.length,
+    totalPages: Math.ceil(docentes.length / 100),
+  };
+}

@@ -1,0 +1,31 @@
+<section class="page" aria-labelledby="titulo-crear-estudiante">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-crear-estudiante">Crear estudiante</h1>
+      <p class="page-subtitle">Registra un nuevo estudiante en el sistema.</p>
+    </div>
+  </header>
+
+  @if (mensajeExito()) {
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (cargandoCarreras()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando carreras...
+    </div>
+  }
+
+  <app-estudiante-form
+    [carreras]="carreras()"
+    [cargandoCarreras]="cargandoCarreras()"
+    [enviando]="enviando()"
+    (guardarEstudiante)="guardarEstudiante($event)"
+    (cancelarFormulario)="cancelar()"
+  />
+</section>

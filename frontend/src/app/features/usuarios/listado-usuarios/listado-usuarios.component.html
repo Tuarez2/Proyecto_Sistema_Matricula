@@ -1,0 +1,201 @@
+<section class="page" aria-labelledby="titulo-usuarios">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-usuarios">Usuarios</h1>
+      <p class="page-subtitle">Administra las cuentas y permisos de acceso al sistema.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/usuarios/nuevo" class="btn btn-primary">Nuevo usuario</a>
+    </div>
+  </header>
+
+  <form
+    class="form-card"
+    [formGroup]="formularioFiltros"
+    (ngSubmit)="$event.preventDefault()"
+    novalidate
+  >
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="correo">Correo</label>
+        <input
+          id="correo"
+          type="search"
+          formControlName="correo"
+          maxlength="150"
+        />
+        @if (
+          formularioFiltros.controls.correo.touched &&
+          formularioFiltros.controls.correo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El correo no puede superar 150 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="estado">Estado</label>
+        <select id="estado" formControlName="estado">
+          <option value="">Todos los estados</option>
+          <option [value]="ESTADOS_USUARIO.ACTIVO">Activo</option>
+          <option [value]="ESTADOS_USUARIO.BLOQUEADO">Bloqueado</option>
+          <option [value]="ESTADOS_USUARIO.INACTIVO">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="codigoRol">Rol</label>
+        <select
+          id="codigoRol"
+          formControlName="codigoRol"
+          [disabled]="cargandoRoles()"
+        >
+          <option value="">Todos los roles</option>
+          @for (rol of roles(); track rol.id) {
+            <option [value]="rol.codigo">{{ rol.nombre }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-neutral"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+  </form>
+
+  <p class="filtros-activos" role="status" aria-live="polite">
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
+
+  @if (cargandoUsuarios()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando usuarios...
+    </div>
+  }
+
+  @if (mensajeErrorRoles()) {
+    <p class="alert alert--error" role="alert">{{ mensajeErrorRoles() }}</p>
+  }
+
+  @if (mensajeErrorUsuarios()) {
+    <p class="alert alert--error" role="alert">{{ mensajeErrorUsuarios() }}</p>
+  }
+
+  @if (!cargandoUsuarios() && !mensajeErrorUsuarios() && usuarios().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon" aria-hidden="true">👥</span>
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron usuarios con los filtros aplicados.</h2>
+        <p>Prueba con otros criterios o limpia los filtros.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+      } @else {
+        <h2>No se encontraron usuarios.</h2>
+        <p>Ajusta los filtros de búsqueda o registra un nuevo usuario.</p>
+        <div class="empty-actions">
+          <a routerLink="/usuarios/nuevo" class="btn btn-primary">Nuevo usuario</a>
+        </div>
+      }
+    </div>
+  }
+
+  @if (usuarios().length > 0) {
+    <p class="result-count" role="status">
+      Se encontraron <strong>{{ totalUsuarios() }}</strong>
+      {{ totalUsuarios() === 1 ? 'usuario' : 'usuarios' }}
+    </p>
+
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
+      <table>
+        <caption>Listado de usuarios</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
+            <th scope="col">Identificador</th>
+            <th scope="col">Nombre completo</th>
+            <th scope="col">Correo</th>
+            <th scope="col">Rol</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Contraseña pendiente</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (usuario of usuarios(); track usuario.id) {
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === usuario.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === usuario.id"
+              (click)="seleccionarFila($event, usuario)"
+              (keydown)="seleccionarFilaTeclado($event, usuario)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === usuario.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(usuario)"
+                  [attr.aria-label]="'Seleccionar a ' + obtenerNombreCompleto(usuario)"
+                />
+              </td>
+              <td>{{ usuario.id }}</td>
+              <td>{{ obtenerNombreCompleto(usuario) }}</td>
+              <td>{{ usuario.correo }}</td>
+              <td>{{ usuario.rol?.nombre || 'Sin rol' }}</td>
+              <td>
+                <span class="estado-badge {{ obtenerClaseEstado(usuario.estado) }}">
+                  {{ obtenerEtiquetaEstado(usuario.estado) }}
+                </span>
+              </td>
+              <td>
+                @if (usuario.debe_cambiar_password) {
+                  <span class="estado-badge estado-badge--warning">Sí</span>
+                } @else {
+                  <span class="estado-badge estado-badge--neutral">No</span>
+                }
+              </td>
+              <td>
+                <div class="row-actions">
+                  <a [routerLink]="['/usuarios', usuario.id, 'editar']" class="btn btn-sm btn-neutral">
+                    Editar
+                  </a>
+                  <a [routerLink]="['/usuarios', usuario.id, 'estado']" class="btn btn-sm btn-neutral">
+                    Cambiar estado
+                  </a>
+                  <a [routerLink]="['/usuarios', usuario.id, 'contrasena']" class="btn btn-sm btn-neutral">
+                    Cambiar contraseña
+                  </a>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalUsuarios()"
+    [deshabilitado]="cargandoUsuarios()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>

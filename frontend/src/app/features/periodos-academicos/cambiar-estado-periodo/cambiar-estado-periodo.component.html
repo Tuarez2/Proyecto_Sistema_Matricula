@@ -1,0 +1,104 @@
+<section class="page" aria-labelledby="titulo-cambiar-estado-periodo">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-cambiar-estado-periodo">
+        Cambiar estado de periodo académico
+      </h1>
+      <p class="page-subtitle">Avanza el ciclo de un periodo académico.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/periodos-academicos" class="btn btn-neutral">Volver a periodos académicos</a>
+    </div>
+  </header>
+
+  @if (cargandoPeriodo()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando periodo académico...
+    </div>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert" aria-live="polite">{{ mensajeError() }}</p>
+  }
+
+  @if (periodo()) {
+    <div class="detail-card">
+      <p class="detail-line"><strong>Identificador:</strong> {{ periodo()?.id }}</p>
+      <p class="detail-line"><strong>Código:</strong> {{ periodo()?.codigo }}</p>
+      <p class="detail-line"><strong>Nombre:</strong> {{ periodo()?.nombre }}</p>
+      <p class="detail-line"><strong>Fecha de inicio:</strong> {{ periodo()?.fecha_inicio | fecha }}</p>
+      <p class="detail-line"><strong>Fecha de fin:</strong> {{ periodo()?.fecha_fin | fecha }}</p>
+      <p class="detail-line"><strong>Estado actual:</strong> <span class="estado-badge {{ obtenerClaseEstado(periodo()!.estado) }}">{{ obtenerEtiquetaEstado(periodo()!.estado) }}</span></p>
+    </div>
+
+    <p class="form-hint">
+      Las transiciones avanzan el ciclo del periodo académico y no pueden
+      revertirse desde esta interfaz.
+    </p>
+
+    @if (estadoActual() === ESTADOS_PERIODO_ACADEMICO.CERRADO) {
+      <p class="alert alert--warning" role="status" aria-live="polite">
+        El periodo académico está cerrado y no tiene transiciones disponibles.
+      </p>
+    }
+
+    @if (tieneTransicionesDisponibles()) {
+      <form
+        class="form-card"
+        [formGroup]="formularioEstado"
+        (ngSubmit)="guardarEstado()"
+        novalidate
+      >
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="nuevoEstado">Nuevo estado</label>
+            <select
+              id="nuevoEstado"
+              formControlName="nuevoEstado"
+              [attr.aria-invalid]="
+                formularioEstado.controls.nuevoEstado.touched &&
+                formularioEstado.controls.nuevoEstado.invalid
+              "
+              aria-describedby="error-nuevo-estado"
+            >
+              <option value="">Seleccione un estado</option>
+              @for (estado of estadosPermitidos(); track estado) {
+                <option [value]="estado">
+                  {{ obtenerEtiquetaEstado(estado) }}
+                </option>
+              }
+            </select>
+            @if (
+              formularioEstado.controls.nuevoEstado.touched &&
+              formularioEstado.controls.nuevoEstado.hasError('required')
+            ) {
+              <p id="error-nuevo-estado" class="error-field" role="alert">Seleccione un estado.</p>
+            }
+          </div>
+        </div>
+
+        @if (obtenerDescripcionEfecto()) {
+          <p class="alert alert--info" role="status" aria-live="polite">
+            {{ obtenerDescripcionEfecto() }}
+          </p>
+        }
+
+        @if (mensajeAviso()) {
+          <p class="alert alert--info" role="status" aria-live="polite">{{ mensajeAviso() }}</p>
+        }
+
+        <div class="form-actions">
+          <button type="submit" [disabled]="!puedeGuardar()">
+            {{
+              actualizandoEstado()
+                ? 'Aplicando transición...'
+                : 'Aplicar transición'
+            }}
+          </button>
+          <a routerLink="/periodos-academicos" class="btn btn-neutral">Cancelar</a>
+        </div>
+      </form>
+    }
+  }
+</section>

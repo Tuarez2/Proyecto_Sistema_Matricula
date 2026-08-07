@@ -1,0 +1,22 @@
+<section class="page" aria-labelledby="titulo-crear-docente">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-crear-docente">Registrar docente</h1>
+      <p class="page-subtitle">Registra un nuevo docente.</p>
+    </div>
+  </header>
+
+  @if (mensajeExito()) {
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  <app-docente-form
+    [enviando]="enviando()"
+    (guardarDocente)="guardarDocente($event)"
+    (cancelarFormulario)="cancelar()"
+  />
+</section>

@@ -1,0 +1,78 @@
+.listar-estudiantes {
+  display: grid;
+  gap: var(--espacio-5);
+}
+
+.listar-estudiantes__filtros-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-3);
+  justify-content: space-between;
+}
+
+.listar-estudiantes__conteo {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.listar-estudiantes__total {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.listar-estudiantes__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.listar-estudiantes__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.listar-estudiantes__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  padding: 0.25rem 0.6rem;
+}
+
+.listar-estudiantes__chip--activo {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.listar-estudiantes__vaciar {
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  padding: 0;
+  text-decoration: underline;
+}
+
+.listar-estudiantes__vaciar:hover,
+.listar-estudiantes__vaciar:focus-visible {
+  color: var(--color-danger);
+}
+
+.filtros-activos {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.filtros-activos strong {
+  color: var(--color-primary);
+}

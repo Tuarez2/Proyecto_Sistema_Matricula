@@ -1,0 +1,73 @@
+import * as usuarioService from '../services/usuario.service.js';
+import manejadorAsync from '../utils/asyncHandler.js';
+
+export const obtenerUsuarios = manejadorAsync(async (req, res) => {
+  const resultado = await usuarioService.listarUsuarios(req.query);
+
+  res.status(200).json({
+    success: true,
+    data: resultado.data,
+    page: resultado.page,
+    limit: resultado.limit,
+    total: resultado.total,
+    totalPages: resultado.totalPages
+  });
+});
+
+export const obtenerUsuarioPorId = manejadorAsync(async (req, res) => {
+  const usuario = await usuarioService.obtenerUsuarioPorId(req.params.id);
+
+  res.status(200).json({
+    success: true,
+    data: usuario
+  });
+});
+
+export const crearUsuario = manejadorAsync(async (req, res) => {
+  const usuario = await usuarioService.crearUsuario(req.body);
+
+  res.status(201).json({
+    success: true,
+    message: 'Usuario creado correctamente.',
+    data: usuario
+  });
+});
+
+export const actualizarUsuario = manejadorAsync(async (req, res) => {
+  const usuario = await usuarioService.actualizarUsuario(req.params.id, req.body, req.user.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Usuario actualizado correctamente.',
+    data: usuario
+  });
+});
+
+export const cambiarEstadoUsuario = manejadorAsync(async (req, res) => {
+  const usuario = await usuarioService.cambiarEstadoUsuario(req.params.id, req.body.estado, req.user.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Estado de usuario actualizado correctamente.',
+    data: usuario
+  });
+});
+
+export const cambiarPasswordUsuario = manejadorAsync(async (req, res) => {
+  const usuario = await usuarioService.cambiarPasswordUsuario(req.params.id, req.body.password);
+
+  res.status(200).json({
+    success: true,
+    message: 'Contrasena de usuario actualizada correctamente.',
+    data: usuario
+  });
+});
+
+export default {
+  obtenerUsuarios,
+  obtenerUsuarioPorId,
+  crearUsuario,
+  actualizarUsuario,
+  cambiarEstadoUsuario,
+  cambiarPasswordUsuario
+};

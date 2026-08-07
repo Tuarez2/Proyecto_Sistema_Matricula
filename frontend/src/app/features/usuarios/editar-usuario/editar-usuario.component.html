@@ -1,0 +1,242 @@
+<section class="page" aria-labelledby="titulo-editar-usuario">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-editar-usuario">Editar usuario</h1>
+      <p class="page-subtitle">Modifica los datos de un usuario.</p>
+    </div>
+  </header>
+
+  @if (cargandoUsuario()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando usuario...
+    </div>
+  }
+
+  @if (mensajeErrorUsuario()) {
+    <p class="alert alert--error" role="alert" aria-live="polite">{{ mensajeErrorUsuario() }}</p>
+    <a routerLink="/usuarios" class="btn btn-neutral">Volver a usuarios</a>
+  }
+
+  @if (mensajeErrorRoles()) {
+    <p class="alert alert--error" role="alert" aria-live="polite">{{ mensajeErrorRoles() }}</p>
+  }
+
+  @if (mensajeAviso()) {
+    <p class="alert alert--info" role="status" aria-live="polite">{{ mensajeAviso() }}</p>
+  }
+
+  @if (usuarioOriginal(); as usuario) {
+    <div class="detail-card">
+      <p class="detail-line"><strong>Identificador:</strong> {{ usuario.id }}</p>
+      <p class="detail-line"><strong>Estado actual:</strong> <span class="estado-badge {{ obtenerClaseEstado(usuario.estado) }}">{{ obtenerEtiquetaEstado(usuario.estado) }}</span></p>
+    </div>
+
+    <form
+      class="form-card"
+      [formGroup]="formularioUsuario"
+      (ngSubmit)="guardarCambios()"
+      novalidate
+    >
+      <div class="form-section">
+        <h2 class="form-section__title">Información de acceso</h2>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="nombres">Nombres</label>
+            <input
+              id="nombres"
+              type="text"
+              formControlName="nombres"
+              maxlength="100"
+              autocomplete="given-name"
+              [attr.aria-invalid]="formularioUsuario.controls.nombres.invalid"
+              aria-describedby="error-nombres"
+            />
+            @if (
+              formularioUsuario.controls.nombres.touched &&
+              formularioUsuario.controls.nombres.hasError('required')
+            ) {
+              <p id="error-nombres" class="error-field" role="alert">Los nombres son obligatorios.</p>
+            }
+            @if (
+              formularioUsuario.controls.nombres.touched &&
+              formularioUsuario.controls.nombres.hasError('maxlength')
+            ) {
+              <p id="error-nombres-maximo" class="error-field" role="alert">
+                Los nombres no pueden superar 100 caracteres.
+              </p>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="apellidos">Apellidos</label>
+            <input
+              id="apellidos"
+              type="text"
+              formControlName="apellidos"
+              maxlength="100"
+              autocomplete="family-name"
+              [attr.aria-invalid]="formularioUsuario.controls.apellidos.invalid"
+              aria-describedby="error-apellidos"
+            />
+            @if (
+              formularioUsuario.controls.apellidos.touched &&
+              formularioUsuario.controls.apellidos.hasError('required')
+            ) {
+              <p id="error-apellidos" class="error-field" role="alert">Los apellidos son obligatorios.</p>
+            }
+            @if (
+              formularioUsuario.controls.apellidos.touched &&
+              formularioUsuario.controls.apellidos.hasError('maxlength')
+            ) {
+              <p id="error-apellidos-maximo" class="error-field" role="alert">
+                Los apellidos no pueden superar 100 caracteres.
+              </p>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="correo">Correo</label>
+            <input
+              id="correo"
+              type="email"
+              formControlName="correo"
+              maxlength="150"
+              autocomplete="email"
+              [attr.aria-invalid]="formularioUsuario.controls.correo.invalid"
+              aria-describedby="error-correo"
+            />
+            @if (
+              formularioUsuario.controls.correo.touched &&
+              formularioUsuario.controls.correo.hasError('required')
+            ) {
+              <p id="error-correo" class="error-field" role="alert">El correo es obligatorio.</p>
+            }
+            @if (
+              formularioUsuario.controls.correo.touched &&
+              formularioUsuario.controls.correo.hasError('email')
+            ) {
+              <p id="error-correo-formato" class="error-field" role="alert">Ingrese un correo válido.</p>
+            }
+            @if (
+              formularioUsuario.controls.correo.touched &&
+              formularioUsuario.controls.correo.hasError('maxlength')
+            ) {
+              <p id="error-correo-maximo" class="error-field" role="alert">
+                El correo no puede superar 150 caracteres.
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 class="form-section__title">Rol y vínculo</h2>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="rolId">Rol</label>
+            <select
+              id="rolId"
+              formControlName="rolId"
+              [attr.aria-invalid]="formularioUsuario.controls.rolId.invalid"
+              aria-describedby="error-rol"
+            >
+              <option value="">Seleccione un rol</option>
+              @for (rol of rolesDisponibles(); track rol.id) {
+                <option
+                  [value]="rol.id"
+                  [disabled]="!rol.activo"
+                >
+                  {{ rol.nombre }}{{ rol.activo ? '' : ' (inactivo)' }}
+                </option>
+              }
+            </select>
+            @if (
+              formularioUsuario.controls.rolId.touched &&
+              formularioUsuario.controls.rolId.hasError('required')
+            ) {
+              <p id="error-rol" class="error-field" role="alert">El rol es obligatorio.</p>
+            }
+            @if (
+              formularioUsuario.controls.rolId.touched &&
+              formularioUsuario.controls.rolId.hasError('pattern')
+            ) {
+              <p id="error-rol-formato" class="error-field" role="alert">
+                El rol debe ser un entero positivo.
+              </p>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="estudianteId">Identificador del estudiante (opcional)</label>
+            <input
+              id="estudianteId"
+              type="number"
+              min="1"
+              step="1"
+              formControlName="estudianteId"
+              [attr.aria-invalid]="formularioUsuario.controls.estudianteId.invalid"
+              aria-describedby="error-estudiante"
+            />
+            @if (
+              formularioUsuario.controls.estudianteId.touched &&
+              formularioUsuario.controls.estudianteId.hasError('pattern')
+            ) {
+              <p id="error-estudiante" class="error-field" role="alert">
+                El identificador del estudiante debe ser un entero positivo.
+              </p>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="docenteId">Identificador del docente (opcional)</label>
+            <input
+              id="docenteId"
+              type="number"
+              min="1"
+              step="1"
+              formControlName="docenteId"
+              [attr.aria-invalid]="formularioUsuario.controls.docenteId.invalid"
+              aria-describedby="error-docente"
+            />
+            @if (
+              formularioUsuario.controls.docenteId.touched &&
+              formularioUsuario.controls.docenteId.hasError('pattern')
+            ) {
+              <p id="error-docente" class="error-field" role="alert">
+                El identificador del docente debe ser un entero positivo.
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 class="form-section__title">Estado</h2>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="debeCambiarContrasena" class="checkbox-field">
+              <input
+                id="debeCambiarContrasena"
+                type="checkbox"
+                formControlName="debeCambiarContrasena"
+              />
+              Solicitar cambio de contraseña al iniciar sesión
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="!puedeGuardar()">
+          @if (actualizandoUsuario()) {
+            Guardando cambios...
+          } @else {
+            Guardar cambios
+          }
+        </button>
+        <a routerLink="/usuarios" class="btn btn-neutral">Cancelar</a>
+      </div>
+    </form>
+  }
+</section>

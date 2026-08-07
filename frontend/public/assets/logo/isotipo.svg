@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Sistema de Matrícula Universitaria">
+  <defs>
+    <linearGradient id="fondo-isotipo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a5a44"/>
+      <stop offset="1" stop-color="#142e22"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#fondo-isotipo)"/>
+  <path d="M32 11l12 6-12 6-12-6z" fill="#e7efe9"/>
+  <path d="M23 23.5v5c0 2.6 4 4.2 9 4.2s9-1.6 9-4.2v-5" fill="none" stroke="#e7efe9" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 30c-4-3.5-8.5-4.5-13-4.5H10v23h9c4.5 0 9 1 13 4.5 4-3.5 8.5-4.5 13-4.5h9V25.5h-9c-4.5 0-9 1-13 4.5Z" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M32 30v23" fill="none" stroke="#ffffff" stroke-width="3.5"/>
+</svg>

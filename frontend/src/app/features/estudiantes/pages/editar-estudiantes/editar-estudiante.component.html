@@ -1,0 +1,42 @@
+<section class="page" aria-labelledby="titulo-editar-estudiante">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-editar-estudiante">Editar estudiante</h1>
+      <p class="page-subtitle">Modifica los datos de un estudiante.</p>
+    </div>
+  </header>
+
+  @if (mensajeExito()) {
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (cargandoEstudiante()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando estudiante...
+    </div>
+  }
+
+  @if (cargandoCarreras()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando carreras...
+    </div>
+  }
+
+  @if (estudiante()) {
+    <app-estudiante-form
+      [estudianteInicial]="estudiante()"
+      [carreras]="carreras()"
+      [modoEdicion]="true"
+      [cargandoCarreras]="cargandoCarreras()"
+      [enviando]="enviando()"
+      (guardarEstudiante)="guardarEstudiante($event)"
+      (cancelarFormulario)="cancelar()"
+    />
+  }
+</section>

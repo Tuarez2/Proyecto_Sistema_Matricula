@@ -1,0 +1,84 @@
+<div class="table-wrap tabla-seleccionable">
+  <table>
+    <caption>Listado de docentes</caption>
+    <thead>
+      <tr>
+        <th scope="col" class="columna-seleccion">
+          <span class="sr-only">Seleccionar</span>
+        </th>
+        <th scope="col">Identificación</th>
+        <th scope="col">Nombre completo</th>
+        <th scope="col">Correo</th>
+        <th scope="col">Teléfono</th>
+        <th scope="col">Especialidad</th>
+        <th scope="col">Estado</th>
+        @if (esAdministrador) {
+          <th scope="col">Acciones</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (docente of docentes; track docente.id) {
+        <tr
+          tabindex="0"
+          [class.fila-seleccionada]="filaSeleccionadaId === docente.id"
+          [attr.aria-selected]="filaSeleccionadaId === docente.id"
+          (click)="manejarClicFila($event, docente)"
+          (keydown)="manejarTecladoFila($event, docente)"
+        >
+          <td class="columna-seleccion">
+            <input
+              type="checkbox"
+              [checked]="filaSeleccionadaId === docente.id"
+              (click)="$event.stopPropagation()"
+              (change)="alternarSeleccion.emit(docente)"
+              [attr.aria-label]="'Seleccionar a ' + obtenerNombreCompleto(docente)"
+            />
+          </td>
+          <td>{{ docente.identificacion }}</td>
+          <td>{{ obtenerNombreCompleto(docente) }}</td>
+          <td>{{ docente.correo }}</td>
+          <td>{{ docente.telefono ?? 'No registrado' }}</td>
+          <td>{{ docente.especialidad }}</td>
+          <td>
+            <span class="estado-badge {{ obtenerClaseEstado(docente) }}">
+              {{ obtenerEtiquetaEstado(docente) }}
+            </span>
+          </td>
+          @if (esAdministrador) {
+            <td>
+              <div class="row-actions">
+                <button
+                  class="btn btn-sm btn-neutral"
+                  type="button"
+                  [disabled]="idDocenteProcesando !== null"
+                  (click)="editarDocente.emit(docente)"
+                >
+                  Editar
+                </button>
+                <button
+                  class="btn btn-sm btn-neutral"
+                  type="button"
+                  [disabled]="idDocenteProcesando !== null"
+                  (click)="cambiarEstadoDocente.emit(docente)"
+                >
+                  @if (docente.activo) {
+                    Inactivar
+                  } @else {
+                    Activar
+                  }
+                </button>
+              </div>
+            </td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td [attr.colspan]="esAdministrador ? 8 : 7">
+            No se encontraron docentes.
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

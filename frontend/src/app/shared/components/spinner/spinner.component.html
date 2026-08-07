@@ -1,0 +1,8 @@
+@if (isLoading) {
+  <div class="loading" role="status">
+    <div class="spinner" aria-hidden="true"></div>
+    @if (mensaje) {
+      <p>{{ mensaje }}</p>
+    }
+  </div>
+}

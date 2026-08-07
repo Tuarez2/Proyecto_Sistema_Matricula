@@ -1,0 +1,133 @@
+<form
+  class="form-card"
+  [formGroup]="formularioDocente"
+  (ngSubmit)="enviarFormulario()"
+  novalidate
+>
+  <div class="form-grid">
+    <div class="form-field">
+      <label for="identificacion">Identificación</label>
+      <input
+        id="identificacion"
+        type="text"
+        formControlName="identificacion"
+        maxlength="20"
+        [attr.aria-invalid]="formularioDocente.controls.identificacion.invalid"
+      />
+      @if (
+        formularioDocente.controls.identificacion.touched &&
+        formularioDocente.controls.identificacion.invalid
+      ) {
+        <p class="error-field" role="alert">La identificación es obligatoria, entre 5 y 20 caracteres alfanuméricos y debe contener al menos un número.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="nombres">Nombres</label>
+      <input
+        id="nombres"
+        type="text"
+        formControlName="nombres"
+        maxlength="100"
+        [attr.aria-invalid]="formularioDocente.controls.nombres.invalid"
+      />
+      @if (
+        formularioDocente.controls.nombres.touched &&
+        formularioDocente.controls.nombres.invalid
+      ) {
+        <p class="error-field" role="alert">Los nombres son obligatorios y solo pueden contener letras y espacios.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="apellidos">Apellidos</label>
+      <input
+        id="apellidos"
+        type="text"
+        formControlName="apellidos"
+        maxlength="100"
+        [attr.aria-invalid]="formularioDocente.controls.apellidos.invalid"
+      />
+      @if (
+        formularioDocente.controls.apellidos.touched &&
+        formularioDocente.controls.apellidos.invalid
+      ) {
+        <p class="error-field" role="alert">Los apellidos son obligatorios y solo pueden contener letras y espacios.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="correo">Correo</label>
+      <input
+        id="correo"
+        type="email"
+        formControlName="correo"
+        maxlength="150"
+        [attr.aria-invalid]="formularioDocente.controls.correo.invalid"
+      />
+      @if (
+        formularioDocente.controls.correo.touched &&
+        formularioDocente.controls.correo.invalid
+      ) {
+        <p class="error-field" role="alert">Ingrese un correo válido de máximo 150 caracteres.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="telefono">Teléfono</label>
+      <input
+        id="telefono"
+        type="text"
+        formControlName="telefono"
+        maxlength="20"
+        [attr.aria-invalid]="formularioDocente.controls.telefono.invalid"
+      />
+      @if (
+        formularioDocente.controls.telefono.touched &&
+        formularioDocente.controls.telefono.invalid
+      ) {
+        <p class="error-field" role="alert">El teléfono debe contener solo números, +, - y espacios.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="especialidad">Especialidad</label>
+      <input
+        id="especialidad"
+        type="text"
+        formControlName="especialidad"
+        maxlength="150"
+        [attr.aria-invalid]="formularioDocente.controls.especialidad.invalid"
+      />
+      @if (
+        formularioDocente.controls.especialidad.touched &&
+        formularioDocente.controls.especialidad.invalid
+      ) {
+        <p class="error-field" role="alert">La especialidad es obligatoria y no puede superar 150 caracteres.</p>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="activo">Estado</label>
+      <select id="activo" formControlName="activo">
+        <option [ngValue]="true">Activo</option>
+        <option [ngValue]="false">Inactivo</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" [disabled]="formularioDocente.invalid || enviando">
+      @if (enviando) {
+        Guardando...
+      } @else if (modoEdicion) {
+        Actualizar
+      } @else {
+        Guardar
+      }
+    </button>
+    <button type="button" [disabled]="enviando" (click)="cancelar()">
+      Cancelar
+    </button>
+  </div>
+</form>

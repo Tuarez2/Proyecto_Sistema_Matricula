@@ -1,0 +1,213 @@
+<section class="page" aria-labelledby="titulo-crear-periodo">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-crear-periodo">
+        Nuevo periodo académico
+      </h1>
+      <p class="page-subtitle">Registra un nuevo periodo académico.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/periodos-academicos" class="btn btn-neutral">Cancelar</a>
+    </div>
+  </header>
+
+  <p class="form-hint">El periodo será creado inicialmente con estado Planificado.</p>
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert" aria-live="polite">{{ mensajeError() }}</p>
+  }
+
+  @if (mensajeAviso()) {
+    <p class="alert alert--info" role="status" aria-live="polite">{{ mensajeAviso() }}</p>
+  }
+
+  <form
+    class="form-card"
+    [formGroup]="formularioPeriodo"
+    (ngSubmit)="guardarPeriodo()"
+    novalidate
+  >
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
+        <input
+          id="codigo"
+          type="text"
+          formControlName="codigo"
+          maxlength="20"
+          [attr.aria-invalid]="formularioPeriodo.controls.codigo.invalid"
+          aria-describedby="error-codigo"
+        />
+        @if (
+          formularioPeriodo.controls.codigo.touched &&
+          formularioPeriodo.controls.codigo.hasError('required')
+        ) {
+          <p id="error-codigo" class="error-field" role="alert">El código es obligatorio.</p>
+        }
+        @if (
+          formularioPeriodo.controls.codigo.touched &&
+          formularioPeriodo.controls.codigo.hasError('maxlength')
+        ) {
+          <p id="error-codigo" class="error-field" role="alert">
+            El código no puede superar 20 caracteres.
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          maxlength="100"
+          [attr.aria-invalid]="formularioPeriodo.controls.nombre.invalid"
+          aria-describedby="error-nombre"
+        />
+        @if (
+          formularioPeriodo.controls.nombre.touched &&
+          formularioPeriodo.controls.nombre.hasError('required')
+        ) {
+          <p id="error-nombre" class="error-field" role="alert">El nombre es obligatorio.</p>
+        }
+        @if (
+          formularioPeriodo.controls.nombre.touched &&
+          formularioPeriodo.controls.nombre.hasError('maxlength')
+        ) {
+          <p id="error-nombre" class="error-field" role="alert">
+            El nombre no puede superar 100 caracteres.
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="fechaInicio">Fecha de inicio</label>
+        <input
+          id="fechaInicio"
+          type="date"
+          formControlName="fechaInicio"
+          [attr.aria-invalid]="
+            formularioPeriodo.controls.fechaInicio.invalid ||
+            formularioPeriodo.hasError('rangoPeriodoInvalido') ||
+            formularioPeriodo.hasError('matriculaFueraPeriodo') ||
+            formularioPeriodo.hasError('fechaInvalida')
+          "
+          aria-describedby="error-fechas-periodo"
+        />
+        @if (
+          formularioPeriodo.controls.fechaInicio.touched &&
+          formularioPeriodo.controls.fechaInicio.hasError('required')
+        ) {
+          <p id="error-fechas-periodo" class="error-field" role="alert">
+            La fecha de inicio es obligatoria.
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="fechaFin">Fecha de fin</label>
+        <input
+          id="fechaFin"
+          type="date"
+          formControlName="fechaFin"
+          [attr.aria-invalid]="
+            formularioPeriodo.controls.fechaFin.invalid ||
+            formularioPeriodo.hasError('rangoPeriodoInvalido') ||
+            formularioPeriodo.hasError('matriculaFueraPeriodo') ||
+            formularioPeriodo.hasError('fechaInvalida')
+          "
+          aria-describedby="error-fechas-periodo"
+        />
+        @if (
+          formularioPeriodo.controls.fechaFin.touched &&
+          formularioPeriodo.controls.fechaFin.hasError('required')
+        ) {
+          <p id="error-fechas-periodo" class="error-field" role="alert">
+            La fecha de fin es obligatoria.
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="fechaInicioMatricula">Inicio de matrícula</label>
+        <input
+          id="fechaInicioMatricula"
+          type="datetime-local"
+          formControlName="fechaInicioMatricula"
+          [attr.aria-invalid]="
+            formularioPeriodo.controls.fechaInicioMatricula.invalid ||
+            formularioPeriodo.hasError('rangoMatriculaInvalido') ||
+            formularioPeriodo.hasError('matriculaFueraPeriodo') ||
+            formularioPeriodo.hasError('fechaInvalida')
+          "
+          aria-describedby="error-fechas-matricula"
+        />
+        @if (
+          formularioPeriodo.controls.fechaInicioMatricula.touched &&
+          formularioPeriodo.controls.fechaInicioMatricula.hasError('required')
+        ) {
+          <p id="error-fechas-matricula" class="error-field" role="alert">
+            El inicio de matrícula es obligatorio.
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="fechaFinMatricula">Fin de matrícula</label>
+        <input
+          id="fechaFinMatricula"
+          type="datetime-local"
+          formControlName="fechaFinMatricula"
+          [attr.aria-invalid]="
+            formularioPeriodo.controls.fechaFinMatricula.invalid ||
+            formularioPeriodo.hasError('rangoMatriculaInvalido') ||
+            formularioPeriodo.hasError('matriculaFueraPeriodo') ||
+            formularioPeriodo.hasError('fechaInvalida')
+          "
+          aria-describedby="error-fechas-matricula"
+        />
+        @if (
+          formularioPeriodo.controls.fechaFinMatricula.touched &&
+          formularioPeriodo.controls.fechaFinMatricula.hasError('required')
+        ) {
+          <p id="error-fechas-matricula" class="error-field" role="alert">
+            El fin de matrícula es obligatorio.
+          </p>
+        }
+      </div>
+
+      @if (formularioPeriodo.hasError('rangoPeriodoInvalido')) {
+        <p id="error-fechas-periodo" class="error-field form-field--full" role="alert">
+          La fecha de inicio debe ser anterior a la fecha de fin.
+        </p>
+      }
+
+      @if (formularioPeriodo.hasError('rangoMatriculaInvalido')) {
+        <p id="error-fechas-matricula" class="error-field form-field--full" role="alert">
+          El inicio de matrícula debe ser anterior al fin de matrícula.
+        </p>
+      }
+
+      @if (formularioPeriodo.hasError('matriculaFueraPeriodo')) {
+        <p id="error-fechas-matricula" class="error-field form-field--full" role="alert">
+          La ventana de matrícula debe estar dentro del periodo académico.
+        </p>
+      }
+
+      @if (formularioPeriodo.hasError('fechaInvalida')) {
+        <p id="error-fechas-periodo" class="error-field form-field--full" role="alert">Revise las fechas ingresadas.</p>
+      }
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="!puedeGuardar()">
+        @if (creandoPeriodo()) {
+          Creando periodo...
+        } @else {
+          Crear periodo
+        }
+      </button>
+      <a routerLink="/periodos-academicos" class="btn btn-neutral">Cancelar</a>
+    </div>
+  </form>
+</section>

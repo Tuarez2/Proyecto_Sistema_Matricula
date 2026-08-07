@@ -1,0 +1,24 @@
+@if (mensaje) {
+  <div class="alert {{ clasePorTipo }}" role="alert">
+    <div class="alert__contenido">
+      @if (titulo) {
+        <strong>{{ titulo }}:</strong>
+      }
+      {{ mensaje }}
+
+      @if (detalles.length > 0) {
+        <ul>
+          @for (detalle of detalles; track $index) {
+            <li>{{ detalle }}</li>
+          }
+        </ul>
+      }
+    </div>
+
+    @if (descartable) {
+      <button type="button" class="alert__cerrar" aria-label="Cerrar alerta" (click)="descartar()">
+        ×
+      </button>
+    }
+  </div>
+}

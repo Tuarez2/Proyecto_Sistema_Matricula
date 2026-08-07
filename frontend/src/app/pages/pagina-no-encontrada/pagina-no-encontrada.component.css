@@ -1,0 +1,58 @@
+.pagina-no-encontrada {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: var(--espacio-6) var(--espacio-4);
+  text-align: center;
+}
+
+.pagina-no-encontrada::before {
+  content: "404";
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  margin-bottom: var(--espacio-5);
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+.pagina-no-encontrada h1 {
+  margin: 0 0 var(--espacio-4);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.pagina-no-encontrada p {
+  margin: 0 0 var(--espacio-5);
+  color: var(--color-text-secondary);
+  max-width: 30rem;
+}
+
+.pagina-no-encontrada a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--altura-control);
+  padding: 0.55rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  transition: background-color var(--transition-fast);
+}
+
+.pagina-no-encontrada a:hover {
+  background: var(--color-primary-hover);
+  text-decoration: none;
+}

@@ -1,0 +1,139 @@
+.comprobante-pagina {
+  display: grid;
+  gap: var(--espacio-4);
+}
+
+.comprobante-pagina__titulo {
+  margin: 0;
+}
+
+.comprobante-pagina__acciones {
+  display: flex;
+  gap: var(--espacio-2);
+  flex-wrap: wrap;
+}
+
+.comprobante {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--espacio-5);
+  display: grid;
+  gap: var(--espacio-4);
+}
+
+.comprobante__encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--espacio-4);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: var(--espacio-4);
+  flex-wrap: wrap;
+}
+
+.comprobante__identidad {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+}
+
+.comprobante__isotipo {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.comprobante__marca {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  font-size: var(--font-size-md);
+}
+
+.comprobante__subtitulo-marca {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+}
+
+.comprobante__meta {
+  text-align: right;
+  color: var(--color-text-secondary);
+}
+
+.comprobante__meta p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.comprobante__subtitulo {
+  font-size: var(--font-size-md);
+  margin: 0;
+  color: var(--color-text);
+  padding-bottom: var(--espacio-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.comprobante__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--espacio-3) var(--espacio-4);
+  margin: 0;
+}
+
+.comprobante__datos div {
+  border-bottom: 1px dashed var(--color-border-strong);
+  padding-bottom: var(--espacio-2);
+}
+
+.comprobante__datos dt {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.comprobante__datos dd {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.comprobante__pie {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--espacio-3);
+  color: var(--color-text-muted);
+}
+
+.comprobante__pie p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+@media print {
+  .comprobante-pagina__acciones,
+  .comprobante-pagina__titulo {
+    display: none;
+  }
+
+  .comprobante {
+    border: none;
+    padding: 0;
+    max-width: none;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .comprobante__subtitulo {
+    border-bottom-color: #000;
+  }
+
+  .comprobante__encabezado {
+    border-bottom-color: #000;
+  }
+}

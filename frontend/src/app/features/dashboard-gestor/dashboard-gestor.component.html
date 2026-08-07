@@ -1,0 +1,164 @@
+<section class="dashboard-gestor" aria-labelledby="titulo-dashboard">
+  <header class="dashboard-gestor__encabezado">
+    <div>
+      <h2 id="titulo-dashboard">Resumen de matrículas</h2>
+      <p class="dashboard-gestor__subtitulo">
+        Estado actual del proceso de matrícula del periodo vigente.
+      </p>
+    </div>
+    <button
+      type="button"
+      class="btn btn-neutral"
+      [disabled]="cargando()"
+      (click)="cargarResumen()"
+    >
+      Actualizar
+    </button>
+  </header>
+
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando resumen...
+    </div>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && resumen(); as resumen) {
+    <div class="dashboard-gestor__periodo">
+      <div class="dashboard-gestor__periodo-info">
+        <h3>Periodo actual</h3>
+        <p class="dashboard-gestor__periodo-nombre">
+          {{ resumen.periodo_actual?.nombre ?? 'Sin periodo en matrícula abierta' }}
+        </p>
+        @if (resumen.periodo_actual) {
+          <p class="dashboard-gestor__periodo-fechas">
+            Del {{ resumen.periodo_actual.fecha_inicio | fecha }}
+            al {{ resumen.periodo_actual.fecha_fin | fecha }}
+          </p>
+        }
+      </div>
+      <div class="dashboard-gestor__periodo-ventana">
+        @if (resumen.ventana_matricula_abierta) {
+          <span class="estado-badge estado-badge--success">Ventana abierta</span>
+          @if (diasRestantesDeMatricula(resumen); as dias) {
+            <p class="dashboard-gestor__periodo-mensaje">
+              @if (resumen.periodo_actual?.fecha_fin_matricula; as cierre) {
+                Cierra el {{ cierre | fecha }} · <strong>{{ dias }}</strong>
+                {{ dias === 1 ? 'día' : 'días' }} restantes
+              }
+            </p>
+          }
+        } @else {
+          <span class="estado-badge estado-badge--warning">Ventana cerrada</span>
+          <p class="dashboard-gestor__periodo-mensaje">
+            No se pueden registrar nuevas matrículas.
+          </p>
+        }
+      </div>
+    </div>
+
+    <div class="dashboard-gestor__tarjetas">
+      <div class="dashboard-gestor__tarjeta">
+        <svg class="dashboard-gestor__tarjeta-icono" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v1M12 19v1M5 12H4M20 12h-1M7 7l-.7-.7M17.7 17.7l-.7-.7M17.7 6.3l-.7.7M7.7 17.7l-.7-.7" />
+          <circle cx="12" cy="12" r="3.5" />
+        </svg>
+        <span class="dashboard-gestor__valor">{{ resumen.matriculas_registradas_hoy }}</span>
+        <span class="dashboard-gestor__etiqueta">Matrículas hoy</span>
+      </div>
+      <div class="dashboard-gestor__tarjeta">
+        <svg class="dashboard-gestor__tarjeta-icono" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+        </svg>
+        <span class="dashboard-gestor__valor">{{ resumen.estudiantes_matriculados_periodo }}</span>
+        <span class="dashboard-gestor__etiqueta">Estudiantes en el periodo</span>
+      </div>
+      <div class="dashboard-gestor__tarjeta">
+        <svg class="dashboard-gestor__tarjeta-icono" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3l9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5" />
+        </svg>
+        <span class="dashboard-gestor__valor">{{ resumen.cursos_con_pocos_cupos.length }}</span>
+        <span class="dashboard-gestor__etiqueta">Cursos con pocos cupos</span>
+      </div>
+      <div class="dashboard-gestor__tarjeta">
+        <svg class="dashboard-gestor__tarjeta-icono" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 11l2 2 4-4M12 3l9 5-9 5-9-5 9-5ZM3 17l9 5 9-5" />
+        </svg>
+        <span class="dashboard-gestor__valor">{{ resumen.cursos_llenos.length }}</span>
+        <span class="dashboard-gestor__etiqueta">Cursos llenos</span>
+      </div>
+    </div>
+
+    <div class="dashboard-gestor__acciones">
+      <h3>Acciones rápidas</h3>
+      <div class="dashboard-gestor__acciones-grupo">
+        <a routerLink="/estudiantes" class="btn btn-neutral">Buscar estudiante</a>
+        <a routerLink="/matriculas/nueva" class="btn btn-primary">Nueva matrícula</a>
+        <a routerLink="/matriculas/renovar" class="btn btn-neutral">Renovar matrícula</a>
+        <a routerLink="/matriculas" class="btn btn-neutral">Ver matrículas</a>
+      </div>
+    </div>
+
+    <div class="dashboard-gestor__columnas">
+      <div class="dashboard-gestor__bloque">
+        <h3>Cursos con pocos cupos</h3>
+        @if (resumen.cursos_con_pocos_cupos.length === 0) {
+          <p class="dashboard-gestor__vacio">Sin cursos con cupos bajos.</p>
+        } @else {
+          <ul class="dashboard-gestor__lista">
+            @for (curso of resumen.cursos_con_pocos_cupos; track curso.id) {
+              <li>
+                {{ curso.asignatura?.codigo }} - {{ curso.asignatura?.nombre }}
+                ({{ curso.paralelo }})
+                <span class="estado-badge estado-badge--warning">Pocos cupos</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="dashboard-gestor__bloque">
+        <h3>Cursos llenos</h3>
+        @if (resumen.cursos_llenos.length === 0) {
+          <p class="dashboard-gestor__vacio">Sin cursos llenos.</p>
+        } @else {
+          <ul class="dashboard-gestor__lista">
+            @for (curso of resumen.cursos_llenos; track curso.id) {
+              <li>
+                {{ curso.asignatura?.codigo }} - {{ curso.asignatura?.nombre }}
+                ({{ curso.paralelo }})
+                <span class="estado-badge estado-badge--danger">Lleno</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+
+    <div class="dashboard-gestor__bloque">
+      <h3>Últimas matrículas</h3>
+      @if (resumen.ultimas_matriculas.length === 0) {
+        <p class="dashboard-gestor__vacio">Aún no hay matrículas registradas.</p>
+      } @else {
+        <ul class="dashboard-gestor__lista">
+          @for (matricula of resumen.ultimas_matriculas; track matricula.id) {
+            <li>
+              <a [routerLink]="['/matriculas', matricula.id]">
+                {{ matricula.estudiante?.nombres }}
+                {{ matricula.estudiante?.apellidos }}
+              </a>
+              - {{ obtenerDescripcionCurso(matricula) }}
+              <span class="estado-badge estado-badge--info">
+                {{ obtenerEtiquetaEstado(matricula.estado) }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</section>

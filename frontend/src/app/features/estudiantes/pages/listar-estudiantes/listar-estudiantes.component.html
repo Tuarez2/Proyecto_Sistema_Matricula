@@ -1,0 +1,284 @@
+<section class="page listar-estudiantes" aria-labelledby="titulo-estudiantes">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-estudiantes">Estudiantes</h1>
+      <p class="page-subtitle">Busca, consulta y administra el registro de estudiantes.</p>
+    </div>
+    @if (esAdministrador()) {
+      <div class="page-actions">
+        <a routerLink="/estudiantes/crear" class="btn btn-primary">Nuevo estudiante</a>
+      </div>
+    }
+  </header>
+
+  <form
+    class="form-card"
+    [formGroup]="filtros"
+    (ngSubmit)="impedirEnvio($event)"
+    novalidate
+  >
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="numero_matricula">Número de matrícula</label>
+        <input
+          id="numero_matricula"
+          type="search"
+          formControlName="numero_matricula"
+          maxlength="30"
+        />
+        @if (
+          filtros.controls.numero_matricula.touched &&
+          filtros.controls.numero_matricula.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">La matrícula no puede superar 30 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="identificacion">Identificación</label>
+        <input
+          id="identificacion"
+          type="search"
+          formControlName="identificacion"
+          maxlength="20"
+        />
+        @if (
+          filtros.controls.identificacion.touched &&
+          filtros.controls.identificacion.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">La identificación no puede superar 20 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nombres">Nombres</label>
+        <input
+          id="nombres"
+          type="search"
+          formControlName="nombres"
+          maxlength="100"
+        />
+        @if (
+          filtros.controls.nombres.touched &&
+          filtros.controls.nombres.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">Los nombres no pueden superar 100 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="apellidos">Apellidos</label>
+        <input
+          id="apellidos"
+          type="search"
+          formControlName="apellidos"
+          maxlength="100"
+        />
+        @if (
+          filtros.controls.apellidos.touched &&
+          filtros.controls.apellidos.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">Los apellidos no pueden superar 100 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="carrera_id">Carrera</label>
+        <select id="carrera_id" formControlName="carrera_id">
+          <option value="">Todas las carreras</option>
+          @for (carrera of carreras(); track carrera.id) {
+            <option [value]="carrera.id">{{ carrera.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="estado_academico">Estado académico</label>
+        <select id="estado_academico" formControlName="estado_academico">
+          <option value="">Todos los estados</option>
+          <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO">Activo</option>
+          <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO">Inactivo</option>
+          <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.SUSPENDIDO">Suspendido</option>
+          <option [value]="ESTADOS_ACADEMICOS_ESTUDIANTE.EGRESADO">Egresado</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="nivel_academico_actual">Nivel académico</label>
+        <input
+          id="nivel_academico_actual"
+          type="number"
+          formControlName="nivel_academico_actual"
+          min="1"
+          max="100"
+        />
+        @if (
+          filtros.controls.nivel_academico_actual.touched &&
+          filtros.controls.nivel_academico_actual.invalid
+        ) {
+          <p class="error-field" role="alert">El nivel académico debe ser un entero positivo.</p>
+        }
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-neutral"
+        (click)="limpiarFiltros()"
+        [disabled]="filtrosActivos() === 0"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+  </form>
+
+  @if (filtrosActivos() > 0) {
+    <p class="filtros-activos" role="status">
+      Filtros activos: <strong>{{ filtrosActivos() }}</strong>
+    </p>
+  }
+
+  @if (cargandoEstudiantes()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando estudiantes...
+    </div>
+  }
+
+  @if (mensajeExito()) {
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargandoEstudiantes() && !mensajeError() && estudiantes().length === 0) {
+    <div class="empty-state">
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron estudiantes con los filtros aplicados.</h2>
+        <p>Ajusta los criterios o limpia los filtros para ampliar la búsqueda.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-primary" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+      } @else {
+        <h2>No se encontraron estudiantes.</h2>
+        <p>No hay estudiantes registrados todavía.</p>
+        @if (esAdministrador()) {
+          <div class="empty-actions">
+            <a routerLink="/estudiantes/crear" class="btn btn-primary">Nuevo estudiante</a>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  @if (estudiantes().length > 0) {
+    <div class="listar-estudiantes__filtros-barra">
+      <p class="listar-estudiantes__conteo" role="status">
+        Se encontraron <span class="listar-estudiantes__total">{{ totalEstudiantes() }}</span>
+        {{ totalEstudiantes() === 1 ? 'estudiante' : 'estudiantes' }}
+      </p>
+    </div>
+
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
+      <table>
+        <caption>Listado de estudiantes</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
+            <th scope="col">Matrícula</th>
+            <th scope="col">Identificación</th>
+            <th scope="col">Nombre completo</th>
+            <th scope="col">Carrera</th>
+            <th scope="col">Nivel</th>
+            <th scope="col">Estado académico</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (estudiante of estudiantes(); track estudiante.id) {
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === estudiante.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === estudiante.id"
+              (click)="seleccionarFila($event, estudiante)"
+              (keydown)="seleccionarFilaTeclado($event, estudiante)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === estudiante.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(estudiante)"
+                  [attr.aria-label]="'Seleccionar a ' + obtenerNombreCompleto(estudiante)"
+                />
+              </td>
+              <td>{{ estudiante.numero_matricula }}</td>
+              <td>{{ estudiante.identificacion }}</td>
+              <td>{{ obtenerNombreCompleto(estudiante) }}</td>
+              <td>{{ estudiante.carrera?.nombre ?? 'Sin carrera' }}</td>
+              <td>{{ estudiante.nivel_academico_actual }}</td>
+              <td>
+                <span class="estado-badge estado-badge--info">
+                  {{ obtenerEtiquetaEstado(estudiante.estado_academico) }}
+                </span>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <a class="btn btn-sm btn-neutral" [routerLink]="['/estudiantes', estudiante.id]">
+                    Ver
+                  </a>
+                  @if (esAdministrador()) {
+                    <a class="btn btn-sm btn-neutral" [routerLink]="['/estudiantes/editar', estudiante.id]">
+                      Editar
+                    </a>
+                    @if (estudiante.estado_academico !== ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO) {
+                      <button
+                        class="btn btn-sm btn-neutral"
+                        type="button"
+                        [disabled]="estudianteProcesando() !== null"
+                        (click)="inactivarEstudiante(estudiante)"
+                      >
+                        Inactivar
+                      </button>
+                    }
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <app-pagination
+    [currentPage]="paginaActual()"
+    [totalPages]="totalPaginas()"
+    [totalRegistros]="totalEstudiantes()"
+    [deshabilitado]="cargandoEstudiantes()"
+    (pageChange)="cambiarPagina($event)"
+  />
+</section>
+
+<app-confirm-modal
+  [oAbierto]="dialogoAbierto()"
+  [titulo]="dialogoTitulo()"
+  [mensaje]="dialogoMensaje()"
+  [peligroso]="dialogoPeligroso()"
+  [procesando]="dialogoProcesando()"
+  (confirmado)="confirmarInactivacion()"
+  (cancelado)="cerrarDialogo()"
+/>

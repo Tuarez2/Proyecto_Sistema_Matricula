@@ -1,0 +1,26 @@
+<nav class="pagination" aria-label="Paginacion">
+  <button
+    type="button"
+    class="pagination__button"
+    [disabled]="!puedeRetroceder"
+    (click)="irAnterior()"
+  >
+    Anterior
+  </button>
+
+  <span class="pagination__status" aria-live="polite">
+    Página {{ paginaNormalizada }} de {{ totalPaginasNormalizado }}
+    @if (totalRegistros !== null) {
+      · {{ totalRegistros }} {{ totalRegistros === 1 ? 'resultado' : 'resultados' }}
+    }
+  </span>
+
+  <button
+    type="button"
+    class="pagination__button"
+    [disabled]="!puedeAvanzar"
+    (click)="irSiguiente()"
+  >
+    Siguiente
+  </button>
+</nav>

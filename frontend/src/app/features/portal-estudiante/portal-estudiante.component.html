@@ -1,0 +1,101 @@
+<section class="page" aria-labelledby="titulo-portal">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-portal">Mi matrícula</h1>
+      <p class="page-subtitle">Consulta su información y su historial de matrículas.</p>
+    </div>
+    <a routerLink="/" class="btn btn-neutral">Volver al inicio</a>
+  </header>
+
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando su información...
+    </div>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && estudiante(); as estudiante) {
+    <div class="portal-estudiante__resumen">
+      <div>
+        <h2>{{ estudiante.nombres }} {{ estudiante.apellidos }}</h2>
+        <p class="page-subtitle">
+          {{ estudiante.numero_matricula }} · {{ estudiante.carrera?.nombre ?? 'Sin carrera' }}
+        </p>
+      </div>
+      <div class="portal-estudiante__datos">
+        <p>
+          <strong>Nivel académico:</strong> {{ estudiante.nivel_academico_actual }}
+        </p>
+        <p>
+          <span class="estado-badge estado-badge--info">
+            {{ obtenerEtiquetaEstadoAcademico(estudiante.estado_academico) }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <h2 class="portal-estudiante__titulo-seccion">Mis matrículas</h2>
+
+    @if (matriculas().length === 0) {
+      <div class="empty-state">
+        <h3>Sin matrículas registradas.</h3>
+        <p>Actualmente no tiene matrículas registradas en el sistema.</p>
+      </div>
+    }
+
+    @for (grupo of gruposHistorial(); track grupo.id) {
+      <section class="portal-estudiante__grupo" [attr.aria-label]="'Periodo ' + grupo.nombre">
+        <h3>{{ grupo.nombre }}</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Curso</th>
+                <th scope="col">Paralelo</th>
+                <th scope="col">Horario</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (matricula of grupo.matriculas; track matricula.id) {
+                <tr>
+                  <td>{{ obtenerDescripcionCurso(matricula) }}</td>
+                  <td>{{ matricula.curso?.paralelo ?? 'Sin paralelo' }}</td>
+                  <td>{{ matricula.curso?.horario ?? 'Sin horario' }}</td>
+                  <td>{{ matricula.fecha_matricula | fecha }}</td>
+                  <td>
+                    <span class="estado-badge estado-badge--info">
+                      {{ obtenerEtiquetaEstado(matricula.estado) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="row-actions">
+                      <a
+                        [routerLink]="['/matriculas', matricula.id]"
+                        class="btn btn-sm btn-neutral"
+                      >
+                        Ver detalle
+                      </a>
+                      <a
+                        [routerLink]="['/matriculas/imprimir', matricula.id]"
+                        class="btn btn-sm btn-neutral"
+                      >
+                        Comprobante
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+</section>

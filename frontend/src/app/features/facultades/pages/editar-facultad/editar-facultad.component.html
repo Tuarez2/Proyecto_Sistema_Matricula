@@ -1,0 +1,89 @@
+<section class="page" aria-labelledby="titulo-editar-facultad">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-editar-facultad">Editar facultad</h1>
+      <p class="page-subtitle">Modifica los datos de una facultad.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/facultades" class="btn btn-neutral">Volver a facultades</a>
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando facultad...
+    </div>
+  }
+
+  @if (mensajeExito()) {
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (facultad(); as facultad) {
+    <div class="detail-card">
+      <p class="detail-line"><strong>Estado actual:</strong> {{ facultad.activo ? 'Activa' : 'Inactiva' }}</p>
+    </div>
+  }
+
+  <form class="form-card" [formGroup]="formularioFacultad" (ngSubmit)="guardarFacultad()" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
+        <input
+          id="codigo"
+          formControlName="codigo"
+          maxlength="20"
+          [disabled]="cargando() || enviando()"
+        />
+        @if (
+          formularioFacultad.controls.codigo.touched &&
+          formularioFacultad.controls.codigo.hasError('required')
+        ) {
+          <p class="error-field" role="alert">El código es obligatorio.</p>
+        }
+        @if (
+          formularioFacultad.controls.codigo.touched &&
+          formularioFacultad.controls.codigo.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El código no puede superar 20 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input
+          id="nombre"
+          formControlName="nombre"
+          maxlength="120"
+          [disabled]="cargando() || enviando()"
+        />
+        @if (
+          formularioFacultad.controls.nombre.touched &&
+          formularioFacultad.controls.nombre.hasError('required')
+        ) {
+          <p class="error-field" role="alert">El nombre es obligatorio.</p>
+        }
+        @if (
+          formularioFacultad.controls.nombre.touched &&
+          formularioFacultad.controls.nombre.hasError('maxlength')
+        ) {
+          <p class="error-field" role="alert">El nombre no puede superar 120 caracteres.</p>
+        }
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="cargando() || enviando()">
+        Guardar cambios
+      </button>
+      <button type="button" [disabled]="enviando()" (click)="cancelar()">
+        Cancelar
+      </button>
+    </div>
+  </form>
+</section>

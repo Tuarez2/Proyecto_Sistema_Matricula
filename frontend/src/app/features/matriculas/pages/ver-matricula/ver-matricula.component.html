@@ -1,0 +1,100 @@
+<section class="page" aria-labelledby="titulo-ver-matricula">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-ver-matricula">Detalle de matrícula</h1>
+      <p class="page-subtitle">Información de la matrícula y acceso al comprobante.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/matriculas" class="btn btn-neutral">Volver a matrículas</a>
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando matrícula...
+    </div>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && matricula(); as matricula) {
+    <div class="detail-card">
+      <div class="detail-card__encabezado">
+        <div>
+          <h2>Matrícula #{{ matricula.id }}</h2>
+          <p class="page-subtitle">{{ obtenerDescripcionCurso(matricula) }}</p>
+        </div>
+        <span class="estado-badge estado-badge--info">
+          {{ obtenerEtiquetaEstado(matricula.estado) }}
+        </span>
+      </div>
+
+      <dl class="detail-list">
+        <div class="detail-item">
+          <dt>Estudiante</dt>
+          <dd>{{ obtenerNombreEstudiante(matricula) }}</dd>
+        </div>
+
+        @if (puedeVerDatosPersonales()) {
+          <div class="detail-item">
+            <dt>Identificación</dt>
+            <dd>{{ matricula.estudiante?.identificacion ?? 'Sin identificación' }}</dd>
+          </div>
+
+          <div class="detail-item">
+            <dt>Correo</dt>
+            <dd>{{ matricula.estudiante?.correo ?? 'Sin correo' }}</dd>
+          </div>
+        }
+
+        <div class="detail-item">
+          <dt>Curso</dt>
+          <dd>{{ obtenerDescripcionCurso(matricula) }}</dd>
+        </div>
+
+        <div class="detail-item">
+          <dt>Periodo</dt>
+          <dd>{{ obtenerPeriodo(matricula) }}</dd>
+        </div>
+
+        <div class="detail-item">
+          <dt>Docente</dt>
+          <dd>{{ obtenerDocente(matricula) }}</dd>
+        </div>
+
+        @if (matricula.curso?.aula) {
+          <div class="detail-item">
+            <dt>Aula</dt>
+            <dd>{{ matricula.curso.aula }}</dd>
+          </div>
+        }
+
+        @if (matricula.curso?.horario) {
+          <div class="detail-item">
+            <dt>Horario</dt>
+            <dd>{{ matricula.curso.horario }}</dd>
+          </div>
+        }
+
+        <div class="detail-item">
+          <dt>Fecha de matrícula</dt>
+          <dd>{{ matricula.fecha_matricula | fecha }}</dd>
+        </div>
+
+        <div class="detail-item">
+          <dt>Calificación final</dt>
+          <dd>{{ matricula.calificacion_final ?? 'Sin calificación' }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="page-actions">
+      <a [routerLink]="['/matriculas/imprimir', matricula.id]" class="btn btn-primary">
+        Ver comprobante
+      </a>
+    </div>
+  }
+</section>

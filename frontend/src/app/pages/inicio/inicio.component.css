@@ -1,0 +1,104 @@
+.pagina-inicio {
+  display: grid;
+  gap: var(--espacio-6);
+}
+
+.saludo-inicio h1 {
+  margin: 0 0 var(--espacio-2);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.rol-inicio {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  padding: 0.3rem 0.8rem;
+}
+
+.saludo-inicio__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-3);
+  margin: 0 0 var(--espacio-3);
+}
+
+.fecha-inicio {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.descripcion-inicio {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.modulos-inicio {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--espacio-4);
+}
+
+.modulo-acceso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: var(--espacio-4);
+  text-decoration: none;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.modulo-acceso:hover,
+.modulo-acceso:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.modulo-acceso__icono {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  padding: 0.25rem;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.modulo-acceso__contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.modulo-acceso__titulo {
+  font-weight: var(--font-weight-bold);
+}
+
+.modulo-acceso__descripcion {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modulo-acceso {
+    transition: none;
+  }
+}

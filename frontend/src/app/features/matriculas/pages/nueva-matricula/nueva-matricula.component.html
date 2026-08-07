@@ -1,0 +1,334 @@
+<section class="page" aria-labelledby="titulo-nueva-matricula">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-nueva-matricula">Nueva matrícula</h1>
+      <p class="page-subtitle">Asistente para registrar la matrícula de un estudiante.</p>
+    </div>
+    <a routerLink="/matriculas" class="btn btn-neutral">Volver a matrículas</a>
+  </header>
+
+  <ol class="nueva-matricula__pasos">
+    <li
+      [class.nueva-matricula__paso--activo]="pasoActual() === 1"
+      [class.nueva-matricula__paso--completado]="pasoActual() > 1"
+    >
+      <span class="nueva-matricula__paso-indice" aria-hidden="true">1</span>
+      <span class="nueva-matricula__paso-nombre">Estudiante</span>
+    </li>
+    <li
+      [class.nueva-matricula__paso--activo]="pasoActual() === 2"
+      [class.nueva-matricula__paso--completado]="pasoActual() > 2"
+    >
+      <span class="nueva-matricula__paso-indice" aria-hidden="true">2</span>
+      <span class="nueva-matricula__paso-nombre">Periodo</span>
+    </li>
+    <li
+      [class.nueva-matricula__paso--activo]="pasoActual() === 3"
+      [class.nueva-matricula__paso--completado]="pasoActual() > 3"
+    >
+      <span class="nueva-matricula__paso-indice" aria-hidden="true">3</span>
+      <span class="nueva-matricula__paso-nombre">Cursos</span>
+    </li>
+    <li
+      [class.nueva-matricula__paso--activo]="pasoActual() === 4"
+      [class.nueva-matricula__paso--completado]="pasoActual() > 4"
+    >
+      <span class="nueva-matricula__paso-indice" aria-hidden="true">4</span>
+      <span class="nueva-matricula__paso-nombre">Confirmar</span>
+    </li>
+  </ol>
+
+  <p class="nueva-matricula__progreso" aria-live="polite">
+    Paso {{ pasoActual() }} de 4
+  </p>
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (pasoActual() === 1 && !resultadoLote()) {
+    <div class="nueva-matricula__bloque">
+      <h2>Buscar estudiante</h2>
+      <p class="page-subtitle">
+        Busque por número de matrícula, identificación, nombres o apellidos.
+      </p>
+
+      <form
+        class="nueva-matricula__busqueda"
+        [formGroup]="formularioBusqueda"
+        (ngSubmit)="buscarEstudiantes()"
+        novalidate
+      >
+        <div class="form-field nueva-matricula__busqueda-campo">
+          <label for="criterio">Criterio de búsqueda</label>
+          <input
+            id="criterio"
+            type="search"
+            formControlName="criterio"
+            maxlength="120"
+            placeholder="Ej: EST-2026-001"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary" [disabled]="cargando()">
+          Buscar
+        </button>
+      </form>
+
+      @if (cargando()) {
+        <div class="loading" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          Buscando estudiantes...
+        </div>
+      }
+
+      @if (!cargando() && resultadosBusqueda().length > 0) {
+        <ul class="nueva-matricula__lista">
+          @for (estudiante of resultadosBusqueda(); track estudiante.id) {
+            <li>
+              <button
+                type="button"
+                class="nueva-matricula__item"
+                (click)="seleccionarEstudiante(estudiante)"
+              >
+                <span class="nueva-matricula__item-nombre">
+                  {{ obtenerNombreCompleto(estudiante) }}
+                </span>
+                <span class="nueva-matricula__item-detalle">
+                  {{ estudiante.numero_matricula }} · {{ estudiante.carrera?.nombre ?? 'Sin carrera' }}
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (!cargando() && resultadosBusqueda().length === 0) {
+        <div class="empty-state">
+          <h3>Sin resultados.</h3>
+          <p>No se encontraron estudiantes con ese criterio.</p>
+        </div>
+      }
+    </div>
+  }
+
+  @if (pasoActual() === 2 && estudianteSeleccionado(); as estudiante) {
+    <div class="nueva-matricula__bloque">
+      <h2>Seleccionar periodo</h2>
+      <p class="page-subtitle">
+        Estudiante: {{ obtenerNombreCompleto(estudiante) }} ({{ estudiante.numero_matricula }})
+      </p>
+
+      @if (periodos().length === 0) {
+        <div class="empty-state">
+          <h3>Sin periodos disponibles.</h3>
+          <p>No hay periodos con matrícula abierta en este momento.</p>
+        </div>
+      } @else {
+        <ul class="nueva-matricula__lista">
+          @for (periodo of periodos(); track periodo.id) {
+            <li>
+              <button
+                type="button"
+                class="nueva-matricula__item"
+                (click)="seleccionarPeriodo(periodo)"
+              >
+                <span class="nueva-matricula__item-nombre">{{ periodo.nombre }}</span>
+                <span class="nueva-matricula__item-detalle">{{ periodo.codigo }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <button type="button" class="btn btn-neutral" (click)="volverAlPasoAnterior()">
+        Cambiar estudiante
+      </button>
+    </div>
+  }
+
+  @if (pasoActual() === 3 && estudianteSeleccionado(); as estudiante) {
+    <div class="nueva-matricula__bloque">
+      <h2>Seleccionar cursos</h2>
+      <p class="page-subtitle">
+        {{ obtenerNombreCompleto(estudiante) }} · {{ periodoSeleccionado()?.nombre }}
+      </p>
+
+      @if (cargando()) {
+        <div class="loading" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          Consultando cursos disponibles...
+        </div>
+      }
+
+      @if (!cargando() && cursosDisponibles().length === 0) {
+        <div class="empty-state">
+          <h3>Sin cursos disponibles.</h3>
+          <p>
+            No hay cursos disponibles para este estudiante en el periodo seleccionado.
+          </p>
+        </div>
+      }
+
+      @if (!cargando() && cursosDisponiblesSeleccionables().length > 0) {
+        <ul class="nueva-matricula__lista">
+          @for (curso of cursosDisponiblesSeleccionables(); track curso.id) {
+            <li>
+              <label class="nueva-matricula__item nueva-matricula__item--seleccionable">
+                <input
+                  type="checkbox"
+                  [checked]="estaSeleccionado(curso.id)"
+                  (change)="alternarCurso(curso.id)"
+                />
+                <span class="nueva-matricula__item-nombre">
+                  {{ obtenerNombreCurso(curso) }}
+                </span>
+                <span class="nueva-matricula__item-detalle">
+                  {{ curso.cupos_disponibles }} cupos · {{ curso.horario }}
+                </span>
+              </label>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="nueva-matricula__acciones">
+        <button type="button" class="btn btn-neutral" (click)="volverAlPasoAnterior()">
+          Cambiar periodo
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!hayCursosSeleccionados()"
+          (click)="continuarAConfirmacion()"
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (pasoActual() === 4 && estudianteSeleccionado(); as estudiante) {
+    <div class="nueva-matricula__bloque">
+      <h2>Confirmar matrícula</h2>
+
+      <dl class="nueva-matricula__resumen">
+        <div>
+          <dt>Estudiante</dt>
+          <dd>{{ obtenerNombreCompleto(estudiante) }} ({{ estudiante.numero_matricula }})</dd>
+        </div>
+        <div>
+          <dt>Periodo</dt>
+          <dd>{{ periodoSeleccionado()?.nombre }}</dd>
+        </div>
+        <div>
+          <dt>Cursos seleccionados</dt>
+          <dd>{{ cursosSeleccionados().length }}</dd>
+        </div>
+      </dl>
+
+      <ul class="nueva-matricula__lista">
+        @for (curso of cursosDisponiblesSeleccionables(); track curso.id) {
+          @if (estaSeleccionado(curso.id)) {
+            <li>
+              <span class="nueva-matricula__item-nombre">
+                {{ obtenerNombreCurso(curso) }}
+              </span>
+              <span class="nueva-matricula__item-detalle">{{ curso.horario }}</span>
+            </li>
+          }
+        }
+      </ul>
+
+      <div class="nueva-matricula__acciones">
+        <button
+          type="button"
+          class="btn btn-neutral"
+          [disabled]="enviando()"
+          (click)="volverAlPasoAnterior()"
+        >
+          Volver a cursos
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="enviando()"
+          (click)="registrarMatricula()"
+        >
+          @if (enviando()) {
+            Registrando...
+          } @else {
+            Registrar matrícula
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (resultadoLote(); as resultado) {
+    <div class="nueva-matricula__resultado">
+      <p class="alert alert--success" role="status">
+        La matrícula fue registrada correctamente para
+        {{ resultado.estudiante.nombres }} {{ resultado.estudiante.apellidos }}.
+      </p>
+
+      <article class="comprobante" aria-label="Comprobante de matrícula">
+        <header class="comprobante__encabezado">
+          <div>
+            <p class="comprobante__sigla">SM</p>
+            <p class="comprobante__marca">Sistema de Matrícula Universitaria</p>
+          </div>
+          <div class="comprobante__meta">
+            <p>Matrícula registrada</p>
+            <p>Fecha: {{ resultado.matriculas[0]?.fecha_matricula | fecha }}</p>
+          </div>
+        </header>
+
+        <h2 class="comprobante__subtitulo">Datos del estudiante</h2>
+        <dl class="comprobante__datos">
+          <div>
+            <dt>Nombre completo</dt>
+            <dd>{{ resultado.estudiante.nombres }} {{ resultado.estudiante.apellidos }}</dd>
+          </div>
+          <div>
+            <dt>Número de matrícula</dt>
+            <dd>{{ resultado.estudiante.numero_matricula }}</dd>
+          </div>
+          <div>
+            <dt>Identificación</dt>
+            <dd>{{ resultado.estudiante.identificacion }}</dd>
+          </div>
+          <div>
+            <dt>Periodo</dt>
+            <dd>{{ resultado.periodo.nombre }}</dd>
+          </div>
+        </dl>
+
+        <h2 class="comprobante__subtitulo">Cursos matriculados ({{ resultado.total_cursos }})</h2>
+        <ul class="comprobante__lista-cursos">
+          @for (matricula of resultado.matriculas; track matricula.id) {
+            <li>
+              {{ matricula.curso?.asignatura?.codigo }} -
+              {{ matricula.curso?.asignatura?.nombre }}
+              ({{ matricula.curso?.paralelo }}) ·
+              {{ matricula.curso?.horario }}
+            </li>
+          }
+        </ul>
+
+        <footer class="comprobante__pie">
+          <p>Este documento certifica la matrícula registrada en el sistema.</p>
+        </footer>
+      </article>
+
+      <div class="nueva-matricula__acciones">
+        <button type="button" class="btn btn-primary" (click)="imprimir()">
+          Imprimir comprobante
+        </button>
+        <button type="button" class="btn btn-neutral" (click)="reiniciarFlujo()">
+          Registrar otra matrícula
+        </button>
+        <a routerLink="/matriculas" class="btn btn-neutral">Ir a matrículas</a>
+      </div>
+    </div>
+  }
+</section>

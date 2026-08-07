@@ -1,0 +1,106 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+
+import { obtenerUrlApi } from '../../../core/config/configuracion-api';
+import type {
+  ActualizarUsuarioSolicitud,
+  CambiarContrasenaUsuarioSolicitud,
+  CambiarEstadoUsuarioSolicitud,
+  CrearUsuarioSolicitud,
+  FiltrosListadoUsuarios,
+  RespuestaListadoUsuarios,
+  RespuestaUsuario,
+} from '../models/usuario.model';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class UsuariosService {
+  private readonly http = inject(HttpClient);
+
+  listarUsuarios(
+    filtros: FiltrosListadoUsuarios = {},
+  ): Observable<RespuestaListadoUsuarios> {
+    const params = this.construirParametros(filtros);
+
+    return this.http.get<RespuestaListadoUsuarios>(obtenerUrlApi('usuarios'), {
+      params,
+    });
+  }
+
+  crearUsuario(
+    datosUsuario: CrearUsuarioSolicitud,
+  ): Observable<RespuestaUsuario> {
+    return this.http.post<RespuestaUsuario>(obtenerUrlApi('usuarios'), datosUsuario);
+  }
+
+  obtenerUsuarioPorId(
+    idUsuario: number,
+  ): Observable<RespuestaUsuario> {
+    return this.http.get<RespuestaUsuario>(
+      obtenerUrlApi(`usuarios/${idUsuario}`),
+    );
+  }
+
+  actualizarUsuario(
+    idUsuario: number,
+    datosUsuario: ActualizarUsuarioSolicitud,
+  ): Observable<RespuestaUsuario> {
+    return this.http.put<RespuestaUsuario>(
+      obtenerUrlApi(`usuarios/${idUsuario}`),
+      datosUsuario,
+    );
+  }
+
+  cambiarEstadoUsuario(
+    idUsuario: number,
+    solicitud: CambiarEstadoUsuarioSolicitud,
+  ): Observable<RespuestaUsuario> {
+    return this.http.patch<RespuestaUsuario>(
+      obtenerUrlApi(`usuarios/${idUsuario}/estado`),
+      {
+        estado: solicitud.estado,
+      },
+    );
+  }
+
+  cambiarContrasenaUsuario(
+    idUsuario: number,
+    solicitud: CambiarContrasenaUsuarioSolicitud,
+  ): Observable<RespuestaUsuario> {
+    return this.http.patch<RespuestaUsuario>(
+      obtenerUrlApi(`usuarios/${idUsuario}/password`),
+      {
+        password: solicitud.password,
+      },
+    );
+  }
+
+  private construirParametros(filtros: FiltrosListadoUsuarios): HttpParams {
+    let params = new HttpParams();
+    const correo = filtros.correo?.trim();
+
+    if (correo) {
+      params = params.set('correo', correo);
+    }
+
+    if (filtros.estado) {
+      params = params.set('estado', filtros.estado);
+    }
+
+    if (filtros.codigoRol) {
+      params = params.set('rol', filtros.codigoRol);
+    }
+
+    if (filtros.pagina !== undefined) {
+      params = params.set('page', String(filtros.pagina));
+    }
+
+    if (filtros.limite !== undefined) {
+      params = params.set('limit', String(filtros.limite));
+    }
+
+    return params;
+  }
+}

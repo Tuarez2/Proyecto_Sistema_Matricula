@@ -1,0 +1,169 @@
+<section class="page" aria-labelledby="titulo-ver-estudiante">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-ver-estudiante">Detalle del estudiante</h1>
+      <p class="page-subtitle">Información personal e historial de matrículas.</p>
+    </div>
+    <div class="page-actions">
+      @if (puedeGestionarMatriculas()) {
+        <a routerLink="/matriculas/nueva" class="btn btn-primary">Nueva matrícula</a>
+        <a routerLink="/matriculas/renovar" class="btn btn-neutral">Renovar matrícula</a>
+      }
+      <a routerLink="/estudiantes" class="btn btn-neutral">Volver a estudiantes</a>
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando estudiante...
+    </div>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (!cargando() && estudiante(); as estudiante) {
+    <div class="ver-estudiante__encabezado">
+      <div>
+        <h2>
+          {{ estudiante.nombres }} {{ estudiante.apellidos }}
+        </h2>
+        <p class="page-subtitle">
+          {{ estudiante.numero_matricula }} · {{ estudiante.carrera?.nombre ?? 'Sin carrera' }}
+        </p>
+      </div>
+      <span class="estado-badge estado-badge--info">
+        {{ obtenerEtiquetaEstadoAcademico(estudiante.estado_academico) }}
+      </span>
+    </div>
+
+    <nav class="ver-estudiante__pestanias" aria-label="Secciones del estudiante">
+      <button
+        type="button"
+        class="ver-estudiante__pestania"
+        [class.ver-estudiante__pestania--activa]="pestaniaActiva() === 'datos'"
+        (click)="mostrarPestania('datos')"
+      >
+        Datos
+      </button>
+      <button
+        type="button"
+        class="ver-estudiante__pestania"
+        [class.ver-estudiante__pestania--activa]="pestaniaActiva() === 'historial'"
+        (click)="mostrarPestania('historial')"
+      >
+        Historial de matrículas
+      </button>
+    </nav>
+
+    @if (pestaniaActiva() === 'datos') {
+      <dl class="ver-estudiante__datos">
+        <div>
+          <dt>Número de matrícula</dt>
+          <dd>{{ estudiante.numero_matricula }}</dd>
+        </div>
+        <div>
+          <dt>Identificación</dt>
+          <dd>{{ estudiante.identificacion }}</dd>
+        </div>
+        <div>
+          <dt>Correo</dt>
+          <dd>{{ estudiante.correo }}</dd>
+        </div>
+        <div>
+          <dt>Teléfono</dt>
+          <dd>{{ estudiante.telefono ?? 'Sin teléfono' }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de nacimiento</dt>
+          <dd>{{ estudiante.fecha_nacimiento | fecha }}</dd>
+        </div>
+        <div>
+          <dt>Carrera</dt>
+          <dd>{{ estudiante.carrera?.nombre ?? 'Sin carrera' }}</dd>
+        </div>
+        <div>
+          <dt>Nivel académico actual</dt>
+          <dd>{{ estudiante.nivel_academico_actual }}</dd>
+        </div>
+        <div>
+          <dt>Estado académico</dt>
+          <dd>{{ obtenerEtiquetaEstadoAcademico(estudiante.estado_academico) }}</dd>
+        </div>
+      </dl>
+    }
+
+    @if (pestaniaActiva() === 'historial') {
+      <div>
+        @if (cargandoHistorial()) {
+          <div class="loading" role="status" aria-live="polite">
+            <span class="spinner" aria-hidden="true"></span>
+            Consultando historial...
+          </div>
+        }
+
+        @if (!cargandoHistorial() && gruposHistorial().length === 0) {
+          <div class="empty-state">
+            <h3>Sin matrículas registradas.</h3>
+            <p>El estudiante aún no tiene matrículas en el sistema.</p>
+          </div>
+        }
+
+        @for (grupo of gruposHistorial(); track grupo.id) {
+          <section class="ver-estudiante__grupo" [attr.aria-label]="'Periodo ' + grupo.nombre">
+            <h3>{{ grupo.nombre }}</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Curso</th>
+                    <th scope="col">Paralelo</th>
+                    <th scope="col">Docente</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (matricula of grupo.matriculas; track matricula.id) {
+                    <tr>
+                      <td>{{ obtenerDescripcionCurso(matricula) }}</td>
+                      <td>{{ matricula.curso?.paralelo ?? 'Sin paralelo' }}</td>
+                      <td>{{ matricula.curso?.docente?.nombres }} {{ matricula.curso?.docente?.apellidos }}</td>
+                      <td>{{ matricula.fecha_matricula | fecha }}</td>
+                      <td>
+                        <span class="estado-badge estado-badge--info">
+                          {{ obtenerEtiquetaEstado(matricula.estado) }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="row-actions">
+                          <a
+                            [routerLink]="['/matriculas', matricula.id]"
+                            class="btn btn-sm btn-neutral"
+                          >
+                            Ver
+                          </a>
+                          @if (puedeGestionarMatriculas()) {
+                            <a
+                              [routerLink]="['/matriculas/imprimir', matricula.id]"
+                              class="btn btn-sm btn-neutral"
+                            >
+                              Comprobante
+                            </a>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        }
+      </div>
+    }
+  }
+</section>

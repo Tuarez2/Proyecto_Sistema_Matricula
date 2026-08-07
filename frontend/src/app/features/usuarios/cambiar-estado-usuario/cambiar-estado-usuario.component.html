@@ -1,0 +1,89 @@
+<section class="page" aria-labelledby="titulo-cambiar-estado">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-cambiar-estado">
+        Cambiar estado de usuario
+      </h1>
+      <p class="page-subtitle">Modifica el estado de un usuario del sistema.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/usuarios" class="btn btn-neutral">Volver a usuarios</a>
+    </div>
+  </header>
+
+  @if (cargandoUsuario()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando usuario...
+    </div>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert" aria-live="polite">{{ mensajeError() }}</p>
+  }
+
+  @if (mensajeAviso()) {
+    <p class="alert alert--info" role="status" aria-live="polite">{{ mensajeAviso() }}</p>
+  }
+
+  @if (usuario(); as usuarioConsultado) {
+    <div class="detail-card">
+      <p class="detail-line"><strong>Identificador:</strong> {{ usuarioConsultado.id }}</p>
+      <p class="detail-line"><strong>Usuario:</strong> {{ obtenerNombreCompleto(usuarioConsultado) }}</p>
+      <p class="detail-line"><strong>Correo:</strong> {{ usuarioConsultado.correo }}</p>
+      <p class="detail-line"><strong>Rol:</strong> {{ usuarioConsultado.rol?.nombre || 'Sin rol' }}</p>
+      <p class="detail-line"><strong>Estado actual:</strong> <span class="estado-badge {{ obtenerClaseEstado(usuarioConsultado.estado) }}">{{ obtenerEtiquetaEstado(usuarioConsultado.estado) }}</span></p>
+    </div>
+
+    @if (esUsuarioActual()) {
+      <p class="alert alert--warning" role="status" aria-live="polite">
+        No puede modificar el estado de su propio usuario.
+      </p>
+    } @else {
+      <form
+        class="form-card"
+        [formGroup]="formularioEstado"
+        (ngSubmit)="guardarEstado()"
+        novalidate
+      >
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="nuevoEstado">Nuevo estado</label>
+            <select
+              id="nuevoEstado"
+              formControlName="nuevoEstado"
+              [attr.aria-invalid]="formularioEstado.controls.nuevoEstado.invalid"
+              aria-describedby="error-nuevo-estado"
+            >
+              <option value="">Seleccione un estado</option>
+              <option [value]="ESTADOS_USUARIO.ACTIVO">Activo</option>
+              <option [value]="ESTADOS_USUARIO.BLOQUEADO">Bloqueado</option>
+              <option [value]="ESTADOS_USUARIO.INACTIVO">Inactivo</option>
+            </select>
+            @if (
+              formularioEstado.controls.nuevoEstado.touched &&
+              formularioEstado.controls.nuevoEstado.hasError('required')
+            ) {
+              <p id="error-nuevo-estado" class="error-field" role="alert">Seleccione un estado.</p>
+            }
+          </div>
+        </div>
+
+        <p class="form-hint">
+          Al bloquear o inactivar un usuario, sus sesiones activas serán cerradas.
+        </p>
+
+        <div class="form-actions">
+          <button type="submit" [disabled]="!puedeGuardar()">
+            @if (actualizandoEstado()) {
+              Guardando estado...
+            } @else {
+              Guardar estado
+            }
+          </button>
+          <a routerLink="/usuarios" class="btn btn-neutral">Cancelar</a>
+        </div>
+      </form>
+    }
+  }
+</section>

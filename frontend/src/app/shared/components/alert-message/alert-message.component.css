@@ -1,0 +1,27 @@
+.alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.alert__contenido ul {
+  margin: var(--espacio-2) 0 0;
+  padding-left: var(--espacio-4);
+}
+
+.alert__cerrar {
+  min-height: auto;
+  padding: var(--espacio-1) var(--espacio-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: currentColor;
+  font-size: var(--font-size-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.alert__cerrar:hover {
+  background: rgb(0 0 0 / 0.08);
+}

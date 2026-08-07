@@ -1,0 +1,33 @@
+<section class="page" aria-labelledby="titulo-editar-docente">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-editar-docente">Editar docente</h1>
+      <p class="page-subtitle">Modifica los datos de un docente.</p>
+    </div>
+  </header>
+
+  @if (mensajeExito()) {
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
+  }
+
+  @if (mensajeError()) {
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
+  }
+
+  @if (cargandoDocente()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando docente...
+    </div>
+  }
+
+  @if (docente()) {
+    <app-docente-form
+      [docenteInicial]="docente()"
+      [modoEdicion]="true"
+      [enviando]="enviando()"
+      (guardarDocente)="guardarDocente($event)"
+      (cancelarFormulario)="cancelar()"
+    />
+  }
+</section>

@@ -1,0 +1,53 @@
+@if (oAbierto) {
+  <div
+    class="modal-fondo"
+    (click)="onFondoClic()"
+    [attr.aria-busy]="procesando"
+  >
+    <div
+      #contenedor
+      class="modal-contenedor"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      [attr.aria-label]="titulo"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-contenedor__cabecera">
+        <h2>{{ titulo }}</h2>
+        <button
+          type="button"
+          class="modal-contenedor__cerrar"
+          aria-label="Cerrar"
+          [disabled]="procesando"
+          (click)="onCancelar()"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="modal-contenedor__cuerpo">
+        <p>{{ mensaje }}</p>
+      </div>
+
+      <div class="modal-contenedor__acciones">
+        <button
+          type="button"
+          class="btn btn-neutral"
+          [disabled]="procesando"
+          (click)="onCancelar()"
+        >
+          {{ etiquetaCancelar }}
+        </button>
+        <button
+          type="button"
+          class="btn {{ peligroso ? 'btn-danger' : 'btn-primary' }}"
+          [disabled]="procesando"
+          (click)="onConfirmar()"
+        >
+          {{ etiquetaConfirmar }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
