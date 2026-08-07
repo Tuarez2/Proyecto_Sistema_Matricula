@@ -19,6 +19,8 @@
     "db:seed:undo": "sequelize-cli db:seed:undo --config src/config/sequelize-cli.cjs --seeders-path seeders",
     "db:seed:undo:all": "sequelize-cli db:seed:undo:all --config src/config/sequelize-cli.cjs --seeders-path seeders",
     "seed:demo": "node src/seeders/datos-demostracion.js",
+    "seed:video": "node scripts/seed-video.js",
+    "cleanup:video": "node scripts/cleanup-video.js",
     "auditar:datos": "node scripts/auditar-datos.js"
   },
   "dependencies": {
