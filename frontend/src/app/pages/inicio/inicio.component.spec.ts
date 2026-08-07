@@ -12,7 +12,9 @@ describe('InicioComponent', () => {
   let usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
 
   beforeEach(async () => {
-    usuarioActual = signal<UsuarioAutenticado | null>(crearUsuario('Persona', 'Prueba', 'Docente', 'docente'));
+    usuarioActual = signal<UsuarioAutenticado | null>(
+      crearUsuario('Persona', 'Prueba', 'Docente', CODIGOS_ROL.DOCENTE),
+    );
 
     await TestBed.configureTestingModule({
       imports: [InicioComponent],
@@ -55,9 +57,7 @@ describe('InicioComponent', () => {
   });
 
   it('muestra el módulo de usuarios solo al administrador', () => {
-    usuarioActual.set(
-      crearUsuario('Admin', 'Sistema', null, CODIGOS_ROL.ADMIN),
-    );
+    usuarioActual.set(crearUsuario('Admin', 'Sistema', null, CODIGOS_ROL.ADMIN));
 
     crearComponente();
 
@@ -70,9 +70,21 @@ describe('InicioComponent', () => {
     expect(obtenerTexto()).not.toContain('Usuarios');
   });
 
-  it('muestra el catálogo de módulos del sistema', () => {
+  it('oculta módulos restringidos al docente', () => {
     crearComponente();
 
+    expect(obtenerTexto()).toContain('Asignaturas');
+    expect(obtenerTexto()).toContain('Carreras');
+    expect(obtenerTexto()).not.toContain('Matrículas');
+    expect(obtenerTexto()).not.toContain('Estudiantes');
+  });
+
+  it('muestra el catálogo completo de módulos al administrador', () => {
+    usuarioActual.set(crearUsuario('Admin', 'Sistema', 'Administrador', CODIGOS_ROL.ADMIN));
+
+    crearComponente();
+
+    expect(obtenerTexto()).toContain('Usuarios');
     expect(obtenerTexto()).toContain('Matrículas');
     expect(obtenerTexto()).toContain('Estudiantes');
   });
