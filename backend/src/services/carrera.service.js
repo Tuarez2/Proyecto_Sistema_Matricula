@@ -24,6 +24,24 @@ const asegurarFacultadExistente = async (facultadId) => {
   if (!facultad) {
     throw new ApiError(400, 'La facultad especificada no existe.', 'FACULTAD_NOT_FOUND');
   }
+
+  return facultad;
+};
+
+const asegurarCodigoUnico = async (codigo, carreraIdExcluida = null) => {
+  if (!codigo) return;
+
+  const condiciones = { codigo };
+
+  if (carreraIdExcluida) {
+    condiciones.id = { [Op.ne]: carreraIdExcluida };
+  }
+
+  const carreraExistente = await Carrera.findOne({ where: condiciones });
+
+  if (carreraExistente) {
+    throw new ApiError(409, 'El codigo de carrera ya esta registrado.', 'CARRERA_CODIGO_DUPLICATED');
+  }
 };
 
 const construirFiltrosCarrera = (filtros = {}) => {
@@ -108,6 +126,7 @@ export const obtenerCarreraPorId = async (id) => {
 
 export const crearCarrera = async (datos) => {
   await asegurarFacultadExistente(datos.facultad_id);
+  await asegurarCodigoUnico(datos.codigo);
   return Carrera.create(seleccionarDatosPermitidos(datos));
 };
 
@@ -126,6 +145,10 @@ export const actualizarCarrera = async (id, datos) => {
 
   if (datosPermitidos.facultad_id !== undefined) {
     await asegurarFacultadExistente(datosPermitidos.facultad_id);
+  }
+
+  if (datosPermitidos.codigo !== undefined) {
+    await asegurarCodigoUnico(datosPermitidos.codigo, carrera.id);
   }
 
   await carrera.update(datosPermitidos);

@@ -35,7 +35,7 @@
         formularioEstudiante.controls.identificacion.touched &&
         formularioEstudiante.controls.identificacion.invalid
       ) {
-        <p class="error-field" role="alert">La identificación es obligatoria y no puede superar 20 caracteres.</p>
+        <p class="error-field" role="alert">La identificación es obligatoria, entre 5 y 20 caracteres alfanuméricos y debe contener al menos un número.</p>
       }
     </div>
 
@@ -52,7 +52,7 @@
         formularioEstudiante.controls.nombres.touched &&
         formularioEstudiante.controls.nombres.invalid
       ) {
-        <p class="error-field" role="alert">Los nombres son obligatorios y no pueden superar 100 caracteres.</p>
+        <p class="error-field" role="alert">Los nombres son obligatorios y solo pueden contener letras y espacios.</p>
       }
     </div>
 
@@ -69,7 +69,7 @@
         formularioEstudiante.controls.apellidos.touched &&
         formularioEstudiante.controls.apellidos.invalid
       ) {
-        <p class="error-field" role="alert">Los apellidos son obligatorios y no pueden superar 100 caracteres.</p>
+        <p class="error-field" role="alert">Los apellidos son obligatorios y solo pueden contener letras y espacios.</p>
       }
     </div>
 
@@ -103,7 +103,7 @@
         formularioEstudiante.controls.telefono.touched &&
         formularioEstudiante.controls.telefono.invalid
       ) {
-        <p class="error-field" role="alert">El teléfono no puede superar 20 caracteres.</p>
+        <p class="error-field" role="alert">El teléfono debe contener solo números, +, - y espacios.</p>
       }
     </div>
 
@@ -119,7 +119,7 @@
         formularioEstudiante.controls.fechaNacimiento.touched &&
         formularioEstudiante.controls.fechaNacimiento.invalid
       ) {
-        <p class="error-field" role="alert">La fecha de nacimiento es obligatoria.</p>
+        <p class="error-field" role="alert">La fecha de nacimiento es obligatoria, no puede ser futura y debe implicar una edad mínima de 15 años.</p>
       }
     </div>
 

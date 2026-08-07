@@ -44,3 +44,27 @@ export const ROLE_CODES = Object.freeze({
   STUDENT: 'ESTUDIANTE',
   TEACHER: 'DOCENTE'
 });
+
+export const EDAD_MINIMA_ESTUDIANTE = 15;
+
+export const EDAD_MINIMA_DOCENTE = 22;
+
+export const IDENTIFICACION_PATTERN = /^(?=.*\d)[A-Za-z0-9-]{5,20}$/;
+
+export const TELEFONO_PATTERN = /^(?=.*\d)\+?[0-9\s()-]{7,20}$/;
+
+export const NOMBRES_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M}\s'.-]*$/u;
+
+export const CODIGO_PATTERN = /^[A-Za-z0-9_-]{1,20}$/;
+
+export const CREDITOS_MIN = 1;
+export const CREDITOS_MAX = 12;
+
+export const NIVEL_ACADEMICO_MIN = 1;
+export const NIVEL_ACADEMICO_MAX = 12;
+
+export const DURACION_SEMESTRES_MIN = 1;
+export const DURACION_SEMESTRES_MAX = 12;
+
+export const CUPO_MAXIMO_MIN = 1;
+export const CUPO_MAXIMO_MAX = 100;

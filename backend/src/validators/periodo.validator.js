@@ -3,6 +3,7 @@ import { body, query } from 'express-validator';
 import { ACADEMIC_PERIOD_STATUS } from '../constants/domain.constants.js';
 import ApiError from '../utils/ApiError.js';
 import { validarIdParam } from './common.validator.js';
+import { reglaCodigoOpcional } from './reglasComunes.js';
 
 const estadosPeriodo = Object.values(ACADEMIC_PERIOD_STATUS);
 const camposCreacion = [
@@ -52,15 +53,7 @@ const validarFiltrosPermitidos = (camposPermitidos) => (req, res, next) => {
   return next();
 };
 
-const reglaCodigo = () =>
-  body('codigo')
-    .optional()
-    .isString()
-    .withMessage('El codigo debe ser texto.')
-    .bail()
-    .trim()
-    .isLength({ min: 1, max: 20 })
-    .withMessage('El codigo tiene una longitud invalida.');
+const reglaCodigo = () => reglaCodigoOpcional('codigo', 'El codigo');
 
 const reglaNombre = () =>
   body('nombre')
@@ -86,6 +79,37 @@ const reglaFechaHora = (campo, etiqueta) =>
     .optional()
     .isISO8601({ strict: true })
     .withMessage(`${etiqueta} debe tener un formato de fecha y hora valido.`);
+
+const reglaOrdenFechas = () =>
+  body('fecha_inicio').custom((fechaInicio, { req }) => {
+    const cuerpo = req.body ?? {};
+    const { fecha_fin, fecha_inicio_matricula, fecha_fin_matricula } = cuerpo;
+
+    if (fechaInicio && fecha_fin && new Date(fechaInicio) >= new Date(fecha_fin)) {
+      throw new Error('La fecha de inicio debe ser anterior a la fecha de fin.');
+    }
+
+    if (
+      fecha_inicio_matricula &&
+      fecha_fin_matricula &&
+      new Date(fecha_inicio_matricula) >= new Date(fecha_fin_matricula)
+    ) {
+      throw new Error('La fecha de inicio de matricula debe ser anterior a la fecha de fin de matricula.');
+    }
+
+    if (
+      fechaInicio &&
+      fecha_fin &&
+      fecha_inicio_matricula &&
+      fecha_fin_matricula &&
+      (new Date(fecha_inicio_matricula) < new Date(fechaInicio) ||
+        new Date(fecha_fin_matricula) > new Date(fecha_fin))
+    ) {
+      throw new Error('La ventana de matricula debe estar dentro del periodo academico.');
+    }
+
+    return true;
+  });
 
 const reglasComunes = [
   reglaCodigo(),
@@ -146,6 +170,7 @@ export const validarCreacionPeriodo = [
   body('fecha_inicio_matricula').exists().withMessage('La fecha de inicio de matricula es obligatoria.'),
   body('fecha_fin_matricula').exists().withMessage('La fecha de fin de matricula es obligatoria.'),
   ...reglasComunes,
+  reglaOrdenFechas(),
   body('estado')
     .optional()
     .isIn(estadosPeriodo)
@@ -154,7 +179,8 @@ export const validarCreacionPeriodo = [
 
 export const validarActualizacionPeriodo = [
   validarCamposPermitidosPeriodo(camposActualizacion, { requireAtLeastOne: true }),
-  ...reglasComunes
+  ...reglasComunes,
+  reglaOrdenFechas()
 ];
 
 export const validarEstadoPeriodo = [

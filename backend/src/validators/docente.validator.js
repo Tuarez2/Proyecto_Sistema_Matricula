@@ -5,18 +5,25 @@ import {
   validarFiltrosPermitidos,
   validarIdParam
 } from './common.validator.js';
+import {
+  reglaCorreoOpcional,
+  reglaIdentificacionOpcional,
+  reglaNombreOpcional,
+  reglaTelefonoOpcional,
+  reglaTextoOpcional
+} from './reglasComunes.js';
 
 const camposPermitidos = ['identificacion', 'nombres', 'apellidos', 'correo', 'telefono', 'especialidad', 'activo'];
 
 const camposListado = ['identificacion', 'nombres', 'apellidos', 'correo', 'especialidad', 'activo', 'page', 'limit'];
 
 const reglas = [
-  body('identificacion').optional().isLength({ min: 1, max: 20 }).withMessage('La identificacion es invalida.'),
-  body('nombres').optional().isLength({ min: 1, max: 100 }).withMessage('Los nombres son invalidos.'),
-  body('apellidos').optional().isLength({ min: 1, max: 100 }).withMessage('Los apellidos son invalidos.'),
-  body('correo').optional().isEmail().withMessage('El correo debe tener un formato valido.').isLength({ max: 150 }),
-  body('telefono').optional({ nullable: true }).isLength({ max: 20 }).withMessage('El telefono es invalido.'),
-  body('especialidad').optional().isLength({ min: 1, max: 150 }).withMessage('La especialidad es invalida.'),
+  reglaIdentificacionOpcional(),
+  reglaNombreOpcional('nombres', 'Los nombres'),
+  reglaNombreOpcional('apellidos', 'Los apellidos'),
+  reglaCorreoOpcional(),
+  reglaTelefonoOpcional(),
+  reglaTextoOpcional('especialidad', 'La especialidad', { max: 150 }),
   body('activo').optional().isBoolean().withMessage('El campo activo debe ser booleano.').toBoolean()
 ];
 

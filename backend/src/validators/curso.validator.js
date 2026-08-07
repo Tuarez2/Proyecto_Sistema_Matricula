@@ -1,6 +1,6 @@
 import { body, query } from 'express-validator';
 
-import { COURSE_STATUS } from '../constants/domain.constants.js';
+import { COURSE_STATUS, CUPO_MAXIMO_MAX, CUPO_MAXIMO_MIN } from '../constants/domain.constants.js';
 import { validarCamposPermitidos, validarIdParam } from './common.validator.js';
 import ApiError from '../utils/ApiError.js';
 
@@ -41,6 +41,9 @@ const validarFiltrosPermitidos = (camposPermitidosFiltro) => (req, res, next) =>
 const validarTexto = (campo, etiqueta, max) =>
   body(campo)
     .optional()
+    .isString()
+    .withMessage(`${etiqueta} debe ser texto.`)
+    .bail()
     .trim()
     .notEmpty()
     .withMessage(`${etiqueta} es obligatorio.`)
@@ -55,7 +58,11 @@ const reglas = [
   validarTexto('paralelo', 'El paralelo', 10),
   validarTexto('aula', 'El aula', 50),
   validarTexto('horario', 'El horario', 150),
-  body('cupo_maximo').optional().isInt({ min: 1 }).withMessage('El cupo maximo debe ser positivo.').toInt(),
+  body('cupo_maximo')
+    .optional()
+    .isInt({ min: CUPO_MAXIMO_MIN, max: CUPO_MAXIMO_MAX })
+    .withMessage(`El cupo maximo debe estar entre ${CUPO_MAXIMO_MIN} y ${CUPO_MAXIMO_MAX}.`)
+    .toInt(),
   body('estado').optional().isIn(Object.values(COURSE_STATUS)).withMessage('El estado del curso no es valido.')
 ];
 

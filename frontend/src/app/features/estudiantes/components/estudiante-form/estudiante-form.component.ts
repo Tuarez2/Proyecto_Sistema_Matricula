@@ -19,6 +19,12 @@ import {
   type Estudiante,
   type SolicitudCrearEstudiante,
 } from '../../models/estudiante.model';
+import {
+  validarFechaNacimiento,
+  validarIdentificacion,
+  validarNombre,
+  validarTelefono,
+} from '../../../../shared/utils/validators';
 
 @Component({
   selector: 'app-estudiante-form',
@@ -45,12 +51,12 @@ export class EstudianteFormComponent implements OnInit, OnChanges {
   readonly formularioEstudiante = this.constructorFormulario.group({
     carreraId: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]],
     numeroMatricula: ['', [Validators.required, Validators.maxLength(30)]],
-    identificacion: ['', [Validators.required, Validators.maxLength(20)]],
-    nombres: ['', [Validators.required, Validators.maxLength(100)]],
-    apellidos: ['', [Validators.required, Validators.maxLength(100)]],
+    identificacion: ['', [Validators.required, validarIdentificacion()]],
+    nombres: ['', [Validators.required, validarNombre()]],
+    apellidos: ['', [Validators.required, validarNombre()]],
     correo: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
-    telefono: ['', [Validators.maxLength(20)]],
-    fechaNacimiento: ['', [Validators.required]],
+    telefono: ['', [validarTelefono()]],
+    fechaNacimiento: ['', [Validators.required, validarFechaNacimiento()]],
     estadoAcademico: this.constructorFormulario.control<EstadoAcademicoEstudiante>(
       ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO,
       [Validators.required],
