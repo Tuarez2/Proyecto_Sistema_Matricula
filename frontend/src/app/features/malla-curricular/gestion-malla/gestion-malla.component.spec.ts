@@ -513,8 +513,6 @@ describe('GestionMallaComponent', () => {
   });
 
   it('confirma antes de quitar la relación y explica que no borra el catálogo', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     seleccionarCarreraYConsultar(7);
     servicioMalla.consultarAsignaturasCarrera.mockClear();
@@ -522,10 +520,14 @@ describe('GestionMallaComponent', () => {
     componente.quitarAsignatura(crearAsignatura());
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
-    const mensaje = String(confirmar.mock.calls[0]?.[0]);
-    expect(mensaje).toContain('Programación I');
-    expect(mensaje).toContain('no borra la asignatura del catálogo');
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    expect(obtenerTexto()).toContain('Quitar asignatura');
+    expect(obtenerTexto()).toContain('Programación I');
+    expect(obtenerTexto()).toContain('no borra la asignatura del catálogo');
+
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(servicioMalla.quitarAsignatura).toHaveBeenCalledWith('7-3');
     expect(obtenerTexto()).toContain('Asignatura quitada correctamente.');
     expect(servicioMalla.consultarAsignaturasCarrera).toHaveBeenCalledWith(
@@ -536,13 +538,17 @@ describe('GestionMallaComponent', () => {
   });
 
   it('no quita la relación si se cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     seleccionarCarreraYConsultar(7);
 
     componente.quitarAsignatura(crearAsignatura());
+    fixture.detectChanges();
 
+    expect(obtenerBoton('Cancelar')).toBeTruthy();
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
+
+    expect(componente.dialogoAbierto()).toBe(false);
     expect(servicioMalla.quitarAsignatura).not.toHaveBeenCalled();
   });
 
@@ -551,15 +557,15 @@ describe('GestionMallaComponent', () => {
     servicioMalla.quitarAsignatura.mockReturnValueOnce(
       pendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     seleccionarCarreraYConsultar(7);
 
     componente.quitarAsignatura(crearAsignatura());
-    componente.quitarAsignatura(
-      crearAsignatura({ id: 4, codigo: 'PRO2', nombre: 'Programación II' }),
-    );
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(servicioMalla.quitarAsignatura).toHaveBeenCalledTimes(1);
     pendiente.complete();
@@ -575,13 +581,14 @@ describe('GestionMallaComponent', () => {
         },
       })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     seleccionarCarreraYConsultar(7);
     servicioMalla.consultarAsignaturasCarrera.mockClear();
 
     componente.quitarAsignatura(crearAsignatura());
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
     fixture.detectChanges();
 
     expect(obtenerTexto()).toContain(
@@ -598,8 +605,10 @@ describe('GestionMallaComponent', () => {
     seleccionarCarreraYConsultar(7);
 
     componente.quitarAsignatura(crearAsignatura());
+    fixture.detectChanges();
 
     expect(servicioMalla.quitarAsignatura).not.toHaveBeenCalled();
+    expect(componente.dialogoAbierto()).toBe(false);
   });
 
   it('muestra error de permisos (403) cuando el backend lo rechaza', () => {

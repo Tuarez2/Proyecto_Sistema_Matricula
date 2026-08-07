@@ -1,16 +1,24 @@
-<section class="pagina-docente" aria-labelledby="titulo-editar-docente">
-  <h1 id="titulo-editar-docente">Editar docente</h1>
+<section class="page" aria-labelledby="titulo-editar-docente">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-editar-docente">Editar docente</h1>
+      <p class="page-subtitle">Modifica los datos de un docente.</p>
+    </div>
+  </header>
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (cargandoDocente()) {
-    <p role="status" aria-live="polite">Consultando docente...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando docente...
+    </div>
   }
 
   @if (docente()) {

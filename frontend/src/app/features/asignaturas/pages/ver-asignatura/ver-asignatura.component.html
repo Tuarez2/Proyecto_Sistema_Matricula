@@ -1,92 +1,106 @@
-<section aria-labelledby="titulo-detalle-asignatura">
-  <h1 id="titulo-detalle-asignatura">Detalle de asignatura</h1>
+<section class="page" aria-labelledby="titulo-detalle-asignatura">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-detalle-asignatura">Detalle de asignatura</h1>
+      <p class="page-subtitle">Información de la asignatura y sus asociaciones.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/asignaturas" class="btn btn-neutral">Volver al listado</a>
+      @if (esAdministrador()) {
+        @if (asignatura(); as asignaturaActual) {
+          <a [routerLink]="['/asignaturas/editar', asignaturaActual.id]" class="btn btn-primary">Editar</a>
+        }
+      }
+    </div>
+  </header>
 
   @if (cargando()) {
-    <p role="status" aria-live="polite">Consultando asignatura...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando asignatura...
+    </div>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (asignatura(); as asignaturaActual) {
-    <dl>
-      <dt>Código</dt>
-      <dd>{{ asignaturaActual.codigo }}</dd>
+    <div class="detail-card">
+      <p class="detail-line"><strong>Código:</strong> {{ asignaturaActual.codigo }}</p>
+      <p class="detail-line"><strong>Nombre:</strong> {{ asignaturaActual.nombre }}</p>
+      <p class="detail-line"><strong>Créditos:</strong> {{ asignaturaActual.creditos }}</p>
+      <p class="detail-line"><strong>Nivel académico:</strong> {{ asignaturaActual.nivel_academico }}</p>
+      <p class="detail-line"><strong>Estado:</strong> <span class="estado-badge {{ obtenerClaseEstado(asignaturaActual) }}">{{ obtenerEtiquetaEstado(asignaturaActual) }}</span></p>
+      <p class="detail-line"><strong>Fecha de creación:</strong> {{ asignaturaActual.created_at | fecha }}</p>
+    </div>
 
-      <dt>Nombre</dt>
-      <dd>{{ asignaturaActual.nombre }}</dd>
-
-      <dt>Créditos</dt>
-      <dd>{{ asignaturaActual.creditos }}</dd>
-
-      <dt>Nivel académico</dt>
-      <dd>{{ asignaturaActual.nivel_academico }}</dd>
-
-      <dt>Estado</dt>
-      <dd>{{ obtenerEtiquetaEstado(asignaturaActual) }}</dd>
-
-      <dt>Fecha de creación</dt>
-      <dd>
-        {{ asignaturaActual.created_at ? (asignaturaActual.created_at | date: 'yyyy-MM-dd') : 'Sin fecha' }}
-      </dd>
-    </dl>
-
-    <nav aria-label="Acciones de asignatura">
-      <a routerLink="/asignaturas">Volver al listado</a>
-      @if (esAdministrador()) {
-        <a [routerLink]="['/asignaturas/editar', asignaturaActual.id]">Editar</a>
+    <section aria-labelledby="titulo-carreras-asociadas">
+      <h2 id="titulo-carreras-asociadas">Carreras asociadas</h2>
+      @if ((asignaturaActual.carreras ?? []).length === 0) {
+        <div class="empty-state">
+          <p>No hay carreras asociadas a esta asignatura.</p>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <caption>Carreras de la asignatura</caption>
+            <thead>
+              <tr>
+                <th scope="col">Carrera</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (carrera of asignaturaActual.carreras ?? []; track carrera.id) {
+                <tr>
+                  <td>{{ obtenerNombreCarrera(carrera) }}</td>
+                  <td>
+                    <span class="estado-badge {{ carrera.activo ? 'estado-badge--success' : 'estado-badge--neutral' }}">
+                      {{ carrera.activo ? 'Activa' : 'Inactiva' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
-    </nav>
+    </section>
 
-    <h2>Carreras asociadas</h2>
-    @if ((asignaturaActual.carreras ?? []).length === 0) {
-      <p>No hay carreras asociadas a esta asignatura.</p>
-    } @else {
-      <table>
-        <caption>Carreras de la asignatura</caption>
-        <thead>
-          <tr>
-            <th scope="col">Carrera</th>
-            <th scope="col">Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (carrera of asignaturaActual.carreras ?? []; track carrera.id) {
-            <tr>
-              <td>{{ obtenerNombreCarrera(carrera) }}</td>
-              <td>{{ carrera.activo ? 'Activa' : 'Inactiva' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-
-    <h2>Cursos asociados</h2>
-    @if ((asignaturaActual.cursos ?? []).length === 0) {
-      <p>No hay cursos asociados a esta asignatura.</p>
-    } @else {
-      <table>
-        <caption>Cursos de la asignatura</caption>
-        <thead>
-          <tr>
-            <th scope="col">Paralelo</th>
-            <th scope="col">Aula</th>
-            <th scope="col">Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (curso of asignaturaActual.cursos ?? []; track curso.id) {
-            <tr>
-              <td>{{ curso.paralelo ?? 'Sin paralelo' }}</td>
-              <td>{{ curso.aula ?? 'Sin aula' }}</td>
-              <td>{{ curso.estado ?? 'Sin estado' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
+    <section aria-labelledby="titulo-cursos-asociados">
+      <h2 id="titulo-cursos-asociados">Cursos asociados</h2>
+      @if ((asignaturaActual.cursos ?? []).length === 0) {
+        <div class="empty-state">
+          <p>No hay cursos asociados a esta asignatura.</p>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <caption>Cursos de la asignatura</caption>
+            <thead>
+              <tr>
+                <th scope="col">Paralelo</th>
+                <th scope="col">Aula</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (curso of asignaturaActual.cursos ?? []; track curso.id) {
+                <tr>
+                  <td>{{ curso.paralelo ?? 'Sin paralelo' }}</td>
+                  <td>{{ curso.aula ?? 'Sin aula' }}</td>
+                  <td>{{ curso.estado ?? 'Sin estado' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
   } @else if (!cargando() && !mensajeError()) {
-    <p>No se encontró información de la asignatura.</p>
+    <div class="empty-state">
+      <p>No se encontró información de la asignatura.</p>
+    </div>
   }
 </section>

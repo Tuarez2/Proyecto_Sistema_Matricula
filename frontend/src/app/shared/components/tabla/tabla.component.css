@@ -1,0 +1,9 @@
+.tabla__columna-acciones {
+  text-align: end;
+}
+
+.tabla__vacia {
+  padding: var(--espacio-6);
+  text-align: center;
+  color: var(--color-text-muted);
+}

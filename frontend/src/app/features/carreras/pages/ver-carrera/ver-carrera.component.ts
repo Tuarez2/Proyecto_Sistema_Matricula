@@ -16,13 +16,14 @@ import { finalize } from 'rxjs';
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
+import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
 import type { Carrera, FacultadCarrera } from '../../models/carrera.model';
 import { CarrerasService } from '../../services/carreras.service';
 
 @Component({
   selector: 'app-ver-carrera',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FechaPipe],
   templateUrl: './ver-carrera.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -57,6 +58,10 @@ export class VerCarreraComponent implements OnInit {
 
   obtenerEtiquetaEstado(carrera: Carrera): string {
     return carrera.activo ? 'Activa' : 'Inactiva';
+  }
+
+  obtenerClaseEstado(carrera: Carrera): string {
+    return carrera.activo ? 'estado-badge--success' : 'estado-badge--neutral';
   }
 
   obtenerNombreFacultad(facultad: FacultadCarrera | null | undefined): string {

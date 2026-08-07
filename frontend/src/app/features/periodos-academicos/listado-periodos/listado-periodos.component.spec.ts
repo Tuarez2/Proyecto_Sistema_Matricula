@@ -105,7 +105,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia codigo', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ codigo: '2026-1' });
+    componente.formularioFiltros.patchValue({ codigo: '2026-1' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -115,7 +115,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia nombre', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ nombre: 'Primer periodo' });
+    componente.formularioFiltros.patchValue({ nombre: 'Primer periodo' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -125,7 +125,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia estado', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ estado: 'en_curso' });
+    componente.formularioFiltros.patchValue({ estado: 'en_curso' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -135,7 +135,7 @@ describe('ListadoPeriodosComponent', () => {
   it('convierte anio a numero', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ anio: '2026' });
+    componente.formularioFiltros.patchValue({ anio: '2026' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -145,7 +145,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia fecha inicial', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ fechaInicio: '2026-01-05' });
+    componente.formularioFiltros.patchValue({ fechaInicio: '2026-01-05' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -155,7 +155,7 @@ describe('ListadoPeriodosComponent', () => {
   it('envia fecha final', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ fechaFin: '2026-06-30' });
+    componente.formularioFiltros.patchValue({ fechaFin: '2026-06-30' }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -172,7 +172,7 @@ describe('ListadoPeriodosComponent', () => {
       anio: '',
       fechaInicio: '',
       fechaFin: '',
-    });
+    }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -192,31 +192,31 @@ describe('ListadoPeriodosComponent', () => {
   });
 
   it('codigo maximo 20', () => {
-    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) });
+    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.codigo.invalid).toBe(true);
   });
 
   it('nombre maximo 100', () => {
-    componente.formularioFiltros.patchValue({ nombre: 'a'.repeat(101) });
+    componente.formularioFiltros.patchValue({ nombre: 'a'.repeat(101) }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.nombre.invalid).toBe(true);
   });
 
   it('anio minimo 1900', () => {
-    componente.formularioFiltros.patchValue({ anio: '1899' });
+    componente.formularioFiltros.patchValue({ anio: '1899' }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.anio.hasError('min')).toBe(true);
   });
 
   it('anio maximo 2200', () => {
-    componente.formularioFiltros.patchValue({ anio: '2201' });
+    componente.formularioFiltros.patchValue({ anio: '2201' }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.anio.hasError('max')).toBe(true);
   });
 
   it('rechaza decimales', () => {
-    componente.formularioFiltros.patchValue({ anio: '2026.5' });
+    componente.formularioFiltros.patchValue({ anio: '2026.5' }, { emitEvent: false });
 
     expect(componente.formularioFiltros.controls.anio.hasError('anioDecimal'))
       .toBe(true);
@@ -226,7 +226,7 @@ describe('ListadoPeriodosComponent', () => {
     componente.formularioFiltros.patchValue({
       fechaInicio: '2026-06-30',
       fechaFin: '2026-01-05',
-    });
+    }, { emitEvent: false });
 
     expect(componente.formularioFiltros.hasError('rangoFechasInvalido'))
       .toBe(true);
@@ -235,7 +235,7 @@ describe('ListadoPeriodosComponent', () => {
   it('formulario invalido no consulta', () => {
     iniciarYCompletar();
     periodosAcademicosService.listarPeriodos.mockClear();
-    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) });
+    componente.formularioFiltros.patchValue({ codigo: 'a'.repeat(21) }, { emitEvent: false });
 
     componente.buscarPeriodos();
 
@@ -310,6 +310,29 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerTexto()).toContain('Cerrado');
   });
 
+  it('aplica clase de badge segun el estado', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [
+        crearPeriodo({ id: 1, estado: 'matricula_abierta' }),
+        crearPeriodo({ id: 2, estado: 'cerrado' }),
+      ],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.estado-badge--success')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--neutral')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--warning')).toBeNull();
+  });
+
+  it('reemplaza fechas crudas por formato humano', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    const texto = obtenerTexto();
+    expect(texto).not.toContain('2026-01-05');
+    expect(texto).not.toContain('2025-12-01');
+  });
+
   it('muestra etiqueta Planificado', () => {
     expect(componente.obtenerEtiquetaEstado('planificado')).toBe('Planificado');
   });
@@ -331,7 +354,7 @@ describe('ListadoPeriodosComponent', () => {
     iniciarYCompletar(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
     fixture.detectChanges();
 
-    expect(obtenerTexto()).toContain('No se encontraron periodos académicos.');
+    expect(obtenerTexto()).toContain('No se encontraron periodos académicos');
   });
 
   it('anterior deshabilitado en pagina 1', () => {
@@ -407,12 +430,85 @@ describe('ListadoPeriodosComponent', () => {
     expect(componente.cargandoPeriodos()).toBe(false);
   });
 
-  it('evita consultas duplicadas', () => {
+it('ignora resultados de una consulta anterior', () => {
     iniciarComponente();
+    const consultaAnterior = solicitudesPeriodos[0];
+    const consultaNueva = new Subject<RespuestaListadoPeriodos>();
+    periodosAcademicosService.listarPeriodos.mockImplementationOnce(
+      () => consultaNueva.asObservable(),
+    );
 
     componente.cargarPeriodos();
 
+    expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(
+      crearRespuestaListado({ data: [crearPeriodo({ id: 77 })] }),
+    );
+    consultaNueva.complete();
+    consultaAnterior.next(crearRespuestaListado({ data: [crearPeriodo({ id: 1 })] }));
+    consultaAnterior.complete();
+
+    expect(componente.periodos()[0]?.id).toBe(77);
+  });
+
+  it('al cambiar el estado consulta de inmediato', () => {
+    iniciarYCompletar();
+    periodosAcademicosService.listarPeriodos.mockClear();
+
+    componente.formularioFiltros.controls.estado.setValue('cerrado');
+
     expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      estado: 'cerrado',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('la busqueda por texto usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      iniciarYCompletar();
+      periodosAcademicosService.listarPeriodos.mockClear();
+
+      componente.formularioFiltros.controls.nombre.setValue('Pri');
+      vi.advanceTimersByTime(100);
+      expect(periodosAcademicosService.listarPeriodos).not.toHaveBeenCalled();
+
+      componente.formularioFiltros.controls.nombre.setValue('Primer');
+      vi.advanceTimersByTime(400);
+
+      expect(periodosAcademicosService.listarPeriodos).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        nombre: 'Primer',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cuenta los filtros activos', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.formularioFiltros.controls.estado.setValue('cerrado');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
   });
 
   it.each([
@@ -450,7 +546,7 @@ describe('ListadoPeriodosComponent', () => {
 
   it('no elimina filtros ante error', () => {
     iniciarYCompletar();
-    componente.formularioFiltros.patchValue({ codigo: '2026-1' });
+    componente.formularioFiltros.patchValue({ codigo: '2026-1' }, { emitEvent: false });
     componente.buscarPeriodos();
     solicitudesPeriodos[solicitudesPeriodos.length - 1].error(
       new HttpErrorResponse({ status: 500 }),
@@ -509,20 +605,20 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerTexto()).not.toContain('Acciones');
   });
 
-  it('ADMIN ve Crear periodo', () => {
+  it('ADMIN ve Nuevo periodo', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
-  it('el enlace Crear periodo apunta a periodos academicos nuevo', () => {
+  it('el enlace Nuevo periodo apunta a periodos academicos nuevo', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')?.getAttribute('href')).toBe(
+    expect(obtenerEnlace('Nuevo periodo')?.getAttribute('href')).toBe(
       '/periodos-academicos/nuevo',
     );
   });
@@ -531,64 +627,64 @@ describe('ListadoPeriodosComponent', () => {
     'GESTOR_MATRICULA',
     'ESTUDIANTE',
     'DOCENTE',
-  ])('%s no ve Crear periodo', (codigoRol) => {
+  ])('%s no ve Nuevo periodo', (codigoRol) => {
     usuarioActual.set(crearUsuarioConRol(codigoRol));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
   });
 
-  it('usuario sin rol no ve Crear periodo', () => {
+  it('usuario sin rol no ve Nuevo periodo', () => {
     usuarioActual.set(crearUsuario({ rol: null }));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
   });
 
-  it('sin usuario no ve Crear periodo', () => {
+  it('sin usuario no ve Nuevo periodo', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
   });
 
-  it('Crear periodo aparece si la sesion cambia a ADMIN', () => {
+  it('Nuevo periodo aparece si la sesion cambia a ADMIN', () => {
     iniciarYCompletar();
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
 
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
-  it('Crear periodo desaparece si la sesion cambia a otro rol', () => {
+  it('Nuevo periodo desaparece si la sesion cambia a otro rol', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
 
     usuarioActual.set(crearUsuarioConRol('DOCENTE'));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeNull();
+    expect(obtenerEnlace('Nuevo periodo')).toBeNull();
   });
 
-  it('Crear periodo continua visible sin resultados para ADMIN', () => {
+  it('Nuevo periodo continua visible sin resultados para ADMIN', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
-  it('Crear periodo continua visible durante carga para ADMIN', () => {
+  it('Nuevo periodo continua visible durante carga para ADMIN', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarComponente();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
   it('ADMIN ve columna Acciones', () => {
@@ -706,12 +802,12 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerEnlace('Editar')).toBeNull();
   });
 
-  it('Crear periodo continua visible para ADMIN con Acciones', () => {
+  it('Nuevo periodo continua visible para ADMIN con Acciones', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
     expect(obtenerTexto()).toContain('Acciones');
   });
 
@@ -851,12 +947,12 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerEnlace('Editar')).toBeTruthy();
   });
 
-  it('Crear periodo continua existiendo para ADMIN', () => {
+  it('Nuevo periodo continua existiendo para ADMIN', () => {
     usuarioActual.set(crearUsuarioConRol('ADMIN'));
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear periodo')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo periodo')).toBeTruthy();
   });
 
   it('no existe boton Eliminar', () => {
@@ -888,7 +984,7 @@ describe('ListadoPeriodosComponent', () => {
     iniciarComponente();
     fixture.detectChanges();
 
-    expect(obtenerElemento('[role="status"]')?.textContent).toContain(
+    expect(obtenerElemento('.loading')?.textContent).toContain(
       'Consultando periodos académicos...',
     );
   });
@@ -901,6 +997,114 @@ describe('ListadoPeriodosComponent', () => {
     expect(obtenerElemento('[role="alert"]')?.textContent).toContain(
       'Ocurrió un error en el servidor al consultar los periodos.',
     );
+  });
+
+  it('selecciona y deselecciona una fila con clic', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 1 }), crearPeriodo({ id: 2 })],
+      total: 2,
+    }));
+    const primero = componente.periodos()[0];
+
+    clicEnFila(primero);
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    clicEnFila(primero);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    const primero = componente.periodos()[0];
+
+    teclaEnFila(primero, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    teclaEnFila(primero, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace interno', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    const primero = componente.periodos()[0];
+    const enlace = obtenerEnlace('Editar');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      primero,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    const primero = componente.periodos()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con Editar y Cambiar estado al seleccionar', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 1, estado: 'planificado' })],
+    }));
+
+    clicEnFila(componente.periodos()[0]);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cambiar estado')).toBeTruthy();
+  });
+
+  it('un usuario no administrador ve una barra contextual vacía al seleccionar', () => {
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    iniciarYCompletar();
+
+    clicEnFila(componente.periodos()[0]);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Cambiar estado')).toBeNull();
+  });
+
+  it('oculta Cambiar estado si no hay transiciones disponibles', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 1, estado: 'cerrado' })],
+    }));
+
+    clicEnFila(componente.periodos()[0]);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cambiar estado')).toBeNull();
+  });
+
+  it('limpia la selección al paginar', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 2 }));
+    const primero = componente.periodos()[0];
+    clicEnFila(primero);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
   });
 
   function iniciarComponente(): void {
@@ -954,6 +1158,46 @@ describe('ListadoPeriodosComponent', () => {
 
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
+  }
+
+  function obtenerFila(periodo: PeriodoAcademico): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find((filaEncontrada) =>
+      filaEncontrada.textContent?.includes(periodo.codigo),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del periodo');
+    }
+
+    return fila;
+  }
+
+  function clicEnFila(periodo: PeriodoAcademico): void {
+    const celda = obtenerFila(periodo).querySelector(
+      'td:not(.columna-seleccion)',
+    );
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(periodo: PeriodoAcademico, tecla: string): void {
+    obtenerFila(periodo).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
   }
 });
 

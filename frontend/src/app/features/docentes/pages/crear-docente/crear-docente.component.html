@@ -1,12 +1,17 @@
-<section class="pagina-docente" aria-labelledby="titulo-crear-docente">
-  <h1 id="titulo-crear-docente">Registrar docente</h1>
+<section class="page" aria-labelledby="titulo-crear-docente">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-crear-docente">Registrar docente</h1>
+      <p class="page-subtitle">Registra un nuevo docente.</p>
+    </div>
+  </header>
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   <app-docente-form

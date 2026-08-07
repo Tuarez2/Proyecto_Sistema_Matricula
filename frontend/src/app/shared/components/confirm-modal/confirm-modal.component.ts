@@ -1,44 +1,162 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewChild,
+} from '@angular/core';
 
 @Component({
   selector: 'app-confirm-modal',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div *ngIf="isOpen" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5); z-index: 1055;">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">{{ titulo }}</h5>
-            <button type="button" class="btn-close" (click)="onCancel()"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-0">{{ mensaje }}</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancelar</button>
-            <button type="button" class="btn" [ngClass]="btnClass" (click)="onConfirm()">Confirmar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
+  imports: [],
+  templateUrl: './confirm-modal.component.html',
+  styleUrl: './confirm-modal.component.css',
 })
-export class ConfirmModalComponent {
-  @Input() isOpen = false;
-  @Input() titulo = 'Confirmar Acción';
-  @Input() mensaje = '¿Está seguro de realizar esta acción?';
-  @Input() btnClass = 'btn-primary';
+export class ConfirmModalComponent implements OnChanges, AfterViewInit {
+  @Input() oAbierto = false;
+  @Input() titulo = 'Confirmar acción';
+  @Input() mensaje = '¿Está seguro de continuar?';
+  @Input() peligroso = false;
+  @Input() procesando = false;
+  @Input() etiquetaConfirmar = 'Confirmar';
+  @Input() etiquetaCancelar = 'Cancelar';
 
-  @Output() confirmed = new EventEmitter<void>();
-  @Output() cancelled = new EventEmitter<void>();
+  @Output() confirmado = new EventEmitter<void>();
+  @Output() cancelado = new EventEmitter<void>();
 
-  onConfirm(): void {
-    this.confirmed.emit();
+  @ViewChild('contenedor') private readonly contenedor?: ElementRef<HTMLElement>;
+
+  private elementoAnterior: HTMLElement | null = null;
+  private confirmacionBloqueada = false;
+
+  ngOnChanges(cambios: SimpleChanges): void {
+    const apertura = cambios['oAbierto'];
+    const procesando = cambios['procesando'];
+
+    if (apertura && apertura.currentValue && !apertura.previousValue) {
+      this.alAbrir();
+    } else if (apertura && !apertura.currentValue && apertura.previousValue) {
+      this.alCerrar();
+    }
+
+    if (procesando && procesando.previousValue && !procesando.currentValue) {
+      this.confirmacionBloqueada = false;
+    }
   }
 
-  onCancel(): void {
-    this.cancelled.emit();
+  ngAfterViewInit(): void {
+    if (this.oAbierto) {
+      this.fijarFocoInicial();
+    }
+  }
+
+  onConfirmar(): void {
+    if (this.procesando || this.confirmacionBloqueada) {
+      return;
+    }
+
+    this.confirmacionBloqueada = true;
+    this.confirmado.emit();
+  }
+
+  onCancelar(): void {
+    if (this.procesando) {
+      return;
+    }
+
+    this.cancelado.emit();
+  }
+
+  onFondoClic(): void {
+    this.onCancelar();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  manejarTecla(evento: KeyboardEvent): void {
+    if (!this.oAbierto) {
+      return;
+    }
+
+    if (evento.key === 'Escape') {
+      if (this.procesando) {
+        return;
+      }
+
+      evento.preventDefault();
+      this.onCancelar();
+      return;
+    }
+
+    if (evento.key === 'Tab') {
+      this.atraparFoco(evento);
+    }
+  }
+
+  private alAbrir(): void {
+    this.confirmacionBloqueada = false;
+    this.elementoAnterior = document.activeElement as HTMLElement | null;
+    requestAnimationFrame(() => this.fijarFocoInicial());
+  }
+
+  private alCerrar(): void {
+    this.restaurarFoco();
+  }
+
+  private fijarFocoInicial(): void {
+    const contenedor = this.contenedor?.nativeElement;
+
+    if (!contenedor) {
+      return;
+    }
+
+    const enfoqueInicial =
+      contenedor.querySelector<HTMLElement>('button') ?? contenedor;
+    enfoqueInicial.focus();
+  }
+
+  private restaurarFoco(): void {
+    if (this.elementoAnterior && this.elementoAnterior.isConnected) {
+      this.elementoAnterior.focus();
+    }
+
+    this.elementoAnterior = null;
+  }
+
+  private atraparFoco(evento: KeyboardEvent): void {
+    const contenedor = this.contenedor?.nativeElement;
+
+    if (
+      !contenedor ||
+      !contenedor.contains(document.activeElement)
+    ) {
+      return;
+    }
+
+    const elementosFocalizables = Array.from(
+      contenedor.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((elemento) => !(elemento as HTMLButtonElement).disabled);
+
+    if (elementosFocalizables.length === 0) {
+      return;
+    }
+
+    const primero = elementosFocalizables[0];
+    const ultimo = elementosFocalizables[elementosFocalizables.length - 1];
+    const activo = document.activeElement as HTMLElement;
+
+    if (evento.shiftKey && activo === primero) {
+      evento.preventDefault();
+      ultimo.focus();
+    } else if (!evento.shiftKey && activo === ultimo) {
+      evento.preventDefault();
+      primero.focus();
+    }
   }
 }

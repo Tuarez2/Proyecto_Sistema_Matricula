@@ -1,14 +1,39 @@
 .pagina-acceso-denegado {
-  padding: 3rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: var(--espacio-6) var(--espacio-4);
+  text-align: center;
+}
+
+.acceso-denegado__icono {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: var(--espacio-4);
+  padding: var(--espacio-3);
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .pagina-acceso-denegado h1 {
-  margin: 0 0 1rem;
-  font-size: 2rem;
-  font-weight: 700;
+  margin: 0 0 var(--espacio-3);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
 }
 
 .acceso-denegado__descripcion {
-  margin: 0 0 1.5rem;
-  color: #475569;
+  margin: 0 0 var(--espacio-5);
+  color: var(--color-text-secondary);
+  max-width: 30rem;
+}
+
+.acceso-denegado__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+  justify-content: center;
 }

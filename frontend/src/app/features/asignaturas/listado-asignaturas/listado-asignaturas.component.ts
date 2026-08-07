@@ -17,15 +17,36 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Router } from '@angular/router';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  debounceTime,
+  filter,
+  finalize,
+  map,
+  merge,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
+import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type {
   Asignatura,
   FiltrosAsignaturas,
+  RespuestaListadoAsignaturas,
 } from '../models/asignatura.model';
 import { AsignaturasService } from '../services/asignaturas.service';
 
@@ -37,7 +58,12 @@ interface ControlesFiltrosAsignaturas {
   activo: FormControl<string>;
 }
 
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
+
 const LIMITE_POR_PAGINA = 10;
+const DEBOUNCE_BUSQUEDA_MS = 350;
 
 @Component({
   selector: 'app-listado-asignaturas',
@@ -47,6 +73,9 @@ const LIMITE_POR_PAGINA = 10;
     ReactiveFormsModule,
     RouterLink,
     PaginationComponent,
+    FechaPipe,
+    ConfirmModalComponent,
+    BarraAccionesContextualesComponent,
   ],
   templateUrl: './listado-asignaturas.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +83,7 @@ const LIMITE_POR_PAGINA = 10;
 export class ListadoAsignaturasComponent implements OnInit {
   private readonly servicio = inject(AsignaturasService);
   private readonly autenticacionService = inject(AutenticacionService);
+  private readonly router = inject(Router);
   private readonly destruccion = inject(DestroyRef);
   private readonly estadoAsignaturas = signal<Asignatura[]>([]);
   private readonly estadoTotalAsignaturas = signal(0);
@@ -64,6 +94,14 @@ export class ListadoAsignaturasComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoAsignaturaProcesando = signal<number | null>(null);
+  private readonly estadoAsignaturaSeleccionado = signal<Asignatura | null>(null);
+  private readonly estadoFilaSeleccionada = signal<Asignatura | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly asignaturas = this.estadoAsignaturas.asReadonly();
   readonly totalAsignaturas = this.estadoTotalAsignaturas.asReadonly();
@@ -73,10 +111,44 @@ export class ListadoAsignaturasComponent implements OnInit {
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly paginaActual = this.estadoPaginaActual.asReadonly();
   readonly asignaturaProcesando = this.estadoAsignaturaProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const asignatura = this.estadoFilaSeleccionada();
+
+    if (!asignatura) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [
+      { id: 'ver', etiqueta: 'Ver' },
+    ];
+
+    if (this.esAdministrador()) {
+      acciones.push({ id: 'editar', etiqueta: 'Editar' });
+
+      if (asignatura.activo) {
+        acciones.push({
+          id: 'inactivar',
+          etiqueta: 'Inactivar',
+          variante: 'danger',
+        });
+      }
+    }
+
+    return acciones;
+  });
   readonly esAdministrador = computed(
     () =>
       this.autenticacionService.usuarioActual()?.rol?.codigo ===
       CODIGOS_ROL.ADMIN,
+  );
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
   );
 
   readonly filtros = new FormGroup<ControlesFiltrosAsignaturas>({
@@ -100,7 +172,8 @@ export class ListadoAsignaturasComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.cargarAsignaturas();
+    this.configurarFiltrosDinamicos();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
   buscarAsignaturas(): void {
@@ -111,23 +184,29 @@ export class ListadoAsignaturasComponent implements OnInit {
     }
 
     this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
-    this.estadoFiltrosAplicados.set(this.obtenerFiltrosActuales());
-    this.cargarAsignaturas();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
+  }
+
+  impedirEnvio(evento: Event): void {
+    evento.preventDefault();
   }
 
   limpiarFiltros(): void {
-    this.filtros.reset({
-      codigo: '',
-      nombre: '',
-      creditos: '',
-      nivel_academico: '',
-      activo: '',
-    });
     this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
+    this.estadoMensajeExito.set(null);
     this.estadoFiltrosAplicados.set({});
-    this.cargarAsignaturas();
+    this.estadoPaginaActual.set(1);
+    this.filtros.reset(
+      {
+        codigo: '',
+        nombre: '',
+        creditos: '',
+        nivel_academico: '',
+        activo: '',
+      },
+      { emitEvent: false },
+    );
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cambiarPagina(pagina: number): void {
@@ -137,7 +216,61 @@ export class ListadoAsignaturasComponent implements OnInit {
 
     this.estadoPaginaActual.set(pagina);
     this.estadoMensajeError.set(null);
-    this.cargarAsignaturas();
+    this.estadoFilaSeleccionada.set(null);
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  seleccionarFila(evento: Event, asignatura: Asignatura): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(asignatura);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, asignatura: Asignatura): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(asignatura);
+  }
+
+  alternarSeleccion(asignatura: Asignatura): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === asignatura.id
+        ? null
+        : asignatura,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const asignatura = this.estadoFilaSeleccionada();
+
+    if (!asignatura) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'ver':
+        this.router.navigate(['/asignaturas', asignatura.id]);
+        break;
+      case 'editar':
+        this.router.navigate(['/asignaturas/editar', asignatura.id]);
+        break;
+      case 'inactivar':
+        this.inactivarAsignatura(asignatura);
+        break;
+    }
   }
 
   inactivarAsignatura(asignatura: Asignatura): void {
@@ -149,71 +282,144 @@ export class ListadoAsignaturasComponent implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoAsignaturaSeleccionado.set(asignatura);
+    this.estadoDialogoTitulo.set('Inactivar asignatura');
+    this.estadoDialogoMensaje.set(
       `¿Desea inactivar la asignatura ${asignatura.nombre}?`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarInactivacion(): void {
+    const asignatura = this.estadoAsignaturaSeleccionado();
+
+    if (!asignatura) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoAsignaturaProcesando.set(asignatura.id);
+    this.estadoDialogoProcesando.set(true);
     this.servicio
       .inactivarAsignatura(asignatura.id)
       .pipe(
         takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoAsignaturaProcesando.set(null)),
+        finalize(() => {
+          this.estadoAsignaturaProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Asignatura inactivada correctamente.',
           );
-          this.cargarAsignaturas();
+          this.estadoDialogoAbierto.set(false);
+          this.estadoFilaSeleccionada.set(null);
+          this.consultaFiltros$.next({ reiniciarPagina: false });
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoAsignaturaSeleccionado.set(null);
   }
 
   obtenerEtiquetaEstado(asignatura: Asignatura): string {
     return asignatura.activo ? 'Activa' : 'Inactiva';
   }
 
-  private cargarAsignaturas(): void {
-    if (this.cargando()) {
-      return;
-    }
+  obtenerClaseEstado(asignatura: Asignatura): string {
+    return asignatura.activo ? 'estado-badge--success' : 'estado-badge--neutral';
+  }
 
+  private configurarFiltrosDinamicos(): void {
+    const textoDebounced = merge(
+      this.filtros.controls.codigo.valueChanges,
+      this.filtros.controls.nombre.valueChanges,
+      this.filtros.controls.creditos.valueChanges,
+      this.filtros.controls.nivel_academico.valueChanges,
+    ).pipe(
+      debounceTime(DEBOUNCE_BUSQUEDA_MS),
+      map(() => true),
+    );
+
+    const selectoresInmediatos = this.filtros.controls.activo.valueChanges.pipe(
+      map(() => true),
+    );
+
+    merge(textoDebounced, selectoresInmediatos)
+      .pipe(
+        filter(() => this.filtros.valid && !this.criteriosIgualesAplicados()),
+        takeUntilDestroyed(this.destruccion),
+      )
+      .subscribe(() => this.consultaFiltros$.next({ reiniciarPagina: true }));
+
+    this.consultaFiltros$
+      .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.consultarAsignaturas();
+        }),
+        takeUntilDestroyed(this.destruccion),
+      )
+      .subscribe();
+  }
+
+  private criteriosIgualesAplicados(): boolean {
+    return (
+      JSON.stringify(this.obtenerFiltrosActuales()) ===
+      JSON.stringify(this.estadoFiltrosAplicados())
+    );
+  }
+
+  private contarFiltros(filtros: FiltrosAsignaturas): number {
+    return Object.values(filtros).filter((valor) => valor !== undefined).length;
+  }
+
+  private consultarAsignaturas(): Observable<RespuestaListadoAsignaturas> {
+    this.estadoFilaSeleccionada.set(null);
+    const filtros = this.obtenerFiltrosActuales();
+    this.estadoFiltrosAplicados.set(filtros);
     this.estadoCargando.set(true);
     this.estadoMensajeError.set(null);
-    this.servicio
+    return this.servicio
       .listarAsignaturas({
-        ...this.estadoFiltrosAplicados(),
+        ...filtros,
         pagina: this.estadoPaginaActual(),
         limite: LIMITE_POR_PAGINA,
       })
       .pipe(
-        takeUntilDestroyed(this.destruccion),
         finalize(() => this.estadoCargando.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoAsignaturas.set(respuesta.data ?? []);
-          this.estadoTotalAsignaturas.set(respuesta.total);
-          this.estadoTotalPaginas.set(respuesta.totalPages);
-          this.estadoPaginaActual.set(respuesta.page);
-        },
-        error: (error: unknown) => {
+        tap({
+          next: (respuesta) => {
+            this.estadoMensajeError.set(null);
+            this.estadoAsignaturas.set(respuesta.data ?? []);
+            this.estadoTotalAsignaturas.set(respuesta.total);
+            this.estadoTotalPaginas.set(respuesta.totalPages);
+            this.estadoPaginaActual.set(respuesta.page);
+          },
+        }),
+        catchError((error: unknown) => {
           this.estadoAsignaturas.set([]);
           this.estadoTotalAsignaturas.set(0);
           this.estadoTotalPaginas.set(1);
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
+          return EMPTY;
+        }),
+      );
   }
 
   private obtenerFiltrosActuales(): FiltrosAsignaturas {

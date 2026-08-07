@@ -16,7 +16,7 @@ export const rutasPeriodosAcademicos: Routes = [
     data: {
       [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
     },
-    title: 'Crear periodo académico',
+    title: 'Nuevo periodo académico',
   },
   {
     path: ':id/editar',

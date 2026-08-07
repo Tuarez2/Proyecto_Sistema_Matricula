@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  HostListener,
   inject,
   signal,
 } from '@angular/core';
@@ -14,10 +15,11 @@ import { finalize } from 'rxjs';
 import { obtenerRutaInicialPorRol } from '../../../core/config/rutas-por-rol';
 import type { CredencialesInicioSesion } from '../../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import { LogoComponent } from '../../../shared/components/logo/logo.component';
 
 @Component({
   selector: 'app-inicio-sesion',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, LogoComponent],
   templateUrl: './inicio-sesion.component.html',
   styleUrl: './inicio-sesion.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,6 +33,8 @@ export class InicioSesionComponent {
 
   readonly enviandoFormulario = signal(false);
   readonly mensajeError = signal<string | null>(null);
+  readonly contrasenaVisible = signal(false);
+  readonly bloqMayusActivo = signal(false);
   readonly formularioInicioSesion = this.constructorFormulario.nonNullable.group({
     correo: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
     contrasena: ['', [Validators.required, Validators.maxLength(128)]],
@@ -42,6 +46,21 @@ export class InicioSesionComponent {
 
   get controlContrasena() {
     return this.formularioInicioSesion.controls.contrasena;
+  }
+
+  alternarVisibilidadContrasena(): void {
+    this.contrasenaVisible.update((visible) => !visible);
+  }
+
+  detectarBloqMayus(evento: KeyboardEvent): void {
+    this.bloqMayusActivo.set(evento.getModifierState('CapsLock'));
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  detectarBloqMayusGlobal(evento: KeyboardEvent): void {
+    if (evento.key === 'CapsLock') {
+      this.bloqMayusActivo.set(evento.getModifierState('CapsLock'));
+    }
   }
 
   enviarFormulario(): void {

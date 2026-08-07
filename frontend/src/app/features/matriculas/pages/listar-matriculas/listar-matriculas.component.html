@@ -16,7 +16,7 @@
   <form
     class="form-card"
     [formGroup]="formularioFiltros"
-    (ngSubmit)="buscarMatriculas()"
+    (ngSubmit)="impedirEnvio($event)"
     novalidate
   >
     <div class="form-grid">
@@ -94,9 +94,6 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary" [disabled]="cargandoMatriculas()">
-        Buscar
-      </button>
       <button
         type="button"
         class="btn btn-neutral"
@@ -107,6 +104,10 @@
       </button>
     </div>
   </form>
+
+  <p class="filtros-activos" role="status" aria-live="polite">
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
 
   @if (cargandoMatriculas()) {
     <div class="loading" role="status" aria-live="polite">
@@ -124,18 +125,43 @@
   }
 
   @if (!cargandoMatriculas() && !mensajeError() && matriculas().length === 0) {
-<div class="empty-state">
-      <h2>No se encontraron matrículas.</h2>
-      <p>Ajuste los filtros de búsqueda o registre una nueva matrícula.</p>
+    <div class="empty-state">
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron matrículas con los filtros aplicados.</h2>
+        <div class="empty-actions">
+          <button
+            type="button"
+            class="btn btn-neutral"
+            (click)="limpiarFiltros()"
+          >
+            Limpiar filtros
+          </button>
+        </div>
+      } @else {
+        <h2>No se encontraron matrículas.</h2>
+        <p>Ajuste los filtros de búsqueda o registre una nueva matrícula.</p>
+      }
     </div>
   }
 
   @if (matriculas().length > 0) {
-    <div class="table-wrap">
+    <p class="listar-matriculas__conteo" role="status">
+      Se encontraron <strong>{{ totalMatriculas() }}</strong>
+      {{ totalMatriculas() === 1 ? 'matrícula' : 'matrículas' }}
+    </p>
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+    <div class="table-wrap tabla-seleccionable">
       <table>
         <caption>Listado de matrículas</caption>
         <thead>
           <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
             <th scope="col">Matrícula</th>
             <th scope="col">Estudiante</th>
             @if (puedeGestionarMatriculas()) {
@@ -153,7 +179,22 @@
         </thead>
         <tbody>
           @for (matricula of matriculas(); track matricula.id) {
-            <tr>
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === matricula.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === matricula.id"
+              (click)="seleccionarFila($event, matricula)"
+              (keydown)="seleccionarFilaTeclado($event, matricula)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === matricula.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(matricula)"
+                  [attr.aria-label]="'Seleccionar matrícula ' + matricula.id"
+                />
+              </td>
               <td>
                 <a [routerLink]="['/matriculas', matricula.id]">
                   #{{ matricula.id }}
@@ -166,7 +207,7 @@
               <td>{{ obtenerDescripcionCurso(matricula) }}</td>
               <td>{{ obtenerPeriodo(matricula) }}</td>
               <td>{{ obtenerDocente(matricula) }}</td>
-              <td>{{ matricula.fecha_matricula | date: 'yyyy-MM-dd' }}</td>
+              <td>{{ matricula.fecha_matricula | fecha }}</td>
               <td>
                 <span class="estado-badge {{ obtenerClaseEstado(matricula.estado) }}">
                   {{ obtenerEtiquetaEstado(matricula.estado) }}
@@ -206,3 +247,13 @@
     (pageChange)="cambiarPagina($event)"
   />
 </section>
+
+<app-confirm-modal
+  [oAbierto]="dialogoAbierto()"
+  [titulo]="dialogoTitulo()"
+  [mensaje]="dialogoMensaje()"
+  [peligroso]="dialogoPeligroso()"
+  [procesando]="dialogoProcesando()"
+  (confirmado)="confirmarCambio()"
+  (cancelado)="cerrarDialogo()"
+/>

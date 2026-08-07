@@ -9,9 +9,9 @@
   </button>
 
   <span class="pagination__status" aria-live="polite">
-    Pagina {{ paginaNormalizada }} de {{ totalPaginasNormalizado }}
+    Página {{ paginaNormalizada }} de {{ totalPaginasNormalizado }}
     @if (totalRegistros !== null) {
-      <span>({{ totalRegistros }} registros)</span>
+      · {{ totalRegistros }} {{ totalRegistros === 1 ? 'resultado' : 'resultados' }}
     }
   </span>
 

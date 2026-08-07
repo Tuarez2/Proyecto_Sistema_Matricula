@@ -27,7 +27,7 @@ export const DOCENTES_ROUTES: Routes = [
     data: {
       [CLAVE_ROLES_PERMITIDOS]: [CODIGOS_ROL.ADMIN],
     },
-    title: 'Crear docente',
+    title: 'Nuevo docente',
   },
   {
     path: 'editar/:id',

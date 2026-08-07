@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 64" role="img" aria-label="Sistema de Matrícula Universitaria">
+  <rect width="64" height="64" rx="14" fill="#ffffff"/>
+  <path d="M32 11l12 6-12 6-12-6z" fill="#242925"/>
+  <path d="M23 23.5v5c0 2.6 4 4.2 9 4.2s9-1.6 9-4.2v-5" fill="none" stroke="#242925" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 30c-4-3.5-8.5-4.5-13-4.5H10v23h9c4.5 0 9 1 13 4.5 4-3.5 8.5-4.5 13-4.5h9V25.5h-9c-4.5 0-9 1-13 4.5Z" fill="none" stroke="#242925" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M32 30v23" fill="none" stroke="#242925" stroke-width="3.5"/>
+  <text x="76" y="38" font-family="Georgia, 'Times New Roman', Cambria, serif" font-size="24" font-weight="700" fill="#242925" letter-spacing="0.5">Sistema de Matrícula</text>
+  <text x="76" y="56" font-family="'Segoe UI', Inter, system-ui, sans-serif" font-size="11" letter-spacing="4" fill="#606861" font-weight="600">UNIVERSITARIA</text>
+</svg>

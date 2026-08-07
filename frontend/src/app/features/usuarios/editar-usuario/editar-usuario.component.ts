@@ -19,6 +19,7 @@ import type { Rol } from '../models/rol.model';
 import {
   ESTADOS_USUARIO,
   type ActualizarUsuarioSolicitud,
+  type EstadoUsuario,
   type RolUsuario,
   type Usuario,
 } from '../models/usuario.model';
@@ -157,16 +158,28 @@ export class EditarUsuarioComponent implements OnInit {
       });
   }
 
-  obtenerEtiquetaEstado(usuario: Usuario): string {
-    if (usuario.estado === ESTADOS_USUARIO.ACTIVO) {
+  obtenerEtiquetaEstado(estado: EstadoUsuario): string {
+    if (estado === ESTADOS_USUARIO.ACTIVO) {
       return 'Activo';
     }
 
-    if (usuario.estado === ESTADOS_USUARIO.BLOQUEADO) {
+    if (estado === ESTADOS_USUARIO.BLOQUEADO) {
       return 'Bloqueado';
     }
 
     return 'Inactivo';
+  }
+
+  obtenerClaseEstado(estado: EstadoUsuario): string {
+    if (estado === ESTADOS_USUARIO.ACTIVO) {
+      return 'estado-badge--success';
+    }
+
+    if (estado === ESTADOS_USUARIO.BLOQUEADO) {
+      return 'estado-badge--danger';
+    }
+
+    return 'estado-badge--neutral';
   }
 
   private obtenerIdUsuario(): number | null {

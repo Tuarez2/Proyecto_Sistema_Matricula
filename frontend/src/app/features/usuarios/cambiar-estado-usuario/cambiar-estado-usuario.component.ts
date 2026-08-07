@@ -157,6 +157,18 @@ export class CambiarEstadoUsuarioComponent implements OnInit {
     return 'Inactivo';
   }
 
+  obtenerClaseEstado(estado: EstadoUsuario): string {
+    if (estado === ESTADOS_USUARIO.ACTIVO) {
+      return 'estado-badge--success';
+    }
+
+    if (estado === ESTADOS_USUARIO.BLOQUEADO) {
+      return 'estado-badge--danger';
+    }
+
+    return 'estado-badge--neutral';
+  }
+
   obtenerNombreCompleto(usuario: Usuario): string {
     const nombreCompleto = [
       usuario.nombres.trim(),

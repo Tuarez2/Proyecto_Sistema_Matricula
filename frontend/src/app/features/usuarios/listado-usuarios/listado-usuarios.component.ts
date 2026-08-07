@@ -10,24 +10,51 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  debounceTime,
+  merge,
+  filter,
+  finalize,
+  switchMap,
+  tap,
+} from 'rxjs';
 
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import type { Rol } from '../models/rol.model';
 import {
   ESTADOS_USUARIO,
   type EstadoUsuario,
   type FiltrosListadoUsuarios,
+  type RespuestaListadoUsuarios,
   type Usuario,
 } from '../models/usuario.model';
 import { RolesService } from '../services/roles.service';
 import { UsuariosService } from '../services/usuarios.service';
+
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
+
+const LIMITE_POR_PAGINA = 10;
+const DEBOUNCE_BUSQUEDA_MS = 350;
 
 @Component({
   selector: 'app-listado-usuarios',
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    PaginationComponent,
+    BarraAccionesContextualesComponent,
   ],
   templateUrl: './listado-usuarios.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +64,7 @@ export class ListadoUsuariosComponent implements OnInit {
   private readonly usuariosService = inject(UsuariosService);
   private readonly rolesService = inject(RolesService);
   private readonly referenciaDestruccion = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly estadoUsuarios = signal<Usuario[]>([]);
   private readonly estadoRoles = signal<Rol[]>([]);
   private readonly estadoCargandoUsuarios = signal(false);
@@ -44,9 +72,12 @@ export class ListadoUsuariosComponent implements OnInit {
   private readonly estadoMensajeErrorUsuarios = signal<string | null>(null);
   private readonly estadoMensajeErrorRoles = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
-  private readonly estadoLimitePorPagina = signal(10);
+  private readonly estadoLimitePorPagina = signal(LIMITE_POR_PAGINA);
   private readonly estadoTotalUsuarios = signal(0);
   private readonly estadoTotalPaginas = signal(0);
+  private readonly estadoFiltrosAplicados = signal<FiltrosListadoUsuarios>({});
+  private readonly estadoFilaSeleccionada = signal<Usuario | null>(null);
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_USUARIO = ESTADOS_USUARIO;
   readonly usuarios = this.estadoUsuarios.asReadonly();
@@ -68,6 +99,21 @@ export class ListadoUsuariosComponent implements OnInit {
       this.paginaActual() < this.totalPaginas() &&
       !this.cargandoUsuarios(),
   );
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
+  );
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    if (!this.estadoFilaSeleccionada()) {
+      return [];
+    }
+
+    return [
+      { id: 'editar', etiqueta: 'Editar' },
+      { id: 'cambiar-estado', etiqueta: 'Cambiar estado' },
+      { id: 'cambiar-contrasena', etiqueta: 'Cambiar contraseña' },
+    ];
+  });
   readonly formularioFiltros = this.constructorFormulario.nonNullable.group({
     correo: ['', [Validators.maxLength(150)]],
     estado: [''],
@@ -75,36 +121,47 @@ export class ListadoUsuariosComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.consultaFiltros$
+      .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.ejecutarConsultaUsuarios();
+        }),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe();
+
+    this.registrarFiltrosDinamicos();
     this.cargarRoles();
-    this.cargarUsuarios();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
   buscarUsuarios(): void {
-    if (this.cargandoUsuarios()) {
-      return;
-    }
-
     if (this.formularioFiltros.controls.correo.invalid) {
       this.formularioFiltros.controls.correo.markAsTouched();
       return;
     }
 
+    this.estadoFiltrosAplicados.set(this.obtenerFiltrosAplicables());
     this.estadoPaginaActual.set(1);
-    this.cargarUsuarios();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   limpiarFiltros(): void {
-    if (this.cargandoUsuarios()) {
-      return;
-    }
-
-    this.formularioFiltros.reset({
-      correo: '',
-      estado: '',
-      codigoRol: '',
-    });
+    this.formularioFiltros.reset(
+      {
+        correo: '',
+        estado: '',
+        codigoRol: '',
+      },
+      { emitEvent: false },
+    );
+    this.estadoMensajeErrorUsuarios.set(null);
+    this.estadoFiltrosAplicados.set({});
     this.estadoPaginaActual.set(1);
-    this.cargarUsuarios();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   paginaAnterior(): void {
@@ -113,7 +170,7 @@ export class ListadoUsuariosComponent implements OnInit {
     }
 
     this.estadoPaginaActual.update((paginaActual) => paginaActual - 1);
-    this.cargarUsuarios();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   paginaSiguiente(): void {
@@ -122,7 +179,99 @@ export class ListadoUsuariosComponent implements OnInit {
     }
 
     this.estadoPaginaActual.update((paginaActual) => paginaActual + 1);
-    this.cargarUsuarios();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (this.cargandoUsuarios() || pagina === this.paginaActual()) {
+      return;
+    }
+
+    this.estadoPaginaActual.set(pagina);
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  cargarUsuarios(): void {
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  seleccionarFila(evento: Event, usuario: Usuario): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(usuario);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, usuario: Usuario): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(usuario);
+  }
+
+  alternarSeleccion(usuario: Usuario): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === usuario.id ? null : usuario,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const usuario = this.estadoFilaSeleccionada();
+
+    if (!usuario) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'editar':
+        this.router.navigate(['/usuarios', usuario.id, 'editar']);
+        break;
+      case 'cambiar-estado':
+        this.router.navigate(['/usuarios', usuario.id, 'estado']);
+        break;
+      case 'cambiar-contrasena':
+        this.router.navigate(['/usuarios', usuario.id, 'contrasena']);
+        break;
+    }
+  }
+
+  obtenerEtiquetaEstado(estado: EstadoUsuario): string {
+    if (estado === ESTADOS_USUARIO.ACTIVO) {
+      return 'Activo';
+    }
+
+    if (estado === ESTADOS_USUARIO.BLOQUEADO) {
+      return 'Bloqueado';
+    }
+
+    if (estado === ESTADOS_USUARIO.INACTIVO) {
+      return 'Inactivo';
+    }
+
+    return 'Estado desconocido';
+  }
+
+  obtenerClaseEstado(estado: EstadoUsuario): string {
+    if (estado === ESTADOS_USUARIO.ACTIVO) {
+      return 'estado-badge--success';
+    }
+
+    if (estado === ESTADOS_USUARIO.BLOQUEADO) {
+      return 'estado-badge--danger';
+    }
+
+    return 'estado-badge--neutral';
   }
 
   obtenerNombreCompleto(usuario: Usuario): string {
@@ -136,30 +285,62 @@ export class ListadoUsuariosComponent implements OnInit {
     return nombreCompleto || 'Usuario';
   }
 
-  cargarUsuarios(): void {
-    if (this.cargandoUsuarios()) {
+  private registrarFiltrosDinamicos(): void {
+    const correoDebounced = this.formularioFiltros.controls.correo.valueChanges;
+
+    const estados$ = [
+      this.formularioFiltros.controls.estado,
+      this.formularioFiltros.controls.codigoRol,
+    ];
+
+    merge(
+      correoDebounced.pipe(debounceTime(DEBOUNCE_BUSQUEDA_MS)),
+      estados$[0].valueChanges,
+      estados$[1].valueChanges,
+    )
+      .pipe(
+        filter(() => this.formularioFiltros.valid),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe(() => this.aplicarFiltrosDinamicos());
+  }
+
+  private aplicarFiltrosDinamicos(): void {
+    if (this.formularioFiltros.controls.correo.invalid) {
       return;
     }
 
+    const filtros = this.obtenerFiltrosAplicables();
+
+    if (this.filtrosIguales(filtros)) {
+      return;
+    }
+
+    this.estadoFiltrosAplicados.set(filtros);
+    this.estadoPaginaActual.set(1);
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  private ejecutarConsultaUsuarios(): Observable<RespuestaListadoUsuarios> {
+    this.estadoFilaSeleccionada.set(null);
     this.estadoMensajeErrorUsuarios.set(null);
     this.estadoCargandoUsuarios.set(true);
-    this.usuariosService.listarUsuarios(this.obtenerFiltrosUsuarios())
+    return this.usuariosService.listarUsuarios(this.obtenerParametrosConsulta())
       .pipe(
-        takeUntilDestroyed(this.referenciaDestruccion),
         finalize(() => this.estadoCargandoUsuarios.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoUsuarios.set(respuesta.data ?? []);
-          this.estadoPaginaActual.set(respuesta.page);
-          this.estadoLimitePorPagina.set(respuesta.limit);
-          this.estadoTotalUsuarios.set(respuesta.total);
-          this.estadoTotalPaginas.set(respuesta.totalPages);
-        },
-        error: (error: unknown) => {
+        tap({
+          next: (respuesta) => {
+            this.estadoUsuarios.set(respuesta.data ?? []);
+            this.estadoPaginaActual.set(respuesta.page);
+            this.estadoTotalUsuarios.set(respuesta.total);
+            this.estadoTotalPaginas.set(respuesta.totalPages);
+          },
+        }),
+        catchError((error: unknown) => {
           this.estadoMensajeErrorUsuarios.set(this.obtenerMensajeError(error));
-        },
-      });
+          return EMPTY;
+        }),
+      );
   }
 
   private cargarRoles(): void {
@@ -184,12 +365,9 @@ export class ListadoUsuariosComponent implements OnInit {
       });
   }
 
-  private obtenerFiltrosUsuarios(): FiltrosListadoUsuarios {
+  private obtenerFiltrosAplicables(): FiltrosListadoUsuarios {
     const valoresFormulario = this.formularioFiltros.getRawValue();
-    const filtros: FiltrosListadoUsuarios = {
-      pagina: this.paginaActual(),
-      limite: this.limitePorPagina(),
-    };
+    const filtros: FiltrosListadoUsuarios = {};
     const correo = valoresFormulario.correo.trim();
 
     if (correo) {
@@ -205,6 +383,24 @@ export class ListadoUsuariosComponent implements OnInit {
     }
 
     return filtros;
+  }
+
+  private obtenerParametrosConsulta(): FiltrosListadoUsuarios {
+    return {
+      ...this.estadoFiltrosAplicados(),
+      pagina: this.estadoPaginaActual(),
+      limite: LIMITE_POR_PAGINA,
+    };
+  }
+
+  private contarFiltros(filtros: FiltrosListadoUsuarios): number {
+    return ['correo', 'estado', 'codigoRol'].filter(
+      (clave) => filtros[clave as keyof FiltrosListadoUsuarios] !== undefined,
+    ).length;
+  }
+
+  private filtrosIguales(filtros: FiltrosListadoUsuarios): boolean {
+    return JSON.stringify(filtros) === JSON.stringify(this.estadoFiltrosAplicados());
   }
 
   private obtenerMensajeError(error: unknown): string {

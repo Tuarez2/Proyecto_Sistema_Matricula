@@ -262,7 +262,7 @@ describe('ListadoAsignaturasComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron asignaturas.');
+    expect(obtenerTexto()).toContain('No se encontraron asignaturas');
   });
 
   it('muestra error de API al cargar asignaturas', () => {
@@ -293,7 +293,7 @@ describe('ListadoAsignaturasComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear asignatura')).toBeTruthy();
+    expect(obtenerEnlace('Nueva asignatura')).toBeTruthy();
     expect(obtenerEnlace('Editar')).toBeTruthy();
     expect(obtenerBoton('Inactivar')).toBeTruthy();
   });
@@ -303,7 +303,7 @@ describe('ListadoAsignaturasComponent', () => {
 
     crearComponente();
 
-    expect(obtenerEnlace('Crear asignatura')).toBeNull();
+    expect(obtenerEnlace('Nueva asignatura')).toBeNull();
     expect(obtenerEnlace('Editar')).toBeNull();
     expect(obtenerBoton('Inactivar')).toBeNull();
   });
@@ -318,13 +318,14 @@ describe('ListadoAsignaturasComponent', () => {
   });
 
   it('confirma antes de inactivar una asignatura y recarga la página actual', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.inactivarAsignatura(componente.asignaturas()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(asignaturasService.inactivarAsignatura).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Asignatura inactivada correctamente.');
     expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(2);
@@ -335,10 +336,12 @@ describe('ListadoAsignaturasComponent', () => {
   });
 
   it('no inactiva si se cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.inactivarAsignatura(componente.asignaturas()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(asignaturasService.inactivarAsignatura).not.toHaveBeenCalled();
   });
@@ -350,11 +353,13 @@ describe('ListadoAsignaturasComponent', () => {
     asignaturasService.inactivarAsignatura.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarAsignatura(componente.asignaturas()[0]);
-    componente.inactivarAsignatura(componente.asignaturas()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(asignaturasService.inactivarAsignatura).toHaveBeenCalledTimes(1);
   });
@@ -372,20 +377,199 @@ describe('ListadoAsignaturasComponent', () => {
         }),
       ),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarAsignatura(componente.asignaturas()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe(
       'El código de asignatura ya está registrado.',
     );
   });
 
+  it('la busqueda por texto usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      asignaturasService.listarAsignaturas.mockClear();
+
+      componente.filtros.controls.nombre.setValue('Prog');
+      vi.advanceTimersByTime(100);
+      expect(asignaturasService.listarAsignaturas).not.toHaveBeenCalled();
+
+      componente.filtros.controls.nombre.setValue('Programación');
+      vi.advanceTimersByTime(400);
+
+      expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        nombre: 'Programación',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('al cambiar el filtro activo consulta de inmediato', () => {
+    crearComponente();
+    asignaturasService.listarAsignaturas.mockClear();
+
+    componente.filtros.controls.activo.setValue('false');
+
+    expect(asignaturasService.listarAsignaturas).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      activo: false,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('cuenta los filtros activos', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtros.controls.activo.setValue('false');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
+  it('selecciona y deselecciona una fila con clic', () => {
+    crearComponente();
+    const primera = componente.asignaturas()[0];
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    crearComponente();
+    const primera = componente.asignaturas()[0];
+
+    teclaEnFila(primera, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    teclaEnFila(primera, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace o botón interno', () => {
+    crearComponente();
+    const primera = componente.asignaturas()[0];
+    const enlace = obtenerEnlace('Ver');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      primera,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    crearComponente();
+    const primera = componente.asignaturas()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones válidas al seleccionar', () => {
+    crearComponente();
+    const primera = componente.asignaturas()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Inactivar')).toBeTruthy();
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    crearComponente();
+    const primera = componente.asignaturas()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerFila(primera).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    crearComponente();
+    const primera = componente.asignaturas()[0];
+    clicEnFila(primera);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no muestra acciones no permitidas en la barra contextual', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+    crearComponente();
+    const primera = componente.asignaturas()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Inactivar')).toBeNull();
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Ver')).toBeTruthy();
+  });
+
+  function clicEnFila(asignatura: Asignatura): void {
+    const celda =
+      obtenerFila(asignatura).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(asignatura: Asignatura, tecla: string): void {
+    obtenerFila(asignatura).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListadoAsignaturasComponent);
     componente = fixture.componentInstance;
     fixture.detectChanges();
+  }
+
+  function obtenerUltimosFiltros(): FiltrosAsignaturas | undefined {
+    const llamadas = asignaturasService.listarAsignaturas.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
   }
 
   function obtenerTexto(): string {
@@ -406,6 +590,33 @@ describe('ListadoAsignaturasComponent', () => {
     ) as HTMLButtonElement[];
 
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function obtenerFila(asignatura: Asignatura): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find(
+      (filaEncontrada) =>
+        filaEncontrada.textContent?.includes(asignatura.codigo),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila de la asignatura');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
   }
 });
 

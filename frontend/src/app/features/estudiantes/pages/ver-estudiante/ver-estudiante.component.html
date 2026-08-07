@@ -78,7 +78,7 @@
         </div>
         <div>
           <dt>Fecha de nacimiento</dt>
-          <dd>{{ estudiante.fecha_nacimiento }}</dd>
+          <dd>{{ estudiante.fecha_nacimiento | fecha }}</dd>
         </div>
         <div>
           <dt>Carrera</dt>
@@ -132,7 +132,7 @@
                       <td>{{ obtenerDescripcionCurso(matricula) }}</td>
                       <td>{{ matricula.curso?.paralelo ?? 'Sin paralelo' }}</td>
                       <td>{{ matricula.curso?.docente?.nombres }} {{ matricula.curso?.docente?.apellidos }}</td>
-                      <td>{{ matricula.fecha_matricula | date: 'yyyy-MM-dd' }}</td>
+                      <td>{{ matricula.fecha_matricula | fecha }}</td>
                       <td>
                         <span class="estado-badge estado-badge--info">
                           {{ obtenerEtiquetaEstado(matricula.estado) }}

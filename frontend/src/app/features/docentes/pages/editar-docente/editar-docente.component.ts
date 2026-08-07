@@ -24,7 +24,6 @@ import { DocentesService } from '../../services/docentes.service';
   standalone: true,
   imports: [DocenteFormComponent],
   templateUrl: './editar-docente.component.html',
-  styleUrl: './editar-docente.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditarDocenteComponent implements OnInit {

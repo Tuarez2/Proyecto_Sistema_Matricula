@@ -163,8 +163,8 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.codigo.setValue('SOF');
-    componente.filtros.controls.nombre.setValue('Software');
+    componente.filtros.controls.codigo.setValue('SOF', { emitEvent: false });
+    componente.filtros.controls.nombre.setValue('Software', { emitEvent: false });
     componente.buscarCarreras();
     fixture.detectChanges();
 
@@ -181,7 +181,7 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.facultad_id.setValue('2');
+    componente.filtros.controls.facultad_id.setValue('2', { emitEvent: false });
     componente.buscarCarreras();
     fixture.detectChanges();
 
@@ -196,7 +196,7 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.activo.setValue('false');
+    componente.filtros.controls.activo.setValue('false', { emitEvent: false });
     componente.buscarCarreras();
     fixture.detectChanges();
 
@@ -211,7 +211,7 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.nombre.setValue('x'.repeat(151));
+    componente.filtros.controls.nombre.setValue('x'.repeat(151), { emitEvent: false });
     componente.buscarCarreras();
     fixture.detectChanges();
 
@@ -223,7 +223,7 @@ describe('ListadoCarrerasComponent', () => {
     crearComponente();
     carrerasService.listarCarreras.mockClear();
 
-    componente.filtros.controls.nombre.setValue('Software');
+    componente.filtros.controls.nombre.setValue('Software', { emitEvent: false });
     componente.buscarCarreras();
     carrerasService.listarCarreras.mockClear();
 
@@ -266,7 +266,7 @@ describe('ListadoCarrerasComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron carreras.');
+    expect(obtenerTexto()).toContain('No se encontraron carreras');
   });
 
   it('muestra error de API al cargar carreras', () => {
@@ -307,7 +307,7 @@ describe('ListadoCarrerasComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear carrera')).toBeTruthy();
+    expect(obtenerEnlace('Nueva carrera')).toBeTruthy();
     expect(obtenerEnlace('Editar')).toBeTruthy();
     expect(obtenerBoton('Inactivar')).toBeTruthy();
   });
@@ -317,7 +317,7 @@ describe('ListadoCarrerasComponent', () => {
 
     crearComponente();
 
-    expect(obtenerEnlace('Crear carrera')).toBeNull();
+    expect(obtenerEnlace('Nueva carrera')).toBeNull();
     expect(obtenerEnlace('Editar')).toBeNull();
     expect(obtenerBoton('Inactivar')).toBeNull();
   });
@@ -332,13 +332,15 @@ describe('ListadoCarrerasComponent', () => {
   });
 
   it('confirma antes de inactivar una carrera y recarga la página actual', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.inactivarCarrera(componente.carreras()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(carrerasService.inactivarCarrera).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Carrera inactivada correctamente.');
     expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(2);
@@ -349,10 +351,12 @@ describe('ListadoCarrerasComponent', () => {
   });
 
   it('no inactiva si se cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.inactivarCarrera(componente.carreras()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(carrerasService.inactivarCarrera).not.toHaveBeenCalled();
   });
@@ -363,11 +367,13 @@ describe('ListadoCarrerasComponent', () => {
     carrerasService.inactivarCarrera.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarCarrera(componente.carreras()[0]);
-    componente.inactivarCarrera(componente.carreras()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(carrerasService.inactivarCarrera).toHaveBeenCalledTimes(1);
   });
@@ -383,13 +389,223 @@ describe('ListadoCarrerasComponent', () => {
         },
       })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.inactivarCarrera(componente.carreras()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe('La carrera tiene relaciones activas.');
   });
+
+  it('ignora resultados de una consulta anterior', () => {
+    const consultaAnterior = new Subject<RespuestaListadoCarreras>();
+    const consultaNueva = new Subject<RespuestaListadoCarreras>();
+
+    carrerasService.listarCarreras
+      .mockReturnValueOnce(consultaAnterior.asObservable())
+      .mockReturnValueOnce(consultaNueva.asObservable());
+
+    crearComponente();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+
+    componente.cargarCarreras();
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(crearRespuestaCarreras([crearCarrera({ id: 77 })]));
+    consultaNueva.complete();
+    consultaAnterior.next(crearRespuestaCarreras([crearCarrera({ id: 1 })]));
+    consultaAnterior.complete();
+
+    expect(componente.carreras()[0]?.id).toBe(77);
+  });
+
+  it('al cambiar el filtro de facultad consulta de inmediato', () => {
+    crearComponente();
+    carrerasService.listarCarreras.mockClear();
+
+    componente.filtros.controls.facultad_id.setValue('2');
+
+    expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      facultad_id: 2,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('la busqueda por texto usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      carrerasService.listarCarreras.mockClear();
+
+      componente.filtros.controls.nombre.setValue('So');
+      vi.advanceTimersByTime(100);
+      expect(carrerasService.listarCarreras).not.toHaveBeenCalled();
+
+      componente.filtros.controls.nombre.setValue('Soft');
+      vi.advanceTimersByTime(400);
+
+      expect(carrerasService.listarCarreras).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        nombre: 'Soft',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cuenta los filtros activos', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtros.controls.facultad_id.setValue('2');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
+  it('selecciona y deselecciona una fila con clic', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    teclaEnFila(primera, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    teclaEnFila(primera, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace o botón interno', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+    const enlace = obtenerEnlace('Ver');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      primera,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones válidas al seleccionar', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Inactivar')).toBeTruthy();
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerFila(primera).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+    clicEnFila(primera);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no muestra acciones no permitidas en la barra contextual', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Inactivar')).toBeNull();
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Ver')).toBeTruthy();
+  });
+
+  it('limpia la selección tras inactivar correctamente', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    componente.inactivarCarrera(primera);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  function clicEnFila(carrera: Carrera): void {
+    const celda = obtenerFila(carrera).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(carrera: Carrera, tecla: string): void {
+    obtenerFila(carrera).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
 
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListadoCarrerasComponent);
@@ -399,6 +615,12 @@ describe('ListadoCarrerasComponent', () => {
 
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
+  }
+
+  function obtenerUltimosFiltros(): FiltrosCarreras | undefined {
+    const llamadas = carrerasService.listarCarreras.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {
@@ -415,6 +637,33 @@ describe('ListadoCarrerasComponent', () => {
     ) as HTMLButtonElement[];
 
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function obtenerFila(carrera: Carrera): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find(
+      (filaEncontrada) =>
+        filaEncontrada.textContent?.includes(carrera.codigo),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila de la carrera');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
   }
 });
 

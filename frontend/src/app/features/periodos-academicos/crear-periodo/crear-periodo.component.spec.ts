@@ -580,11 +580,11 @@ describe('CrearPeriodoComponent', () => {
     );
   });
 
-  it('existe h1 Crear periodo academico', () => {
+  it('existe h1 Nuevo periodo academico', () => {
     fixture.detectChanges();
 
     expect(obtenerElemento('h1')?.textContent).toContain(
-      'Crear periodo académico',
+      'Nuevo periodo académico',
     );
   });
 

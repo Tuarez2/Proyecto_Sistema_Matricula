@@ -16,18 +16,38 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  debounceTime,
+  filter,
+  finalize,
+  map,
+  merge,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal/confirm-modal.component';
+import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import {
   ESTADOS_MATRICULA,
   type EstadoMatricula,
   type FiltrosMatriculas,
   type Matricula,
+  type RespuestaListadoMatriculas,
 } from '../../models/matricula.model';
 import { MatriculasService } from '../../services/matriculas.service';
 
@@ -47,19 +67,37 @@ interface AccionEstadoMatricula {
   etiqueta: string;
 }
 
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
+
 const LIMITE_POR_PAGINA = 10;
+const DEBOUNCE_BUSQUEDA_MS = 350;
+
+const CLAVES_FILTROS_MATRICULAS: (keyof FiltrosMatriculas)[] = [
+  'estudiante_id',
+  'curso_id',
+  'periodo_id',
+  'asignatura_id',
+  'carrera_id',
+  'estado',
+  'fecha_desde',
+  'fecha_hasta',
+];
 
 @Component({
   selector: 'app-listar-matriculas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe, ConfirmModalComponent, BarraAccionesContextualesComponent],
   templateUrl: './listar-matriculas.component.html',
+  styleUrl: './listar-matriculas.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListarMatriculasComponent implements OnInit {
   private readonly matriculasService = inject(MatriculasService);
   private readonly autenticacionService = inject(AutenticacionService);
   private readonly referenciaDestruccion = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly estadoMatriculas = signal<Matricula[]>([]);
   private readonly estadoCargandoMatriculas = signal(false);
   private readonly estadoMensajeError = signal<string | null>(null);
@@ -69,6 +107,18 @@ export class ListarMatriculasComponent implements OnInit {
   private readonly estadoTotalMatriculas = signal(0);
   private readonly estadoTotalPaginas = signal(1);
   private readonly estadoMatriculaProcesando = signal<number | null>(null);
+  private readonly estadoMatriculaSeleccionada = signal<{
+    matricula: Matricula;
+    estado: EstadoMatricula;
+  } | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
+  private readonly estadoFiltrosAplicados = signal<FiltrosMatriculas>({});
+  private readonly estadoFilaSeleccionada = signal<Matricula | null>(null);
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_MATRICULA = ESTADOS_MATRICULA;
   readonly matriculas = this.estadoMatriculas.asReadonly();
@@ -80,6 +130,42 @@ export class ListarMatriculasComponent implements OnInit {
   readonly totalMatriculas = this.estadoTotalMatriculas.asReadonly();
   readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly matriculaProcesando = this.estadoMatriculaProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const matricula = this.estadoFilaSeleccionada();
+
+    if (!matricula) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [
+      { id: 'ver', etiqueta: 'Ver' },
+    ];
+
+    if (this.puedeGestionarMatriculas()) {
+      for (const accion of this.obtenerAccionesEstado(matricula)) {
+        if (accion.estado === ESTADOS_MATRICULA.aprobada) {
+          acciones.push({ id: 'aprobar', etiqueta: 'Aprobar' });
+        } else if (accion.estado === ESTADOS_MATRICULA.reprobada) {
+          acciones.push({ id: 'reprobar', etiqueta: 'Reprobar' });
+        } else if (accion.estado === ESTADOS_MATRICULA.retirada) {
+          acciones.push({ id: 'retirar', etiqueta: 'Retirar', variante: 'danger' });
+        } else if (accion.estado === ESTADOS_MATRICULA.anulada) {
+          acciones.push({ id: 'anular', etiqueta: 'Anular', variante: 'danger' });
+        }
+      }
+    }
+
+    return acciones;
+  });
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
+  );
   readonly puedeGestionarMatriculas = computed(() => {
     const codigoRol = this.autenticacionService.usuarioActual()?.rol?.codigo;
 
@@ -116,67 +202,46 @@ export class ListarMatriculasComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.cargarMatriculas();
+    this.configurarFiltrosDinamicos();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
   cargarMatriculas(): void {
-    if (this.cargandoMatriculas()) {
-      return;
-    }
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
 
+  buscarMatriculas(): void {
     if (!this.validarFiltros()) {
       return;
     }
 
     this.estadoMensajeError.set(null);
-    this.estadoMensajeExito.set(null);
-    this.estadoCargandoMatriculas.set(true);
-    this.matriculasService.listarMatriculas(this.obtenerFiltrosActuales())
-      .pipe(
-        takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoCargandoMatriculas.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoMatriculas.set(respuesta.data ?? []);
-          this.estadoPaginaActual.set(respuesta.page);
-          this.estadoLimitePorPagina.set(respuesta.limit);
-          this.estadoTotalMatriculas.set(respuesta.total);
-          this.estadoTotalPaginas.set(Math.max(respuesta.totalPages, 1));
-        },
-        error: (error: unknown) => {
-          this.estadoMatriculas.set([]);
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
-  buscarMatriculas(): void {
-    if (this.cargandoMatriculas()) {
-      return;
-    }
-
-    this.estadoPaginaActual.set(1);
-    this.cargarMatriculas();
+  impedirEnvio($event: Event): void {
+    $event.preventDefault();
   }
 
   limpiarFiltros(): void {
-    if (this.cargandoMatriculas()) {
-      return;
-    }
-
-    this.formularioFiltros.reset({
-      estudiante_id: '',
-      curso_id: '',
-      periodo_id: '',
-      asignatura_id: '',
-      carrera_id: '',
-      estado: '',
-      fecha_desde: '',
-      fecha_hasta: '',
-    });
+    this.estadoMensajeError.set(null);
+    this.estadoMensajeExito.set(null);
+    this.estadoFiltrosAplicados.set({});
     this.estadoPaginaActual.set(1);
-    this.cargarMatriculas();
+    this.formularioFiltros.reset(
+      {
+        estudiante_id: '',
+        curso_id: '',
+        periodo_id: '',
+        asignatura_id: '',
+        carrera_id: '',
+        estado: '',
+        fecha_desde: '',
+        fecha_hasta: '',
+      },
+      { emitEvent: false },
+    );
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cambiarPagina(pagina: number): void {
@@ -185,7 +250,64 @@ export class ListarMatriculasComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
-    this.cargarMatriculas();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  seleccionarFila(evento: Event, matricula: Matricula): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(matricula);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, matricula: Matricula): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(matricula);
+  }
+
+  alternarSeleccion(matricula: Matricula): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === matricula.id ? null : matricula,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const matricula = this.estadoFilaSeleccionada();
+
+    if (!matricula) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'ver':
+        this.router.navigate(['/matriculas', matricula.id]);
+        break;
+      case 'aprobar':
+        this.solicitarCambioEstado(matricula, ESTADOS_MATRICULA.aprobada);
+        break;
+      case 'reprobar':
+        this.solicitarCambioEstado(matricula, ESTADOS_MATRICULA.reprobada);
+        break;
+      case 'retirar':
+        this.solicitarCambioEstado(matricula, ESTADOS_MATRICULA.retirada);
+        break;
+      case 'anular':
+        this.solicitarCambioEstado(matricula, ESTADOS_MATRICULA.anulada);
+        break;
+    }
   }
 
   solicitarCambioEstado(
@@ -200,23 +322,40 @@ export class ListarMatriculasComponent implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoMatriculaSeleccionada.set({
+      matricula,
+      estado: estadoSiguiente,
+    });
+    this.estadoDialogoTitulo.set(
+      `Cambiar matrícula a ${this.obtenerEtiquetaEstado(estadoSiguiente)}`,
+    );
+    this.estadoDialogoMensaje.set(
       `¿Desea cambiar la matrícula ${matricula.id} a ${this.obtenerEtiquetaEstado(estadoSiguiente)}?`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarCambio(): void {
+    const seleccion = this.estadoMatriculaSeleccionada();
+
+    if (!seleccion) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
-    this.estadoMatriculaProcesando.set(matricula.id);
-    this.matriculasService.cambiarEstadoMatricula(matricula.id, {
-      estado: estadoSiguiente,
+    this.estadoMatriculaProcesando.set(seleccion.matricula.id);
+    this.estadoDialogoProcesando.set(true);
+    this.matriculasService.cambiarEstadoMatricula(seleccion.matricula.id, {
+      estado: seleccion.estado,
     })
       .pipe(
         takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoMatriculaProcesando.set(null)),
+        finalize(() => {
+          this.estadoMatriculaProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
@@ -226,11 +365,22 @@ export class ListarMatriculasComponent implements OnInit {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Estado de matrícula actualizado correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
+          this.estadoFilaSeleccionada.set(null);
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoMatriculaSeleccionada.set(null);
   }
 
   obtenerNombreEstudiante(matricula: Matricula): string {
@@ -317,21 +467,130 @@ export class ListarMatriculasComponent implements OnInit {
       .some((accion) => accion.estado === estadoSiguiente);
   }
 
-  private obtenerFiltrosActuales(): FiltrosMatriculas {
-    const valores = this.formularioFiltros.getRawValue();
+  private configurarFiltrosDinamicos(): void {
+    const textoDebounced = merge(
+      this.formularioFiltros.controls.estudiante_id.valueChanges,
+      this.formularioFiltros.controls.curso_id.valueChanges,
+      this.formularioFiltros.controls.periodo_id.valueChanges,
+      this.formularioFiltros.controls.asignatura_id.valueChanges,
+      this.formularioFiltros.controls.carrera_id.valueChanges,
+      this.formularioFiltros.controls.fecha_desde.valueChanges,
+      this.formularioFiltros.controls.fecha_hasta.valueChanges,
+    ).pipe(
+      debounceTime(DEBOUNCE_BUSQUEDA_MS),
+      map(() => true),
+    );
 
-    return {
-      estudiante_id: this.obtenerEnteroPositivo(valores.estudiante_id),
-      curso_id: this.obtenerEnteroPositivo(valores.curso_id),
-      periodo_id: this.obtenerEnteroPositivo(valores.periodo_id),
-      asignatura_id: this.obtenerEnteroPositivo(valores.asignatura_id),
-      carrera_id: this.obtenerEnteroPositivo(valores.carrera_id),
-      estado: valores.estado || undefined,
-      fecha_desde: valores.fecha_desde || undefined,
-      fecha_hasta: valores.fecha_hasta || undefined,
-      page: this.paginaActual(),
-      limit: this.limitePorPagina(),
-    };
+    const selectoresInmediatos = this.formularioFiltros.controls.estado.valueChanges.pipe(
+      map(() => true),
+    );
+
+    merge(textoDebounced, selectoresInmediatos)
+      .pipe(
+        filter(() => this.formularioFiltros.valid && !this.criteriosIgualesAplicados()),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe(() => this.consultaFiltros$.next({ reiniciarPagina: true }));
+
+    this.consultaFiltros$
+      .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.consultarMatriculas();
+        }),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe();
+  }
+
+  private criteriosIgualesAplicados(): boolean {
+    return (
+      JSON.stringify(this.obtenerFiltrosAplicables()) ===
+      JSON.stringify(this.estadoFiltrosAplicados())
+    );
+  }
+
+  private contarFiltros(filtros: FiltrosMatriculas): number {
+    return CLAVES_FILTROS_MATRICULAS.filter(
+      (clave) => filtros[clave] !== undefined,
+    ).length;
+  }
+
+  private consultarMatriculas(): Observable<RespuestaListadoMatriculas> {
+    this.estadoFilaSeleccionada.set(null);
+    const filtros = this.obtenerFiltrosAplicables();
+    this.estadoFiltrosAplicados.set(filtros);
+    this.estadoMensajeError.set(null);
+    this.estadoCargandoMatriculas.set(true);
+    return this.matriculasService.listarMatriculas({
+      ...filtros,
+      page: this.estadoPaginaActual(),
+      limit: this.estadoLimitePorPagina(),
+    }).pipe(
+      finalize(() => this.estadoCargandoMatriculas.set(false)),
+      tap({
+        next: (respuesta) => {
+          this.estadoMensajeError.set(null);
+          this.estadoMatriculas.set(respuesta.data ?? []);
+          this.estadoPaginaActual.set(respuesta.page);
+          this.estadoLimitePorPagina.set(respuesta.limit);
+          this.estadoTotalMatriculas.set(respuesta.total);
+          this.estadoTotalPaginas.set(Math.max(respuesta.totalPages, 1));
+        },
+      }),
+      catchError((error: unknown) => {
+        this.estadoMatriculas.set([]);
+        this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        return EMPTY;
+      }),
+    );
+  }
+
+  private obtenerFiltrosAplicables(): FiltrosMatriculas {
+    const valores = this.formularioFiltros.getRawValue();
+    const filtros: FiltrosMatriculas = {};
+
+    const estudiante_id = this.obtenerEnteroPositivo(valores.estudiante_id);
+    const curso_id = this.obtenerEnteroPositivo(valores.curso_id);
+    const periodo_id = this.obtenerEnteroPositivo(valores.periodo_id);
+    const asignatura_id = this.obtenerEnteroPositivo(valores.asignatura_id);
+    const carrera_id = this.obtenerEnteroPositivo(valores.carrera_id);
+
+    if (estudiante_id !== undefined) {
+      filtros.estudiante_id = estudiante_id;
+    }
+
+    if (curso_id !== undefined) {
+      filtros.curso_id = curso_id;
+    }
+
+    if (periodo_id !== undefined) {
+      filtros.periodo_id = periodo_id;
+    }
+
+    if (asignatura_id !== undefined) {
+      filtros.asignatura_id = asignatura_id;
+    }
+
+    if (carrera_id !== undefined) {
+      filtros.carrera_id = carrera_id;
+    }
+
+    if (this.esEstadoMatricula(valores.estado)) {
+      filtros.estado = valores.estado;
+    }
+
+    if (valores.fecha_desde) {
+      filtros.fecha_desde = valores.fecha_desde;
+    }
+
+    if (valores.fecha_hasta) {
+      filtros.fecha_hasta = valores.fecha_hasta;
+    }
+
+    return filtros;
   }
 
   private obtenerEnteroPositivo(valor: string): number | undefined {
@@ -342,6 +601,14 @@ export class ListarMatriculasComponent implements OnInit {
     }
 
     return valorNumerico;
+  }
+
+  private esEstadoMatricula(
+    valor: string,
+  ): valor is EstadoMatricula {
+    return Object.values(ESTADOS_MATRICULA).some(
+      (estado) => estado === valor,
+    );
   }
 
   private validarFiltros(): boolean {

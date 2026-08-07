@@ -1,130 +1,146 @@
-<section aria-labelledby="titulo-cambiar-contrasena">
-  <h1 id="titulo-cambiar-contrasena">
-    Cambiar contraseña de usuario
-  </h1>
-
-  <a routerLink="/usuarios">Volver a usuarios</a>
+<section class="page" aria-labelledby="titulo-cambiar-contrasena">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-cambiar-contrasena">
+        Cambiar contraseña de usuario
+      </h1>
+      <p class="page-subtitle">Restablece la contraseña de un usuario.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/usuarios" class="btn btn-neutral">Volver a usuarios</a>
+    </div>
+  </header>
 
   @if (cargandoUsuario()) {
-    <p role="status" aria-live="polite">Consultando usuario...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando usuario...
+    </div>
   }
 
   @if (mensajeError()) {
-    <p role="alert" aria-live="polite">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert" aria-live="polite">{{ mensajeError() }}</p>
   }
 
   @if (mensajeAviso()) {
-    <p role="status" aria-live="polite">{{ mensajeAviso() }}</p>
+    <p class="alert alert--info" role="status" aria-live="polite">{{ mensajeAviso() }}</p>
   }
 
   @if (usuario(); as usuarioConsultado) {
-    <p>Identificador: {{ usuarioConsultado.id }}</p>
-    <p>Usuario: {{ obtenerNombreCompleto(usuarioConsultado) }}</p>
-    <p>Correo: {{ usuarioConsultado.correo }}</p>
-    <p>Rol: {{ usuarioConsultado.rol?.nombre || 'Sin rol' }}</p>
-    <p>Estado actual: {{ obtenerEtiquetaEstado(usuarioConsultado.estado) }}</p>
+    <div class="detail-card">
+      <p class="detail-line"><strong>Identificador:</strong> {{ usuarioConsultado.id }}</p>
+      <p class="detail-line"><strong>Usuario:</strong> {{ obtenerNombreCompleto(usuarioConsultado) }}</p>
+      <p class="detail-line"><strong>Correo:</strong> {{ usuarioConsultado.correo }}</p>
+      <p class="detail-line"><strong>Rol:</strong> {{ usuarioConsultado.rol?.nombre || 'Sin rol' }}</p>
+      <p class="detail-line"><strong>Estado actual:</strong> <span class="estado-badge {{ obtenerClaseEstado(usuarioConsultado.estado) }}">{{ obtenerEtiquetaEstado(usuarioConsultado.estado) }}</span></p>
+    </div>
 
-    <p role="status" aria-live="polite">
+    <p class="alert alert--warning" role="status" aria-live="polite">
       Al cambiar la contraseña, todas las sesiones activas de este usuario serán cerradas.
     </p>
 
     @if (esUsuarioActual()) {
-      <p role="status" aria-live="polite">
+      <p class="alert alert--info" role="status" aria-live="polite">
         Está cambiando su propia contraseña. Su sesión actual se cerrará al guardar.
       </p>
     }
 
     <form
+      class="form-card"
       [formGroup]="formularioContrasena"
       (ngSubmit)="guardarContrasena()"
       novalidate
     >
-      <div>
-        <label for="nuevaContrasena">Nueva contraseña</label>
-        <input
-          id="nuevaContrasena"
-          type="password"
-          formControlName="nuevaContrasena"
-          minlength="10"
-          maxlength="128"
-          autocomplete="new-password"
-          [attr.aria-invalid]="formularioContrasena.controls.nuevaContrasena.invalid"
-          aria-describedby="error-nueva-contrasena"
-        />
-        @if (
-          formularioContrasena.controls.nuevaContrasena.touched &&
-          formularioContrasena.controls.nuevaContrasena.hasError('required')
-        ) {
-          <p id="error-nueva-contrasena" role="alert">
-            La nueva contraseña es obligatoria.
-          </p>
-        }
-        @if (
-          formularioContrasena.controls.nuevaContrasena.touched &&
-          formularioContrasena.controls.nuevaContrasena.hasError('minlength')
-        ) {
-          <p id="error-nueva-contrasena" role="alert">
-            La contraseña debe tener al menos 10 caracteres.
-          </p>
-        }
-        @if (
-          formularioContrasena.controls.nuevaContrasena.touched &&
-          formularioContrasena.controls.nuevaContrasena.hasError('maxlength')
-        ) {
-          <p id="error-nueva-contrasena" role="alert">
-            La contraseña no puede superar 128 caracteres.
-          </p>
-        }
-      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="nuevaContrasena">Nueva contraseña</label>
+          <input
+            id="nuevaContrasena"
+            type="password"
+            formControlName="nuevaContrasena"
+            minlength="10"
+            maxlength="128"
+            autocomplete="new-password"
+            [attr.aria-invalid]="formularioContrasena.controls.nuevaContrasena.invalid"
+            aria-describedby="error-nueva-contrasena"
+          />
+          @if (
+            formularioContrasena.controls.nuevaContrasena.touched &&
+            formularioContrasena.controls.nuevaContrasena.hasError('required')
+          ) {
+            <p id="error-nueva-contrasena" class="error-field" role="alert">
+              La nueva contraseña es obligatoria.
+            </p>
+          }
+          @if (
+            formularioContrasena.controls.nuevaContrasena.touched &&
+            formularioContrasena.controls.nuevaContrasena.hasError('minlength')
+          ) {
+            <p id="error-nueva-contrasena" class="error-field" role="alert">
+              La contraseña debe tener al menos 10 caracteres.
+            </p>
+          }
+          @if (
+            formularioContrasena.controls.nuevaContrasena.touched &&
+            formularioContrasena.controls.nuevaContrasena.hasError('maxlength')
+          ) {
+            <p id="error-nueva-contrasena" class="error-field" role="alert">
+              La contraseña no puede superar 128 caracteres.
+            </p>
+          }
+        </div>
 
-      <div>
-        <label for="confirmacionContrasena">Confirmar nueva contraseña</label>
-        <input
-          id="confirmacionContrasena"
-          type="password"
-          formControlName="confirmacionContrasena"
-          maxlength="128"
-          autocomplete="new-password"
-          [attr.aria-invalid]="
-            formularioContrasena.controls.confirmacionContrasena.invalid ||
+        <div class="form-field">
+          <label for="confirmacionContrasena">Confirmar nueva contraseña</label>
+          <input
+            id="confirmacionContrasena"
+            type="password"
+            formControlName="confirmacionContrasena"
+            maxlength="128"
+            autocomplete="new-password"
+            [attr.aria-invalid]="
+              formularioContrasena.controls.confirmacionContrasena.invalid ||
+              formularioContrasena.hasError('contrasenasNoCoinciden')
+            "
+            aria-describedby="error-confirmacion-contrasena"
+          />
+          @if (
+            formularioContrasena.controls.confirmacionContrasena.touched &&
+            formularioContrasena.controls.confirmacionContrasena.hasError('required')
+          ) {
+            <p id="error-confirmacion-contrasena" class="error-field" role="alert">
+              La confirmación es obligatoria.
+            </p>
+          }
+          @if (
+            formularioContrasena.controls.confirmacionContrasena.touched &&
+            formularioContrasena.controls.confirmacionContrasena.hasError('maxlength')
+          ) {
+            <p id="error-confirmacion-contrasena" class="error-field" role="alert">
+              La confirmación no puede superar 128 caracteres.
+            </p>
+          }
+          @if (
+            formularioContrasena.controls.confirmacionContrasena.touched &&
             formularioContrasena.hasError('contrasenasNoCoinciden')
-          "
-          aria-describedby="error-confirmacion-contrasena"
-        />
-        @if (
-          formularioContrasena.controls.confirmacionContrasena.touched &&
-          formularioContrasena.controls.confirmacionContrasena.hasError('required')
-        ) {
-          <p id="error-confirmacion-contrasena" role="alert">
-            La confirmación es obligatoria.
-          </p>
-        }
-        @if (
-          formularioContrasena.controls.confirmacionContrasena.touched &&
-          formularioContrasena.controls.confirmacionContrasena.hasError('maxlength')
-        ) {
-          <p id="error-confirmacion-contrasena" role="alert">
-            La confirmación no puede superar 128 caracteres.
-          </p>
-        }
-        @if (
-          formularioContrasena.controls.confirmacionContrasena.touched &&
-          formularioContrasena.hasError('contrasenasNoCoinciden')
-        ) {
-          <p id="error-confirmacion-contrasena" role="alert">
-            Las contraseñas no coinciden.
-          </p>
-        }
+          ) {
+            <p id="error-confirmacion-contrasena" class="error-field" role="alert">
+              Las contraseñas no coinciden.
+            </p>
+          }
+        </div>
       </div>
 
-      <button type="submit" [disabled]="!puedeGuardar()">
-        @if (actualizandoContrasena()) {
-          Guardando contraseña...
-        } @else {
-          Guardar contraseña
-        }
-      </button>
-      <a routerLink="/usuarios">Cancelar</a>
+      <div class="form-actions">
+        <button type="submit" [disabled]="!puedeGuardar()">
+          @if (actualizandoContrasena()) {
+            Guardando contraseña...
+          } @else {
+            Guardar contraseña
+          }
+        </button>
+        <a routerLink="/usuarios" class="btn btn-neutral">Cancelar</a>
+      </div>
     </form>
   }
 </section>

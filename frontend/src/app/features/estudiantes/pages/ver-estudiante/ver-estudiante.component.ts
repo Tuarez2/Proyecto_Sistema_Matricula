@@ -16,6 +16,7 @@ import { finalize } from 'rxjs';
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
+import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
 import {
   ESTADOS_MATRICULA,
   type EstadoMatricula,
@@ -41,7 +42,7 @@ const PESTANIA_HISTORIAL = 'historial';
 @Component({
   selector: 'app-ver-estudiante',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FechaPipe],
   templateUrl: './ver-estudiante.component.html',
   styleUrl: './ver-estudiante.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

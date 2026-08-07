@@ -10,16 +10,32 @@
   </header>
 
   <ol class="renovar-matricula__pasos">
-    <li [class.renovar-matricula__paso--activo]="pasoActual() === 1">
-      1. Estudiante
+    <li
+      [class.renovar-matricula__paso--activo]="pasoActual() === 1"
+      [class.renovar-matricula__paso--completado]="pasoActual() > 1"
+    >
+      <span class="renovar-matricula__paso-indice" aria-hidden="true">1</span>
+      <span class="renovar-matricula__paso-nombre">Estudiante</span>
     </li>
-    <li [class.renovar-matricula__paso--activo]="pasoActual() === 2">
-      2. Periodo
+    <li
+      [class.renovar-matricula__paso--activo]="pasoActual() === 2"
+      [class.renovar-matricula__paso--completado]="pasoActual() > 2"
+    >
+      <span class="renovar-matricula__paso-indice" aria-hidden="true">2</span>
+      <span class="renovar-matricula__paso-nombre">Periodo</span>
     </li>
-    <li [class.renovar-matricula__paso--activo]="pasoActual() === 3">
-      3. Revisar
+    <li
+      [class.renovar-matricula__paso--activo]="pasoActual() === 3"
+      [class.renovar-matricula__paso--completado]="pasoActual() > 3"
+    >
+      <span class="renovar-matricula__paso-indice" aria-hidden="true">3</span>
+      <span class="renovar-matricula__paso-nombre">Revisar</span>
     </li>
   </ol>
+
+  <p class="renovar-matricula__progreso" aria-live="polite">
+    Paso {{ pasoActual() }} de 3
+  </p>
 
   @if (mensajeError()) {
     <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>

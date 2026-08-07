@@ -1,34 +1,74 @@
 .nueva-matricula__pasos {
   list-style: none;
   display: flex;
-  gap: 0.5rem;
+  gap: var(--espacio-2);
   flex-wrap: wrap;
-  margin: 0 0 1.25rem;
+  margin: 0;
   padding: 0;
 }
 
 .nueva-matricula__pasos li {
-  padding: 0.4rem 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  color: #64748b;
-  font-size: 0.875rem;
-  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  background: var(--color-surface);
+}
+
+.nueva-matricula__paso-indice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .nueva-matricula__paso--activo {
-  border-color: #0f172a !important;
-  color: #0f172a !important;
-  font-weight: 700;
+  border-color: var(--color-primary) !important;
+  background: var(--color-primary) !important;
+  color: var(--color-surface) !important;
+  font-weight: var(--font-weight-bold);
+}
+
+.nueva-matricula__paso--activo .nueva-matricula__paso-indice {
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.nueva-matricula__paso--completado {
+  border-color: var(--color-success) !important;
+  color: var(--color-success) !important;
+}
+
+.nueva-matricula__paso--completado .nueva-matricula__paso-indice {
+  background: var(--color-success);
+  color: var(--color-surface);
+}
+
+.nueva-matricula__progreso {
+  margin: var(--espacio-2) 0 var(--espacio-5);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .nueva-matricula__bloque {
-  padding: 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background: #ffffff;
+  padding: var(--espacio-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
   display: grid;
-  gap: 1rem;
+  gap: var(--espacio-4);
 }
 
 .nueva-matricula__bloque h2 {
@@ -38,7 +78,7 @@
 .nueva-matricula__busqueda {
   display: flex;
   align-items: flex-end;
-  gap: 0.5rem;
+  gap: var(--espacio-2);
   flex-wrap: wrap;
 }
 
@@ -51,7 +91,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.5rem;
+  gap: var(--espacio-2);
 }
 
 .nueva-matricula__lista li {
@@ -62,75 +102,76 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--espacio-4);
   width: 100%;
   text-align: left;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background: #ffffff;
+  padding: var(--espacio-3) var(--espacio-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   cursor: pointer;
   color: inherit;
 }
 
 .nueva-matricula__item:hover {
-  border-color: #94a3b8;
-}
-
-.nueva-matricula__item--seleccionable {
-  cursor: pointer;
+  border-color: var(--color-primary);
 }
 
 .nueva-matricula__item--seleccionable input {
-  margin-right: 0.5rem;
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  min-height: 0;
+  accent-color: var(--color-primary);
 }
 
 .nueva-matricula__item-nombre {
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
 }
 
 .nueva-matricula__item-detalle {
-  color: #64748b;
-  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .nueva-matricula__acciones {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--espacio-2);
   flex-wrap: wrap;
 }
 
 .nueva-matricula__resumen {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.5rem 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: var(--espacio-2) var(--espacio-4);
   margin: 0;
 }
 
 .nueva-matricula__resumen div {
-  border-bottom: 1px dashed #e2e8f0;
-  padding-bottom: 0.25rem;
+  border-bottom: 1px dashed var(--color-border-strong);
+  padding-bottom: var(--espacio-2);
 }
 
 .nueva-matricula__resumen dt {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  color: #64748b;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin: 0;
 }
 
 .nueva-matricula__resumen dd {
   margin: 0;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .nueva-matricula__resultado {
   display: grid;
-  gap: 1rem;
+  gap: var(--espacio-4);
 }
 
 @media print {
   .nueva-matricula__pasos,
+  .nueva-matricula__progreso,
   .nueva-matricula__acciones,
   .nueva-matricula__bloque,
   .page-header {
@@ -139,39 +180,38 @@
 }
 
 .comprobante {
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  background: #ffffff;
-  padding: 1.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--espacio-5);
   display: grid;
-  gap: 1rem;
+  gap: var(--espacio-4);
 }
 
 .comprobante__encabezado {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
-  border-bottom: 2px solid #0f172a;
-  padding-bottom: 1rem;
+  gap: var(--espacio-4);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: var(--espacio-4);
   flex-wrap: wrap;
 }
 
 .comprobante__sigla {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
   margin: 0;
-  color: #0f172a;
+  color: var(--color-primary);
 }
 
-.comprobante__marca {
-  margin: 0;
-  color: #475569;
+.comprobante__marca,
+.comprobante__meta {
+  color: var(--color-text-secondary);
 }
 
 .comprobante__meta {
   text-align: right;
-  color: #475569;
 }
 
 .comprobante__meta p {
@@ -179,34 +219,29 @@
 }
 
 .comprobante__subtitulo {
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
   margin: 0;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .comprobante__datos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.75rem 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--espacio-3) var(--espacio-4);
   margin: 0;
 }
 
-.comprobante__datos div {
-  border-bottom: 1px dashed #e2e8f0;
-  padding-bottom: 0.25rem;
-}
-
 .comprobante__datos dt {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
 .comprobante__datos dd {
   margin: 0;
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
 }
 
 .comprobante__lista-cursos {
@@ -214,13 +249,20 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: var(--espacio-2);
+}
+
+.comprobante__lista-cursos li {
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
 }
 
 .comprobante__pie {
-  border-top: 1px solid #e2e8f0;
-  padding-top: 0.75rem;
-  color: #64748b;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--espacio-3);
+  color: var(--color-text-muted);
 }
 
 .comprobante__pie p {

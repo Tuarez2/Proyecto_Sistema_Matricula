@@ -1,52 +1,64 @@
-<section aria-labelledby="titulo-malla">
-  <h1 id="titulo-malla">Malla curricular</h1>
+<section class="page" aria-labelledby="titulo-malla">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-malla">Malla curricular</h1>
+      <p class="page-subtitle">Gestiona las asignaturas por carrera.</p>
+    </div>
+  </header>
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
-  <form [formGroup]="formularioAsignar" novalidate>
-    <div>
-      <label for="carrera">Carrera</label>
-      <select
-        id="carrera"
-        formControlName="carreraId"
-        (change)="consultarMalla()"
-        [attr.disabled]="cargandoCarreras() ? '' : null"
-      >
-        <option value="">Seleccione una carrera</option>
-        @for (carrera of carreras(); track carrera.id) {
-          <option [value]="carrera.id">
-            {{ carrera.codigo }} - {{ carrera.nombre }}
-          </option>
+  <form class="form-card" [formGroup]="formularioAsignar" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="carrera">Carrera</label>
+        <select
+          id="carrera"
+          formControlName="carreraId"
+          (change)="consultarMalla()"
+          [attr.disabled]="cargandoCarreras() ? '' : null"
+        >
+          <option value="">Seleccione una carrera</option>
+          @for (carrera of carreras(); track carrera.id) {
+            <option [value]="carrera.id">
+              {{ carrera.codigo }} - {{ carrera.nombre }}
+            </option>
+          }
+        </select>
+        @if (cargandoCarreras()) {
+          <p class="form-hint" role="status">Consultando carreras...</p>
         }
-      </select>
-      @if (cargandoCarreras()) {
-        <p role="status">Consultando carreras...</p>
+      </div>
+
+      @if (carreraMalla() && esAdministrador()) {
+        <div class="form-field">
+          <label for="asignatura">Asignatura</label>
+          <select id="asignatura" formControlName="asignaturaId">
+            <option value="">Seleccione una asignatura</option>
+            @for (asignatura of asignaturasDisponibles(); track asignatura.id) {
+              <option [value]="asignatura.id">
+                {{ asignatura.codigo }} - {{ asignatura.nombre }}
+              </option>
+            }
+          </select>
+          @if (asignaturasDisponibles().length === 0) {
+            <p class="form-hint">
+              Todas las asignaturas activas del catálogo ya están asociadas a la
+              carrera.
+            </p>
+          }
+        </div>
       }
     </div>
 
     @if (carreraMalla() && esAdministrador()) {
-      <div>
-        <label for="asignatura">Asignatura</label>
-        <select id="asignatura" formControlName="asignaturaId">
-          <option value="">Seleccione una asignatura</option>
-          @for (asignatura of asignaturasDisponibles(); track asignatura.id) {
-            <option [value]="asignatura.id">
-              {{ asignatura.codigo }} - {{ asignatura.nombre }}
-            </option>
-          }
-        </select>
-        @if (asignaturasDisponibles().length === 0) {
-          <p>
-            Todas las asignaturas activas del catálogo ya están asociadas a la
-            carrera.
-          </p>
-        }
+      <div class="form-actions">
         <button
           type="button"
           (click)="asignar()"
@@ -67,7 +79,10 @@
   }
 
   @if (cargandoMalla()) {
-    <p role="status" aria-live="polite">Consultando malla curricular...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando malla curricular...
+    </div>
   }
 
   @if (
@@ -76,90 +91,102 @@
     !mensajeError() &&
     asignaturasCarrera().length === 0
   ) {
-    <p>La carrera no tiene asignaturas asignadas.</p>
+    <div class="empty-state">
+      <span class="empty-icon" aria-hidden="true">🗂️</span>
+      <h2>Sin asignaturas asignadas</h2>
+      <p>La carrera no tiene asignaturas asignadas.</p>
+    </div>
   }
 
   @if (asignaturasCarrera().length > 0) {
-    <table>
-      <caption>Asignaturas de la malla curricular</caption>
-      <thead>
-        <tr>
-          <th scope="col">Código</th>
-          <th scope="col">Nombre</th>
-          <th scope="col">Créditos</th>
-          <th scope="col">Nivel académico</th>
-          @if (esAdministrador()) {
-            <th scope="col">Acciones</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (asignatura of asignaturasCarrera(); track asignatura.id) {
-          @if (estaEditando(asignatura)) {
-            <tr>
-              <td [attr.colspan]="columnasTabla()">
-                <form [formGroup]="formularioEditar" novalidate>
-                  <div>
-                    <label for="asignatura-editar">Asignatura</label>
-                    <select
-                      id="asignatura-editar"
-                      formControlName="asignaturaId"
-                    >
-                      @for (opcion of asignaturasParaEdicion(); track opcion.id) {
-                        <option [value]="opcion.id">
-                          {{ opcion.codigo }} - {{ opcion.nombre }}
-                        </option>
-                      }
-                    </select>
-                  </div>
-                  <button
-                    type="button"
-                    (click)="guardarEdicion()"
-                    [disabled]="
-                      procesando() !== null || formularioEditar.invalid
-                    "
-                  >
-                    Guardar
-                  </button>
-                  <button
-                    type="button"
-                    (click)="cancelarEdicion()"
-                    [disabled]="procesando() !== null"
-                  >
-                    Cancelar
-                  </button>
-                </form>
-              </td>
-            </tr>
-          } @else {
-            <tr>
-              <td>{{ asignatura.codigo }}</td>
-              <td>{{ asignatura.nombre }}</td>
-              <td>{{ asignatura.creditos }}</td>
-              <td>{{ asignatura.nivel_academico }}</td>
-              @if (esAdministrador()) {
-                <td>
-                  <button
-                    type="button"
-                    (click)="iniciarEdicion(asignatura)"
-                    [disabled]="procesando() !== null"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    (click)="quitarAsignatura(asignatura)"
-                    [disabled]="procesando() !== null"
-                  >
-                    Quitar
-                  </button>
+    <div class="table-wrap">
+      <table>
+        <caption>Asignaturas de la malla curricular</caption>
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Créditos</th>
+            <th scope="col">Nivel académico</th>
+            @if (esAdministrador()) {
+              <th scope="col">Acciones</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (asignatura of asignaturasCarrera(); track asignatura.id) {
+            @if (estaEditando(asignatura)) {
+              <tr>
+                <td [attr.colspan]="columnasTabla()">
+                  <form [formGroup]="formularioEditar" novalidate>
+                    <div class="form-field">
+                      <label for="asignatura-editar">Asignatura</label>
+                      <select
+                        id="asignatura-editar"
+                        formControlName="asignaturaId"
+                      >
+                        @for (opcion of asignaturasParaEdicion(); track opcion.id) {
+                          <option [value]="opcion.id">
+                            {{ opcion.codigo }} - {{ opcion.nombre }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="form-actions">
+                      <button
+                        type="button"
+                        (click)="guardarEdicion()"
+                        [disabled]="
+                          procesando() !== null || formularioEditar.invalid
+                        "
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        type="button"
+                        (click)="cancelarEdicion()"
+                        [disabled]="procesando() !== null"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
                 </td>
-              }
-            </tr>
+              </tr>
+            } @else {
+              <tr>
+                <td>{{ asignatura.codigo }}</td>
+                <td>{{ asignatura.nombre }}</td>
+                <td>{{ asignatura.creditos }}</td>
+                <td>{{ asignatura.nivel_academico }}</td>
+                @if (esAdministrador()) {
+                  <td>
+                    <div class="row-actions">
+                      <button
+                        class="btn btn-sm btn-neutral"
+                        type="button"
+                        (click)="iniciarEdicion(asignatura)"
+                        [disabled]="procesando() !== null"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        class="btn btn-sm btn-neutral"
+                        type="button"
+                        (click)="quitarAsignatura(asignatura)"
+                        [disabled]="procesando() !== null"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </td>
+                }
+              </tr>
+            }
           }
-        }
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
 
     <app-pagination
       [currentPage]="paginaMalla()"
@@ -170,3 +197,13 @@
     />
   }
 </section>
+
+<app-confirm-modal
+  [oAbierto]="dialogoAbierto()"
+  [titulo]="dialogoTitulo()"
+  [mensaje]="dialogoMensaje()"
+  [peligroso]="dialogoPeligroso()"
+  [procesando]="dialogoProcesando()"
+  (confirmado)="confirmarQuitarAsignatura()"
+  (cancelado)="cerrarDialogo()"
+/>

@@ -1,9 +1,13 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
+import { Observable, Subject, throwError } from 'rxjs';
 
 import { CODIGOS_ROL } from '../../core/config/codigos-rol';
-import type { UsuarioAutenticado } from '../../core/models/autenticacion.model';
+import type {
+  RespuestaCierreSesion,
+  UsuarioAutenticado,
+} from '../../core/models/autenticacion.model';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
 import { AccesoDenegadoComponent } from './acceso-denegado.component';
 
@@ -11,9 +15,14 @@ describe('AccesoDenegadoComponent', () => {
   let fixture: ComponentFixture<AccesoDenegadoComponent>;
   let componente: AccesoDenegadoComponent;
   let usuarioActual: ReturnType<typeof signal<UsuarioAutenticado | null>>;
+  let cerrarSesion: ReturnType<typeof vi.fn<() => Observable<RespuestaCierreSesion>>>;
+  let navegarPorUrl: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     usuarioActual = signal<UsuarioAutenticado | null>(crearUsuario());
+    cerrarSesion = vi.fn(
+      () => new Subject<RespuestaCierreSesion>().asObservable(),
+    );
 
     await TestBed.configureTestingModule({
       imports: [AccesoDenegadoComponent],
@@ -23,10 +32,16 @@ describe('AccesoDenegadoComponent', () => {
           provide: AutenticacionService,
           useValue: {
             usuarioActual,
+            cerrarSesion,
           },
         },
       ],
     }).compileComponents();
+
+    const enrutador = TestBed.inject(Router);
+    navegarPorUrl = vi
+      .spyOn(enrutador, 'navigateByUrl')
+      .mockImplementation(() => Promise.resolve(true));
 
     fixture = TestBed.createComponent(AccesoDenegadoComponent);
     componente = fixture.componentInstance;
@@ -73,12 +88,61 @@ describe('AccesoDenegadoComponent', () => {
     expect(obtenerEnlace()?.getAttribute('href')).toBe('/acceso-denegado');
   });
 
+  it('no muestra informacion tecnica', () => {
+    expect(obtenerTexto()).not.toContain('stack');
+    expect(obtenerTexto()).not.toContain('exception');
+  });
+
+  it('existe una opcion para cerrar sesion', () => {
+    expect(obtenerTexto()).toContain('Cerrar sesión');
+  });
+
+  it('al presionar cerrar sesion llama una vez a cerrarSesion', () => {
+    obtenerBotonCerrarSesion()?.click();
+
+    expect(cerrarSesion).toHaveBeenCalledTimes(1);
+  });
+
+  it('al completarse navega a iniciar-sesion', () => {
+    const solicitud = prepararCierrePendiente();
+
+    obtenerBotonCerrarSesion()?.click();
+    solicitud.next({ success: true, message: 'Cerrado.' });
+    solicitud.complete();
+
+    expect(navegarPorUrl).toHaveBeenCalledWith('/iniciar-sesion');
+  });
+
+  it('ante error tambien navega a iniciar-sesion', () => {
+    cerrarSesion.mockReturnValueOnce(
+      throwError(() => new Error('Error de cierre')),
+    );
+
+    obtenerBotonCerrarSesion()?.click();
+
+    expect(navegarPorUrl).toHaveBeenCalledWith('/iniciar-sesion');
+  });
+
   function obtenerEnlace(): HTMLAnchorElement | null {
     return fixture.nativeElement.querySelector('a') as HTMLAnchorElement | null;
   }
 
+  function obtenerBotonCerrarSesion(): HTMLButtonElement | null {
+    return fixture.nativeElement.querySelector(
+      'button.btn-link',
+    ) as HTMLButtonElement | null;
+  }
+
   function obtenerTexto(): string {
     return (fixture.nativeElement as HTMLElement).textContent ?? '';
+  }
+
+  function prepararCierrePendiente(): Subject<RespuestaCierreSesion> {
+    const solicitud = new Subject<RespuestaCierreSesion>();
+
+    cerrarSesion.mockReturnValueOnce(solicitud.asObservable());
+
+    return solicitud;
   }
 });
 

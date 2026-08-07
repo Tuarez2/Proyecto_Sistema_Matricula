@@ -1,20 +1,31 @@
-<section aria-labelledby="titulo-editar-estudiante">
-  <h1 id="titulo-editar-estudiante">Editar estudiante</h1>
+<section class="page" aria-labelledby="titulo-editar-estudiante">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-editar-estudiante">Editar estudiante</h1>
+      <p class="page-subtitle">Modifica los datos de un estudiante.</p>
+    </div>
+  </header>
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (cargandoEstudiante()) {
-    <p role="status" aria-live="polite">Consultando estudiante...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando estudiante...
+    </div>
   }
 
   @if (cargandoCarreras()) {
-    <p role="status" aria-live="polite">Consultando carreras...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando carreras...
+    </div>
   }
 
   @if (estudiante()) {

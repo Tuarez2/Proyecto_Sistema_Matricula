@@ -125,7 +125,7 @@ describe('ListadoUsuariosComponent', () => {
   it('envia el correo sin espacios exteriores', () => {
     iniciarYCompletar();
     usuariosService.listarUsuarios.mockClear();
-    componente.formularioFiltros.patchValue({ correo: '  admin  ' });
+    componente.formularioFiltros.patchValue({ correo: '  admin  ' }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -135,7 +135,7 @@ describe('ListadoUsuariosComponent', () => {
   it('envia estado', () => {
     iniciarYCompletar();
     usuariosService.listarUsuarios.mockClear();
-    componente.formularioFiltros.patchValue({ estado: 'activo' });
+    componente.formularioFiltros.patchValue({ estado: 'activo' }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -145,7 +145,7 @@ describe('ListadoUsuariosComponent', () => {
   it('envia codigo de rol', () => {
     iniciarYCompletar();
     usuariosService.listarUsuarios.mockClear();
-    componente.formularioFiltros.patchValue({ codigoRol: 'ADMIN' });
+    componente.formularioFiltros.patchValue({ codigoRol: 'ADMIN' }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -159,7 +159,7 @@ describe('ListadoUsuariosComponent', () => {
       correo: '   ',
       estado: '',
       codigoRol: '',
-    });
+    }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -172,7 +172,7 @@ describe('ListadoUsuariosComponent', () => {
   it('correo de mas de 150 caracteres no consulta', () => {
     iniciarYCompletar();
     usuariosService.listarUsuarios.mockClear();
-    componente.formularioFiltros.patchValue({ correo: 'a'.repeat(151) });
+    componente.formularioFiltros.patchValue({ correo: 'a'.repeat(151) }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -186,7 +186,7 @@ describe('ListadoUsuariosComponent', () => {
       correo: 'admin',
       estado: 'activo',
       codigoRol: 'ADMIN',
-    });
+    }, { emitEvent: false });
 
     componente.limpiarFiltros();
 
@@ -385,14 +385,6 @@ describe('ListadoUsuariosComponent', () => {
     expect(componente.cargandoRoles()).toBe(false);
   });
 
-  it('evita consultas duplicadas de usuarios durante carga', () => {
-    iniciarComponente();
-
-    componente.buscarUsuarios();
-
-    expect(usuariosService.listarUsuarios).toHaveBeenCalledTimes(1);
-  });
-
   it('evita consultas duplicadas de roles durante carga', () => {
     iniciarComponente();
 
@@ -401,12 +393,85 @@ describe('ListadoUsuariosComponent', () => {
     expect(rolesService.listarRoles).toHaveBeenCalledTimes(1);
   });
 
-  it('deshabilita controles de accion durante carga', () => {
+  it('ignora resultados obsoletos de una consulta anterior', () => {
     iniciarComponente();
+    const consultaAnterior = solicitudesUsuarios[solicitudesUsuarios.length - 1];
+    const consultaNueva = new Subject<RespuestaListadoUsuarios>();
+    usuariosService.listarUsuarios.mockImplementationOnce(() => consultaNueva.asObservable());
+
+    componente.buscarUsuarios();
+
+    expect(usuariosService.listarUsuarios).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(
+      crearRespuestaListado({ data: [crearUsuario({ id: 77 })] }),
+    );
+    consultaNueva.complete();
+    consultaAnterior.next(
+      crearRespuestaListado({ data: [crearUsuario({ id: 1 })] }),
+    );
+    consultaAnterior.complete();
+
+    expect(componente.usuarios()[0]?.id).toBe(77);
+  });
+
+  it('al cambiar el select estado consulta inmediatamente', () => {
+    iniciarYCompletar();
+    usuariosService.listarUsuarios.mockClear();
+
+    componente.formularioFiltros.controls.estado.setValue('bloqueado');
+
+    expect(usuariosService.listarUsuarios).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      estado: 'bloqueado',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('la busqueda por correo emite una sola consulta con debounce', () => {
+    vi.useFakeTimers();
+    try {
+      iniciarYCompletar();
+      usuariosService.listarUsuarios.mockClear();
+
+      componente.formularioFiltros.controls.correo.setValue('anuor');
+      vi.advanceTimersByTime(100);
+      expect(usuariosService.listarUsuarios).not.toHaveBeenCalled();
+
+      componente.formularioFiltros.controls.correo.setValue('admin');
+      vi.advanceTimersByTime(400);
+
+      expect(usuariosService.listarUsuarios).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        correo: 'admin',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('informa cuantos filtros están activos', () => {
+    iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerBoton('Buscar')?.disabled).toBe(true);
-    expect(obtenerBoton('Limpiar filtros')?.disabled).toBe(true);
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.formularioFiltros.controls.estado.setValue('activo');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar en el filtro', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
   });
 
   it('error de usuarios no elimina los roles ya cargados', () => {
@@ -494,18 +559,18 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerElemento('h1')?.textContent).toContain('Usuarios');
   });
 
-  it('existe enlace Crear usuario', () => {
+  it('existe enlace Nuevo usuario', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo usuario')).toBeTruthy();
   });
 
-  it('el enlace Crear usuario apunta a usuarios nuevo', () => {
+  it('el enlace Nuevo usuario apunta a usuarios nuevo', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear usuario')?.getAttribute('href')).toBe(
+    expect(obtenerEnlace('Nuevo usuario')?.getAttribute('href')).toBe(
       '/usuarios/nuevo',
     );
   });
@@ -538,11 +603,11 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerElemento('select[formControlName="codigoRol"]')).toBeTruthy();
   });
 
-  it('existe boton Buscar', () => {
+  it('el filtro no contiene boton Buscar', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerBoton('Buscar')).toBeTruthy();
+    expect(obtenerBoton('Buscar')).toBeNull();
   });
 
   it('existe boton Limpiar filtros', () => {
@@ -676,13 +741,13 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerBoton('Eliminar')).toBeNull();
   });
 
-  it('el enlace Crear usuario se mantiene visible sin resultados', () => {
+  it('el enlace Nuevo usuario se mantiene visible sin resultados', () => {
     iniciarComponente();
     completarRoles();
     completarUsuarios(crearRespuestaListado({ data: [], total: 0, totalPages: 0 }));
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo usuario')).toBeTruthy();
   });
 
   it('los enlaces usan el identificador correcto con varios usuarios', () => {
@@ -734,11 +799,11 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerElemento('th[scope="col"]')).toBeTruthy();
   });
 
-  it('el enlace Crear usuario se mantiene visible durante la carga', () => {
+  it('el enlace Nuevo usuario se mantiene visible durante la carga', () => {
     iniciarComponente();
     fixture.detectChanges();
 
-    expect(obtenerEnlace('Crear usuario')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo usuario')).toBeTruthy();
   });
 
   it('el enlace de estado existe para usuarios activos', () => {
@@ -808,8 +873,186 @@ describe('ListadoUsuariosComponent', () => {
     fixture.detectChanges();
 
     expect(obtenerTexto()).toContain('Página 1 de 1');
-    expect(obtenerTexto()).toContain('Total de usuarios: 1');
+    expect(obtenerTexto()).toContain('1 resultado');
   });
+
+  it('muestra badge de estado Activo', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'activo' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.estado-badge--success')?.textContent).toContain('Activo');
+  });
+
+  it('muestra badge de estado Bloqueado', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'bloqueado' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.estado-badge--danger')?.textContent).toContain('Bloqueado');
+  });
+
+  it('muestra badge de estado Inactivo', () => {
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearUsuario({ estado: 'inactivo' })],
+    }));
+    fixture.detectChanges();
+
+    expect(obtenerElemento('.estado-badge--neutral')?.textContent).toContain('Inactivo');
+  });
+
+  it('cambiarPagina consulta la pagina indicada', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 3 }));
+    usuariosService.listarUsuarios.mockClear();
+
+    componente.cambiarPagina(2);
+
+    expect(obtenerUltimosFiltros()?.pagina).toBe(2);
+  });
+
+  it('cambiarPagina no consulta si la pagina no cambia', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 3 }));
+    usuariosService.listarUsuarios.mockClear();
+
+    componente.cambiarPagina(1);
+
+    expect(usuariosService.listarUsuarios).not.toHaveBeenCalled();
+  });
+
+  it('muestra el conteo de resultados', () => {
+    iniciarYCompletar(crearRespuestaListado({ data: [crearUsuario()], total: 1 }));
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('Se encontraron');
+    expect(obtenerTexto()).toContain('1 usuario');
+  });
+
+  it('selecciona y deselecciona una fila con clic', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    clicEnFila(usuario);
+    expect(componente.filaSeleccionada()?.id).toBe(usuario.id);
+
+    clicEnFila(usuario);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    teclaEnFila(usuario, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(usuario.id);
+
+    teclaEnFila(usuario, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace interno', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+    const enlace = obtenerEnlace('Editar');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      usuario,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(usuario.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones al seleccionar', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    clicEnFila(usuario);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cambiar estado')).toBeTruthy();
+    expect(obtenerBoton('Cambiar contraseña')).toBeTruthy();
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    clicEnFila(usuario);
+    fixture.detectChanges();
+
+    expect(obtenerFila(usuario).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 2 }));
+    const usuario = componente.usuarios()[0];
+    clicEnFila(usuario);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  function clicEnFila(usuario: Usuario): void {
+    const celda = obtenerFila(usuario).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(usuario: Usuario, tecla: string): void {
+    obtenerFila(usuario).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerFila(usuario: Usuario): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find(
+      (filaEncontrada) =>
+        filaEncontrada.textContent?.includes(usuario.correo),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del usuario');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
+  }
 
   function iniciarComponente(): void {
     fixture.detectChanges();

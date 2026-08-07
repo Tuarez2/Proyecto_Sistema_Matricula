@@ -17,15 +17,39 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Router } from '@angular/router';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  debounceTime,
+  filter,
+  finalize,
+  map,
+  merge,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import { FacultadesService } from '../../facultades/services/facultades.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
+import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type { Facultad } from '../../facultades/models/facultad.model';
-import type { Carrera, FiltrosCarreras } from '../models/carrera.model';
+import type {
+  Carrera,
+  FiltrosCarreras,
+  RespuestaListadoCarreras,
+} from '../models/carrera.model';
 import { CarrerasService } from '../services/carreras.service';
 
 interface ControlesFiltrosCarreras {
@@ -35,12 +59,25 @@ interface ControlesFiltrosCarreras {
   activo: FormControl<string>;
 }
 
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
+
 const LIMITE_POR_PAGINA = 10;
+const DEBOUNCE_BUSQUEDA_MS = 350;
 
 @Component({
   selector: 'app-listado-carreras',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    PaginationComponent,
+    ConfirmModalComponent,
+    BarraAccionesContextualesComponent,
+    FechaPipe,
+  ],
   templateUrl: './listado-carreras.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -48,6 +85,7 @@ export class ListadoCarrerasComponent implements OnInit {
   private readonly servicio = inject(CarrerasService);
   private readonly facultadesServicio = inject(FacultadesService);
   private readonly autenticacionService = inject(AutenticacionService);
+  private readonly router = inject(Router);
   private readonly destruccion = inject(DestroyRef);
   private readonly estadoCarreras = signal<Carrera[]>([]);
   private readonly estadoFacultades = signal<Facultad[]>([]);
@@ -60,6 +98,14 @@ export class ListadoCarrerasComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoCarreraProcesando = signal<number | null>(null);
+  private readonly estadoCarreraSeleccionado = signal<Carrera | null>(null);
+  private readonly estadoFilaSeleccionada = signal<Carrera | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly carreras = this.estadoCarreras.asReadonly();
   readonly facultades = this.estadoFacultades.asReadonly();
@@ -71,6 +117,35 @@ export class ListadoCarrerasComponent implements OnInit {
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly paginaActual = this.estadoPaginaActual.asReadonly();
   readonly carreraProcesando = this.estadoCarreraProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const carrera = this.estadoFilaSeleccionada();
+
+    if (!carrera) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [{ id: 'ver', etiqueta: 'Ver' }];
+
+    if (this.esAdministrador()) {
+      acciones.push({ id: 'editar', etiqueta: 'Editar' });
+
+      if (carrera.activo) {
+        acciones.push({
+          id: 'inactivar',
+          etiqueta: 'Inactivar',
+          variante: 'danger',
+        });
+      }
+    }
+
+    return acciones;
+  });
   readonly cargando = computed(
     () => this.cargandoCarreras() || this.cargandoFacultades(),
   );
@@ -78,6 +153,9 @@ export class ListadoCarrerasComponent implements OnInit {
     () =>
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
+  );
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
   );
 
   readonly filtros = new FormGroup<ControlesFiltrosCarreras>({
@@ -94,7 +172,8 @@ export class ListadoCarrerasComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.cargarCarreras();
+    this.configurarFiltrosDinamicos();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
     this.cargarFacultades();
   }
 
@@ -106,22 +185,28 @@ export class ListadoCarrerasComponent implements OnInit {
     }
 
     this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
-    this.estadoFiltrosAplicados.set(this.obtenerFiltrosActuales());
-    this.cargarCarreras();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
+  }
+
+  impedirEnvio(evento: Event): void {
+    evento.preventDefault();
   }
 
   limpiarFiltros(): void {
-    this.filtros.reset({
-      codigo: '',
-      nombre: '',
-      facultad_id: '',
-      activo: '',
-    });
     this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
+    this.estadoMensajeExito.set(null);
     this.estadoFiltrosAplicados.set({});
-    this.cargarCarreras();
+    this.estadoPaginaActual.set(1);
+    this.filtros.reset(
+      {
+        codigo: '',
+        nombre: '',
+        facultad_id: '',
+        activo: '',
+      },
+      { emitEvent: false },
+    );
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cambiarPagina(pagina: number): void {
@@ -130,8 +215,12 @@ export class ListadoCarrerasComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
-    this.estadoMensajeError.set(null);
-    this.cargarCarreras();
+    this.estadoFilaSeleccionada.set(null);
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  cargarCarreras(): void {
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cargarFacultades(): void {
@@ -158,36 +247,55 @@ export class ListadoCarrerasComponent implements OnInit {
       });
   }
 
-  private cargarCarreras(): void {
-    if (this.cargandoCarreras()) {
+  seleccionarFila(evento: Event, carrera: Carrera): void {
+    if (esElementoInteractivo(evento.target)) {
       return;
     }
 
-    this.estadoCargandoCarreras.set(true);
-    this.estadoMensajeError.set(null);
-    this.servicio.listarCarreras({
-      ...this.estadoFiltrosAplicados(),
-      pagina: this.estadoPaginaActual(),
-      limite: LIMITE_POR_PAGINA,
-    })
-      .pipe(
-        takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoCargandoCarreras.set(false)),
-      )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoCarreras.set(respuesta.data ?? []);
-          this.estadoTotalCarreras.set(respuesta.total);
-          this.estadoTotalPaginas.set(respuesta.totalPages);
-          this.estadoPaginaActual.set(respuesta.page);
-        },
-        error: (error: unknown) => {
-          this.estadoCarreras.set([]);
-          this.estadoTotalCarreras.set(0);
-          this.estadoTotalPaginas.set(1);
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
+    this.alternarSeleccion(carrera);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, carrera: Carrera): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(carrera);
+  }
+
+  alternarSeleccion(carrera: Carrera): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === carrera.id ? null : carrera,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const carrera = this.estadoFilaSeleccionada();
+
+    if (!carrera) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'ver':
+        this.router.navigate(['/carreras', carrera.id]);
+        break;
+      case 'editar':
+        this.router.navigate(['/carreras/editar', carrera.id]);
+        break;
+      case 'inactivar':
+        this.inactivarCarrera(carrera);
+        break;
+    }
   }
 
   inactivarCarrera(carrera: Carrera): void {
@@ -199,27 +307,41 @@ export class ListadoCarrerasComponent implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoCarreraSeleccionado.set(carrera);
+    this.estadoDialogoTitulo.set('Inactivar carrera');
+    this.estadoDialogoMensaje.set(
       `¿Desea inactivar la carrera ${carrera.nombre}?`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarInactivacion(): void {
+    const carrera = this.estadoCarreraSeleccionado();
+
+    if (!carrera) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoCarreraProcesando.set(carrera.id);
+    this.estadoDialogoProcesando.set(true);
     this.servicio.inactivarCarrera(carrera.id)
       .pipe(
         takeUntilDestroyed(this.destruccion),
-        finalize(() => this.estadoCarreraProcesando.set(null)),
+        finalize(() => {
+          this.estadoCarreraProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Carrera inactivada correctamente.',
           );
+          this.estadoDialogoAbierto.set(false);
+          this.estadoFilaSeleccionada.set(null);
           this.cargarCarreras();
         },
         error: (error: unknown) => {
@@ -228,8 +350,21 @@ export class ListadoCarrerasComponent implements OnInit {
       });
   }
 
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoCarreraSeleccionado.set(null);
+  }
+
   obtenerEtiquetaEstado(carrera: Carrera): string {
     return carrera.activo ? 'Activa' : 'Inactiva';
+  }
+
+  obtenerClaseEstado(carrera: Carrera): string {
+    return carrera.activo ? 'estado-badge--success' : 'estado-badge--neutral';
   }
 
   obtenerNombreFacultad(carrera: Carrera): string {
@@ -244,6 +379,82 @@ export class ListadoCarrerasComponent implements OnInit {
     const codigo = facultad.codigo ? `${facultad.codigo} - ` : '';
     const estado = facultad.activo === false ? ' (inactiva)' : '';
     return `${codigo}${facultad.nombre}${estado}`;
+  }
+
+  private configurarFiltrosDinamicos(): void {
+    const textoDebounced = merge(
+      this.filtros.controls.codigo.valueChanges,
+      this.filtros.controls.nombre.valueChanges,
+    ).pipe(
+      debounceTime(DEBOUNCE_BUSQUEDA_MS),
+      map(() => true),
+    );
+
+    const selectoresInmediatos = merge(
+      this.filtros.controls.facultad_id.valueChanges,
+      this.filtros.controls.activo.valueChanges,
+    ).pipe(map(() => true));
+
+    merge(textoDebounced, selectoresInmediatos)
+      .pipe(
+        filter(() => this.filtros.valid && !this.criteriosIgualesAplicados()),
+        takeUntilDestroyed(this.destruccion),
+      )
+      .subscribe(() => this.consultaFiltros$.next({ reiniciarPagina: true }));
+
+    this.consultaFiltros$
+      .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.consultarCarreras();
+        }),
+        takeUntilDestroyed(this.destruccion),
+      )
+      .subscribe();
+  }
+
+  private criteriosIgualesAplicados(): boolean {
+    return (
+      JSON.stringify(this.obtenerFiltrosActuales()) ===
+      JSON.stringify(this.estadoFiltrosAplicados())
+    );
+  }
+
+  private contarFiltros(filtros: FiltrosCarreras): number {
+    return Object.values(filtros).filter((valor) => valor !== undefined).length;
+  }
+
+  private consultarCarreras(): Observable<RespuestaListadoCarreras> {
+    this.estadoFilaSeleccionada.set(null);
+    const filtros = this.obtenerFiltrosActuales();
+    this.estadoFiltrosAplicados.set(filtros);
+    this.estadoMensajeError.set(null);
+    this.estadoCargandoCarreras.set(true);
+    return this.servicio.listarCarreras({
+      ...filtros,
+      pagina: this.estadoPaginaActual(),
+      limite: LIMITE_POR_PAGINA,
+    }).pipe(
+      finalize(() => this.estadoCargandoCarreras.set(false)),
+      tap({
+        next: (respuesta) => {
+          this.estadoMensajeError.set(null);
+          this.estadoCarreras.set(respuesta.data ?? []);
+          this.estadoTotalCarreras.set(respuesta.total);
+          this.estadoTotalPaginas.set(respuesta.totalPages);
+          this.estadoPaginaActual.set(respuesta.page);
+        },
+      }),
+      catchError((error: unknown) => {
+        this.estadoCarreras.set([]);
+        this.estadoTotalCarreras.set(0);
+        this.estadoTotalPaginas.set(1);
+        this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        return EMPTY;
+      }),
+    );
   }
 
   private obtenerFiltrosActuales(): FiltrosCarreras {

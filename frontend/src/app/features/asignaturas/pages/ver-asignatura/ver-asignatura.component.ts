@@ -16,6 +16,7 @@ import { finalize } from 'rxjs';
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
+import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
 import type {
   Asignatura,
   CarreraAsignaturaResumen,
@@ -25,7 +26,7 @@ import { AsignaturasService } from '../../services/asignaturas.service';
 @Component({
   selector: 'app-ver-asignatura',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FechaPipe],
   templateUrl: './ver-asignatura.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -62,6 +63,10 @@ export class VerAsignaturaComponent implements OnInit {
 
   obtenerEtiquetaEstado(asignatura: Asignatura): string {
     return asignatura.activo ? 'Activa' : 'Inactiva';
+  }
+
+  obtenerClaseEstado(asignatura: Asignatura): string {
+    return asignatura.activo ? 'estado-badge--success' : 'estado-badge--neutral';
   }
 
   obtenerNombreCarrera(carrera: CarreraAsignaturaResumen): string {

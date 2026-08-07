@@ -110,6 +110,24 @@ export class VerCursoComponent implements OnInit {
     return curso.estado;
   }
 
+  obtenerClaseEstado(): string {
+    const curso = this.curso();
+
+    if (!curso) {
+      return 'estado-badge--neutral';
+    }
+
+    if (curso.estado === ESTADOS_CURSO.ABIERTO) {
+      return 'estado-badge--success';
+    }
+
+    if (curso.estado === ESTADOS_CURSO.CERRADO) {
+      return 'estado-badge--neutral';
+    }
+
+    return 'estado-badge--danger';
+  }
+
   private cargarCurso(idCurso: number): void {
     this.estadoCargando.set(true);
     this.estadoMensajeError.set(null);

@@ -29,13 +29,22 @@
   @if (!cargando() && matricula(); as matricula) {
     <article class="comprobante" aria-label="Comprobante de matrícula">
       <header class="comprobante__encabezado">
-        <div>
-          <p class="comprobante__sigla">SM</p>
-          <p class="comprobante__marca">Sistema de Matrícula Universitaria</p>
+        <div class="comprobante__identidad">
+          <img
+            src="assets/logo/isotipo.svg"
+            alt=""
+            class="comprobante__isotipo"
+            width="40"
+            height="40"
+          />
+          <div>
+            <p class="comprobante__marca">Sistema de Matrícula</p>
+            <p class="comprobante__subtitulo-marca">Universitaria</p>
+          </div>
         </div>
         <div class="comprobante__meta">
           <p>Comprobante #{{ matricula.id }}</p>
-          <p>Fecha: {{ matricula.fecha_matricula | date: 'yyyy-MM-dd' }}</p>
+          <p>Fecha: {{ matricula.fecha_matricula | fecha }}</p>
           <p>Generado: {{ fechaHoy | date: 'yyyy-MM-dd HH:mm' }}</p>
         </div>
       </header>

@@ -94,8 +94,8 @@ describe('rutasPeriodosAcademicos', () => {
     expect(componente).toBe(CrearPeriodoComponent);
   });
 
-  it('la ruta nuevo tiene titulo Crear periodo academico', () => {
-    expect(obtenerRutaNuevo().title).toBe('Crear periodo académico');
+  it('la ruta nuevo tiene titulo Nuevo periodo academico', () => {
+    expect(obtenerRutaNuevo().title).toBe('Nuevo periodo académico');
   });
 
   it('la ruta nuevo utiliza guardRoles', () => {

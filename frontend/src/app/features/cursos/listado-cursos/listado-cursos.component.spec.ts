@@ -178,6 +178,24 @@ describe('ListadoCursosComponent', () => {
     expect(obtenerTexto()).toContain('Sin período');
   });
 
+  it('aplica clase de badge segun el estado del curso', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([
+          crearCurso({ id: 1, estado: 'abierto' }),
+          crearCurso({ id: 2, estado: 'cerrado' }),
+          crearCurso({ id: 3, estado: 'cancelado' }),
+        ]),
+      ),
+    );
+
+    crearComponente();
+
+    expect(obtenerElemento('.estado-badge--success')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--neutral')).toBeTruthy();
+    expect(obtenerElemento('.estado-badge--danger')).toBeTruthy();
+  });
+
   it('muestra estado vacío cuando no hay resultados', () => {
     cursosService.listar.mockReturnValueOnce(
       respuestaObservable(crearRespuestaCursos([])),
@@ -185,7 +203,7 @@ describe('ListadoCursosComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron cursos.');
+    expect(obtenerTexto()).toContain('No se encontraron cursos');
   });
 
   it('muestra error de red al cargar cursos', () => {
@@ -300,10 +318,114 @@ describe('ListadoCursosComponent', () => {
     );
   });
 
+  it('conserva los filtros al cambiar de página', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso()], { page: 1, total: 15, totalPages: 2 }),
+      ),
+    );
+
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.controls.estado.setValue('cerrado');
+    cursosService.listar.mockClear();
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso({ id: 3 })], { page: 2, total: 15, totalPages: 2 }),
+      ),
+    );
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(cursosService.listar).toHaveBeenLastCalledWith(
+      expect.objectContaining({ estado: 'cerrado', pagina: 2, limite: 10 }),
+    );
+  });
+
+  it('ignora resultados de una consulta anterior', () => {
+    const consultaAnterior = new Subject<RespuestaListadoCursos>();
+    cursosService.listar.mockReturnValueOnce(consultaAnterior.asObservable());
+    crearComponente();
+
+    const consultaNueva = new Subject<RespuestaListadoCursos>();
+    cursosService.listar.mockReturnValueOnce(consultaNueva.asObservable());
+    componente.cargarCursos();
+
+    expect(cursosService.listar).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(crearRespuestaCursos([crearCurso({ id: 77 })]));
+    consultaNueva.complete();
+    consultaAnterior.next(crearRespuestaCursos([crearCurso({ id: 1 })]));
+    consultaAnterior.complete();
+
+    expect(componente.cursos()[0]?.id).toBe(77);
+  });
+
+  it('la búsqueda por paralelo usa debounce', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      cursosService.listar.mockClear();
+
+      componente.filtros.controls.paralelo.setValue('A');
+      vi.advanceTimersByTime(100);
+      expect(cursosService.listar).not.toHaveBeenCalled();
+
+      componente.filtros.controls.paralelo.setValue('AB');
+      vi.advanceTimersByTime(400);
+
+      expect(cursosService.listar).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        paralelo: 'AB',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('al cambiar el select de estado consulta de inmediato', () => {
+    crearComponente();
+    cursosService.listar.mockClear();
+
+    componente.filtros.controls.estado.setValue('cerrado');
+
+    expect(cursosService.listar).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      estado: 'cerrado',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('cuenta los filtros activos', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtros.controls.estado.setValue('cerrado');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe botón Buscar', () => {
+    crearComponente();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear curso')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo curso')).toBeTruthy();
     expect(obtenerEnlace('Editar')).toBeTruthy();
     expect(obtenerBoton('Cancelar')).toBeTruthy();
   });
@@ -313,7 +435,7 @@ describe('ListadoCursosComponent', () => {
 
     crearComponente();
 
-    expect(obtenerEnlace('Crear curso')).toBeNull();
+    expect(obtenerEnlace('Nuevo curso')).toBeNull();
     expect(obtenerEnlace('Editar')).toBeNull();
     expect(obtenerBoton('Cancelar')).toBeNull();
   });
@@ -340,23 +462,27 @@ describe('ListadoCursosComponent', () => {
   });
 
   it('confirma antes de cancelar un curso y recarga el listado', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.cancelarCurso(componente.cursos()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(cursosService.cancelarCurso).toHaveBeenCalledWith(1);
     expect(obtenerTexto()).toContain('Curso cancelado correctamente.');
     expect(cursosService.listar).toHaveBeenCalledTimes(2);
   });
 
   it('no cancela si se cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.cancelarCurso(componente.cursos()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(cursosService.cancelarCurso).not.toHaveBeenCalled();
   });
@@ -368,11 +494,13 @@ describe('ListadoCursosComponent', () => {
     cursosService.cancelarCurso.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cancelarCurso(componente.cursos()[0]);
-    componente.cancelarCurso(componente.cursos()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(cursosService.cancelarCurso).toHaveBeenCalledTimes(1);
   });
@@ -390,15 +518,171 @@ describe('ListadoCursosComponent', () => {
         }),
       ),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cancelarCurso(componente.cursos()[0]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe(
       'Ya existe un curso con el mismo período, asignatura y paralelo.',
     );
   });
+
+  it('selecciona y deselecciona una fila con clic', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    clicEnFila(primero);
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    clicEnFila(primero);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    teclaEnFila(primero, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    teclaEnFila(primero, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace o botón interno', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+    const enlace = obtenerEnlace('Ver');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      primero,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones válidas al seleccionar', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    clicEnFila(primero);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cancelar')).toBeTruthy();
+  });
+
+  it('roles no administradores solo ven Ver en la barra contextual', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    clicEnFila(primero);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Cancelar')).toBeNull();
+  });
+
+  it('no muestra Cancelar en la barra para un curso ya cancelado', () => {
+    cursosService.listar.mockReturnValueOnce(
+      respuestaObservable(
+        crearRespuestaCursos([crearCurso({ id: 5, estado: 'cancelado' })]),
+      ),
+    );
+
+    crearComponente();
+    const curso = componente.cursos()[0];
+    clicEnFila(curso);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cancelar')).toBeNull();
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+
+    clicEnFila(primero);
+    fixture.detectChanges();
+
+    expect(obtenerFila(primero).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    crearComponente();
+    const primero = componente.cursos()[0];
+    clicEnFila(primero);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  function clicEnFila(curso: Curso): void {
+    const celda = obtenerFila(curso).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(curso: Curso, tecla: string): void {
+    obtenerFila(curso).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerFila(curso: Curso): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find((filaEncontrada) =>
+      filaEncontrada.textContent?.includes(`(${curso.paralelo})`),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del curso');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
+  }
 
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListadoCursosComponent);
@@ -406,8 +690,18 @@ describe('ListadoCursosComponent', () => {
     fixture.detectChanges();
   }
 
+  function obtenerUltimosFiltros(): FiltrosCursos | undefined {
+    const llamadas = cursosService.listar.mock.calls;
+
+    return llamadas[llamadas.length - 1]?.[0];
+  }
+
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
+  }
+
+  function obtenerElemento(selector: string): HTMLElement | null {
+    return fixture.nativeElement.querySelector(selector) as HTMLElement | null;
   }
 
   function obtenerEnlace(texto: string): HTMLAnchorElement | null {

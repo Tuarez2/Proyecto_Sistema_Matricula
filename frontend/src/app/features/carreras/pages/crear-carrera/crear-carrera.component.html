@@ -1,93 +1,106 @@
-<section aria-labelledby="titulo-crear-carrera">
-  <h1 id="titulo-crear-carrera">Crear carrera</h1>
+<section class="page" aria-labelledby="titulo-crear-carrera">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-crear-carrera">Nueva carrera</h1>
+      <p class="page-subtitle">Registra una nueva carrera.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/carreras" class="btn btn-neutral">Volver al listado</a>
+    </div>
+  </header>
 
   @if (cargandoFacultades()) {
-    <p role="status" aria-live="polite">Consultando facultades...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando facultades...
+    </div>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
-  <form [formGroup]="formularioCarrera" (ngSubmit)="guardarCarrera()" novalidate>
-    <div>
-      <label for="codigo">Código</label>
-      <input id="codigo" formControlName="codigo" maxlength="20" required />
-      @if (
-        formularioCarrera.controls.codigo.touched &&
-        formularioCarrera.controls.codigo.invalid
-      ) {
-        <p role="alert">El código es obligatorio y no puede superar 20 caracteres.</p>
-      }
-    </div>
-
-    <div>
-      <label for="nombre">Nombre</label>
-      <input id="nombre" formControlName="nombre" maxlength="150" required />
-      @if (
-        formularioCarrera.controls.nombre.touched &&
-        formularioCarrera.controls.nombre.invalid
-      ) {
-        <p role="alert">El nombre es obligatorio y no puede superar 150 caracteres.</p>
-      }
-    </div>
-
-    <div>
-      <label for="duracion_semestres">Duración en semestres</label>
-      <input
-        id="duracion_semestres"
-        type="number"
-        formControlName="duracion_semestres"
-        min="1"
-        required
-      />
-      @if (
-        formularioCarrera.controls.duracion_semestres.touched &&
-        formularioCarrera.controls.duracion_semestres.invalid
-      ) {
-        <p role="alert">La duración en semestres debe ser positiva.</p>
-      }
-    </div>
-
-    <div>
-      <label for="facultad_id">Facultad</label>
-      <select
-        id="facultad_id"
-        formControlName="facultad_id"
-        [attr.disabled]="cargandoFacultades() ? '' : null"
-        required
-      >
-        <option value="">Seleccione una facultad</option>
-        @for (facultad of facultades(); track facultad.id) {
-          <option [value]="facultad.id">{{ obtenerEtiquetaFacultad(facultad) }}</option>
+  <form class="form-card" [formGroup]="formularioCarrera" (ngSubmit)="guardarCarrera()" novalidate>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" maxlength="20" required />
+        @if (
+          formularioCarrera.controls.codigo.touched &&
+          formularioCarrera.controls.codigo.invalid
+        ) {
+          <p class="error-field" role="alert">El código es obligatorio y no puede superar 20 caracteres.</p>
         }
-      </select>
-      @if (
-        formularioCarrera.controls.facultad_id.touched &&
-        formularioCarrera.controls.facultad_id.invalid
-      ) {
-        <p role="alert">La facultad es obligatoria.</p>
-      }
+      </div>
+
+      <div class="form-field">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" formControlName="nombre" maxlength="150" required />
+        @if (
+          formularioCarrera.controls.nombre.touched &&
+          formularioCarrera.controls.nombre.invalid
+        ) {
+          <p class="error-field" role="alert">El nombre es obligatorio y no puede superar 150 caracteres.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="duracion_semestres">Duración en semestres</label>
+        <input
+          id="duracion_semestres"
+          type="number"
+          formControlName="duracion_semestres"
+          min="1"
+          required
+        />
+        @if (
+          formularioCarrera.controls.duracion_semestres.touched &&
+          formularioCarrera.controls.duracion_semestres.invalid
+        ) {
+          <p class="error-field" role="alert">La duración en semestres debe ser positiva.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="facultad_id">Facultad</label>
+        <select
+          id="facultad_id"
+          formControlName="facultad_id"
+          [attr.disabled]="cargandoFacultades() ? '' : null"
+          required
+        >
+          <option value="">Seleccione una facultad</option>
+          @for (facultad of facultades(); track facultad.id) {
+            <option [value]="facultad.id">{{ obtenerEtiquetaFacultad(facultad) }}</option>
+          }
+        </select>
+        @if (
+          formularioCarrera.controls.facultad_id.touched &&
+          formularioCarrera.controls.facultad_id.invalid
+        ) {
+          <p class="error-field" role="alert">La facultad es obligatoria.</p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="activo" class="checkbox-field">
+          <input id="activo" type="checkbox" formControlName="activo" />
+          Carrera activa
+        </label>
+      </div>
     </div>
 
-    <div>
-      <label for="activo">
-        <input id="activo" type="checkbox" formControlName="activo" />
-        Carrera activa
-      </label>
+    <div class="form-actions">
+      <button type="submit" [disabled]="enviando() || cargandoFacultades()">
+        Guardar
+      </button>
+      <button type="button" [disabled]="enviando()" (click)="cancelar()">
+        Cancelar
+      </button>
     </div>
-
-    <button type="submit" [disabled]="enviando() || cargandoFacultades()">
-      Guardar
-    </button>
-    <button type="button" [disabled]="enviando()" (click)="cancelar()">
-      Cancelar
-    </button>
   </form>
-
-  <a routerLink="/carreras">Volver al listado</a>
 </section>

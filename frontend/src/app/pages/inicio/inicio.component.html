@@ -1,10 +1,15 @@
-<section class="pagina-inicio">
+<section class="pagina-inicio" aria-labelledby="titulo-inicio">
   <header class="saludo-inicio">
-    <h1>Hola, {{ nombreUsuario() }}</h1>
-    @if (nombreRolUsuario(); as rol) {
-      <p class="rol-inicio">{{ rol }}</p>
-    }
-    <p class="descripcion-inicio">Acceso rápido a los módulos principales del sistema.</p>
+    <h1 id="titulo-inicio">Bienvenido@if (nombreUsuario(); as nombre) {, {{ nombre }}}</h1>
+    <div class="saludo-inicio__meta">
+      @if (nombreRolUsuario(); as rol) {
+        <span class="rol-inicio">{{ rol }}</span>
+      }
+      <time class="fecha-inicio" [attr.datetime]="fechaHoyDatetime">
+        {{ fechaHoy | fecha }}
+      </time>
+    </div>
+    <p class="descripcion-inicio">Consulta el estado del sistema y accede rápidamente a las tareas principales.</p>
   </header>
 
   <div class="modulos-inicio" aria-label="Módulos del sistema">

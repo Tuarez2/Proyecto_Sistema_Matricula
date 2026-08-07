@@ -15,13 +15,18 @@ import { finalize } from 'rxjs';
 
 import type { ErrorApi } from '../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
+import { FechaPipe } from '../../shared/pipes/fecha.pipe';
 import {
   ESTADOS_MATRICULA,
   type EstadoMatricula,
   type Matricula,
 } from '../matriculas/models/matricula.model';
 import { MatriculasService } from '../matriculas/services/matriculas.service';
-import type { Estudiante } from '../estudiantes/models/estudiante.model';
+import type { EstadoAcademicoEstudiante } from '../estudiantes/models/estudiante.model';
+import {
+  ESTADOS_ACADEMICOS_ESTUDIANTE,
+  type Estudiante,
+} from '../estudiantes/models/estudiante.model';
 import { EstudiantesService } from '../estudiantes/services/estudiantes.service';
 
 interface GrupoMatriculas {
@@ -33,7 +38,7 @@ interface GrupoMatriculas {
 @Component({
   selector: 'app-portal-estudiante',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FechaPipe],
   templateUrl: './portal-estudiante.component.html',
   styleUrl: './portal-estudiante.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,6 +101,17 @@ export class PortalEstudianteComponent implements OnInit {
       [ESTADOS_MATRICULA.reprobada]: 'Reprobada',
       [ESTADOS_MATRICULA.retirada]: 'Retirada',
       [ESTADOS_MATRICULA.anulada]: 'Anulada',
+    };
+
+    return etiquetas[estado];
+  }
+
+  obtenerEtiquetaEstadoAcademico(estado: EstadoAcademicoEstudiante): string {
+    const etiquetas: Record<EstadoAcademicoEstudiante, string> = {
+      [ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO]: 'Activo',
+      [ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO]: 'Inactivo',
+      [ESTADOS_ACADEMICOS_ESTUDIANTE.SUSPENDIDO]: 'Suspendido',
+      [ESTADOS_ACADEMICOS_ESTUDIANTE.EGRESADO]: 'Egresado',
     };
 
     return etiquetas[estado];

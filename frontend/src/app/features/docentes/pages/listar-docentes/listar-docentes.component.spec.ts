@@ -57,6 +57,14 @@ describe('ListarDocentesComponent', () => {
             identificacion: '222',
             especialidad: 'Programación',
           }),
+          crearDocente({
+            id: 3,
+            nombres: 'Pablo',
+            apellidos: 'Ríos',
+            identificacion: '333',
+            especialidad: 'Física',
+            activo: false,
+          }),
         ])),
       ),
       cambiarEstadoDocente: vi.fn(() =>
@@ -304,7 +312,7 @@ describe('ListarDocentesComponent', () => {
 
     crearComponente();
 
-    expect(obtenerTexto()).toContain('No se encontraron docentes.');
+    expect(obtenerTexto()).toContain('No se encontraron docentes');
   });
 
   it('muestra error de API al cargar docentes', () => {
@@ -335,7 +343,7 @@ describe('ListarDocentesComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear docente')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo docente')).toBeTruthy();
     expect(obtenerBoton('Editar')).toBeTruthy();
     expect(obtenerBoton('Inactivar')).toBeTruthy();
   });
@@ -358,13 +366,15 @@ describe('ListarDocentesComponent', () => {
   });
 
   it('confirma antes de inactivar y recarga la página actual', () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     crearComponente();
     componente.cambiarEstadoDocente(componente.docentes()[0]);
     fixture.detectChanges();
 
-    expect(confirmar).toHaveBeenCalled();
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledWith(1, false);
     expect(obtenerTexto()).toContain('Operación completada.');
     expect(docentesService.listarDocentes).toHaveBeenCalledTimes(2);
@@ -378,19 +388,24 @@ describe('ListarDocentesComponent', () => {
     docentesService.cambiarEstadoDocente.mockReturnValueOnce(
       respuestaObservable(crearRespuestaDocente({ activo: true })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cambiarEstadoDocente(crearDocente({ id: 3, activo: false }));
+    fixture.detectChanges();
+
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledWith(3, true);
   });
 
   it('no cambia estado si el usuario cancela la confirmacion', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     crearComponente();
     componente.cambiarEstadoDocente(componente.docentes()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Cancelar')?.click();
+    fixture.detectChanges();
 
     expect(docentesService.cambiarEstadoDocente).not.toHaveBeenCalled();
   });
@@ -401,43 +416,248 @@ describe('ListarDocentesComponent', () => {
     docentesService.cambiarEstadoDocente.mockReturnValueOnce(
       solicitudPendiente.asObservable(),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cambiarEstadoDocente(componente.docentes()[0]);
-    componente.cambiarEstadoDocente(componente.docentes()[1]);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
 
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledTimes(1);
   });
 
-  it('no filtra ni cambia de página mientras hay una carga pendiente', () => {
-    const cargaPendiente = new Subject<RespuestaListadoDocentes>();
-
-    docentesService.listarDocentes.mockReturnValueOnce(
-      cargaPendiente.asObservable(),
-    );
+  it('ignora resultados obsoletos de una consulta anterior', () => {
+    const consultaAnterior = new Subject<RespuestaListadoDocentes>();
+    const consultaNueva = new Subject<RespuestaListadoDocentes>();
 
     crearComponente();
-    componente.filtrar({ identificacion: '222' });
-    componente.cambiarPagina(2);
+    docentesService.listarDocentes
+      .mockReturnValueOnce(consultaAnterior.asObservable())
+      .mockReturnValueOnce(consultaNueva.asObservable());
+
+    componente.filtrar({ nombres: 'Ana' });
+    componente.filtrar({ especialidad: 'Matemática' });
     fixture.detectChanges();
 
-    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(1);
-    cargaPendiente.complete();
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(3);
+
+    consultaNueva.next(
+      crearRespuestaDocentes([crearDocente({ nombres: 'Nuevo' })]),
+    );
+    consultaNueva.complete();
+    consultaAnterior.next(
+      crearRespuestaDocentes([crearDocente({ nombres: 'Obsoleto' })]),
+    );
+    consultaAnterior.complete();
+    fixture.detectChanges();
+
+    expect(componente.docentes()).toHaveLength(1);
+    expect(componente.docentes()[0].nombres).toBe('Nuevo');
   });
 
   it('muestra error al cambiar estado', () => {
     docentesService.cambiarEstadoDocente.mockReturnValueOnce(
       errorObservable(new HttpErrorResponse({ status: 403 })),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     crearComponente();
     componente.cambiarEstadoDocente(componente.docentes()[0]);
+    fixture.detectChanges();
+
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
 
     expect(componente.mensajeError()).toBe(
       'No tiene permisos para gestionar docentes.',
     );
+  });
+
+  it('informa cuantos filtros están activos', () => {
+    crearComponente();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtrar({ identificacion: '1002', activo: true });
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(2);
+    expect(obtenerTexto()).toContain('Filtros activos: 2');
+  });
+
+  it('no renderiza el botón Buscar en la lista', () => {
+    crearComponente();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
+  it('limpiar filtros estando sin filtros no dispara una consulta', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.limpiarFiltros();
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).not.toHaveBeenCalled();
+  });
+
+  it('limpiar filtros restablece a la página 1', () => {
+    crearComponente();
+    componente.cambiarPagina(2);
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({ nombres: 'Ana' });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(1);
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      nombres: 'Ana',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('selecciona y deselecciona una fila con clic', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    teclaEnFila(primera, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    teclaEnFila(primera, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace o botón interno', () => {
+    crearComponente();
+    const boton = obtenerBoton('Editar');
+
+    boton?.click();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones válidas al seleccionar', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Inactivar')).toBeTruthy();
+  });
+
+  it('muestra Activar cuando el docente seleccionado está inactivo', () => {
+    crearComponente();
+    clicEnFila(componente.docentes()[2]);
+
+    expect(componente.accionesContextuales()).toEqual([
+      { id: 'editar', etiqueta: 'Editar' },
+      { id: 'cambiar-estado', etiqueta: 'Activar', variante: 'neutral' },
+    ]);
+  });
+
+  it('usa variante danger para inactivar y neutral para activar', () => {
+    crearComponente();
+    clicEnFila(componente.docentes()[0]);
+
+    expect(componente.accionesContextuales()).toEqual([
+      { id: 'editar', etiqueta: 'Editar' },
+      {
+        id: 'cambiar-estado',
+        etiqueta: 'Inactivar',
+        variante: 'danger',
+      },
+    ]);
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerFila(primera).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+    clicEnFila(primera);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('roles no administradores no reciben acciones contextuales', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(componente.accionesContextuales()).toEqual([]);
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Inactivar')).toBeNull();
+  });
+
+  it('ejecuta editar desde la barra contextual', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    obtenerBoton('Editar')?.click();
+    fixture.detectChanges();
+
+    expect(navegar).toHaveBeenCalledWith(['/docentes/editar', 1]);
+  });
+
+  it('ejecuta cambiar estado desde la barra contextual', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    obtenerBoton('Inactivar')?.click();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
   });
 
   function crearComponente(): void {
@@ -464,6 +684,45 @@ describe('ListarDocentesComponent', () => {
     ) as HTMLButtonElement[];
 
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function clicEnFila(docente: Docente): void {
+    const celda = obtenerFila(docente).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(docente: Docente, tecla: string): void {
+    obtenerFila(docente).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerFila(docente: Docente): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find(
+      (filaEncontrada) =>
+        filaEncontrada.textContent?.includes(docente.identificacion),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del docente');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
   }
 });
 

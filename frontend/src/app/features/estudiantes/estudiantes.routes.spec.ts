@@ -24,10 +24,22 @@ describe('ESTUDIANTES_ROUTES', () => {
   it('contiene listado, detalle, creacion y edicion', () => {
     expect(ESTUDIANTES_ROUTES.map((ruta) => ruta.path)).toEqual([
       '',
-      ':id',
       'crear',
       'editar/:id',
+      ':id',
     ]);
+  });
+
+  it('declara las rutas estaticas antes que el parametro dinamico :id', () => {
+    const indices = ESTUDIANTES_ROUTES.map((ruta) => ruta.path);
+    const indiceCrear = indices.indexOf('crear');
+    const indiceEditar = indices.indexOf('editar/:id');
+    const indiceDetalle = indices.indexOf(':id');
+
+    expect(indiceCrear).toBeGreaterThan(-1);
+    expect(indiceEditar).toBeGreaterThan(-1);
+    expect(indiceCrear).toBeLessThan(indiceDetalle);
+    expect(indiceEditar).toBeLessThan(indiceDetalle);
   });
 
   it('el listado protege por rol de consulta', () => {

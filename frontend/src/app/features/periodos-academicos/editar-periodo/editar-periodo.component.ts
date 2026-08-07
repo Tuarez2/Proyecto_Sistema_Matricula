@@ -154,6 +154,22 @@ export class EditarPeriodoComponent implements OnInit {
     return 'Estado desconocido';
   }
 
+  obtenerClaseEstado(estado: EstadoPeriodoAcademico): string {
+    if (estado === ESTADOS_PERIODO_ACADEMICO.CERRADO) {
+      return 'estado-badge--neutral';
+    }
+
+    if (estado === ESTADOS_PERIODO_ACADEMICO.EN_CURSO) {
+      return 'estado-badge--info';
+    }
+
+    if (estado === ESTADOS_PERIODO_ACADEMICO.MATRICULA_ABIERTA) {
+      return 'estado-badge--success';
+    }
+
+    return 'estado-badge--warning';
+  }
+
   private obtenerIdPeriodo(): number | null {
     const idParametro = this.rutaActivada.snapshot.paramMap.get('id');
 

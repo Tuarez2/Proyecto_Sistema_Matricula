@@ -17,12 +17,32 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Router } from '@angular/router';
+import {
+  EMPTY,
+  Observable,
+  Subject,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  finalize,
+  map,
+  merge,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal/confirm-modal.component';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import type { Carrera } from '../../../carreras/models/carrera.model';
 import { CarrerasService } from '../../../carreras/services/carreras.service';
 import {
@@ -30,6 +50,7 @@ import {
   type EstadoAcademicoEstudiante,
   type Estudiante,
   type FiltrosEstudiantes,
+  type RespuestaListadoEstudiantes,
 } from '../../models/estudiante.model';
 import { EstudiantesService } from '../../services/estudiantes.service';
 
@@ -43,12 +64,24 @@ interface ControlesFiltrosEstudiantes {
   nivel_academico_actual: FormControl<string>;
 }
 
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
+
 const LIMITE_POR_PAGINA = 10;
+const DEBOUNCE_BUSQUEDA_MS = 350;
 
 @Component({
   selector: 'app-listar-estudiantes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    PaginationComponent,
+    ConfirmModalComponent,
+    BarraAccionesContextualesComponent,
+  ],
   templateUrl: './listar-estudiantes.component.html',
   styleUrl: './listar-estudiantes.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,6 +90,7 @@ export class ListarEstudiantesComponent implements OnInit {
   private readonly estudiantesService = inject(EstudiantesService);
   private readonly carrerasService = inject(CarrerasService);
   private readonly autenticacionService = inject(AutenticacionService);
+  private readonly router = inject(Router);
   private readonly referenciaDestruccion = inject(DestroyRef);
   private readonly estadoEstudiantes = signal<Estudiante[]>([]);
   private readonly estadoTotalEstudiantes = signal(0);
@@ -68,6 +102,16 @@ export class ListarEstudiantesComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoEstudianteProcesando = signal<number | null>(null);
+  private readonly estadoEstudianteSeleccionado = signal<Estudiante | null>(
+    null,
+  );
+  private readonly estadoFilaSeleccionada = signal<Estudiante | null>(null);
+  private readonly estadoDialogoAbierto = signal(false);
+  private readonly estadoDialogoTitulo = signal('');
+  private readonly estadoDialogoMensaje = signal('');
+  private readonly estadoDialogoPeligroso = signal(false);
+  private readonly estadoDialogoProcesando = signal(false);
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_ACADEMICOS_ESTUDIANTE = ESTADOS_ACADEMICOS_ESTUDIANTE;
   readonly estudiantes = this.estadoEstudiantes.asReadonly();
@@ -79,10 +123,46 @@ export class ListarEstudiantesComponent implements OnInit {
   readonly mensajeExito = this.estadoMensajeExito.asReadonly();
   readonly paginaActual = this.estadoPaginaActual.asReadonly();
   readonly estudianteProcesando = this.estadoEstudianteProcesando.asReadonly();
+  readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
+  readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
+  readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
+  readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
+  readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const estudiante = this.estadoFilaSeleccionada();
+
+    if (!estudiante) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [
+      { id: 'ver', etiqueta: 'Ver' },
+    ];
+
+    if (this.esAdministrador()) {
+      acciones.push({ id: 'editar', etiqueta: 'Editar' });
+
+      if (
+        estudiante.estado_academico !== ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO
+      ) {
+        acciones.push({
+          id: 'inactivar',
+          etiqueta: 'Inactivar',
+          variante: 'danger',
+        });
+      }
+    }
+
+    return acciones;
+  });
   readonly esAdministrador = computed(
     () =>
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
+  );
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
   );
 
   readonly filtros = new FormGroup<ControlesFiltrosEstudiantes>({
@@ -112,7 +192,8 @@ export class ListarEstudiantesComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarCarreras();
-    this.cargarEstudiantes();
+    this.configurarFiltrosDinamicos();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
   buscarEstudiantes(): void {
@@ -123,12 +204,18 @@ export class ListarEstudiantesComponent implements OnInit {
     }
 
     this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
-    this.estadoFiltrosAplicados.set(this.obtenerFiltrosActuales());
-    this.cargarEstudiantes();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
+  }
+
+  impedirEnvio(evento: Event): void {
+    evento.preventDefault();
   }
 
   limpiarFiltros(): void {
+    this.estadoMensajeError.set(null);
+    this.estadoMensajeExito.set(null);
+    this.estadoFiltrosAplicados.set({});
+    this.estadoPaginaActual.set(1);
     this.filtros.reset({
       numero_matricula: '',
       identificacion: '',
@@ -138,10 +225,7 @@ export class ListarEstudiantesComponent implements OnInit {
       estado_academico: '',
       nivel_academico_actual: '',
     });
-    this.estadoMensajeError.set(null);
-    this.estadoPaginaActual.set(1);
-    this.estadoFiltrosAplicados.set({});
-    this.cargarEstudiantes();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cambiarPagina(pagina: number): void {
@@ -150,46 +234,119 @@ export class ListarEstudiantesComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
-    this.estadoMensajeError.set(null);
-    this.cargarEstudiantes();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  seleccionarFila(evento: Event, estudiante: Estudiante): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(estudiante);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, estudiante: Estudiante): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(estudiante);
+  }
+
+  alternarSeleccion(estudiante: Estudiante): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === estudiante.id ? null : estudiante,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const estudiante = this.estadoFilaSeleccionada();
+
+    if (!estudiante) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'ver':
+        this.router.navigate(['/estudiantes', estudiante.id]);
+        break;
+      case 'editar':
+        this.router.navigate(['/estudiantes/editar', estudiante.id]);
+        break;
+      case 'inactivar':
+        this.inactivarEstudiante(estudiante);
+        break;
+    }
   }
 
   inactivarEstudiante(estudiante: Estudiante): void {
     if (
       !this.esAdministrador() ||
-      estudiante.estado_academico === ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO ||
-      this.estudianteProcesando() !== null
+      estudiante.estado_academico === ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO
     ) {
       return;
     }
 
-    const confirmado = window.confirm(
+    this.estadoEstudianteSeleccionado.set(estudiante);
+    this.estadoDialogoTitulo.set('Inactivar estudiante');
+    this.estadoDialogoMensaje.set(
       `¿Desea inactivar a ${this.obtenerNombreCompleto(estudiante)}?`,
     );
+    this.estadoDialogoPeligroso.set(true);
+    this.estadoDialogoAbierto.set(true);
+  }
 
-    if (!confirmado) {
+  confirmarInactivacion(): void {
+    const estudiante = this.estadoEstudianteSeleccionado();
+
+    if (!estudiante) {
       return;
     }
 
     this.estadoMensajeError.set(null);
     this.estadoMensajeExito.set(null);
     this.estadoEstudianteProcesando.set(estudiante.id);
-    this.estudiantesService.cambiarEstadoEstudiante(estudiante.id)
+    this.estadoDialogoProcesando.set(true);
+    this.estudiantesService
+      .cambiarEstadoEstudiante(estudiante.id)
       .pipe(
         takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoEstudianteProcesando.set(null)),
+        finalize(() => {
+          this.estadoEstudianteProcesando.set(null);
+          this.estadoDialogoProcesando.set(false);
+        }),
       )
       .subscribe({
         next: (respuesta) => {
           this.estadoMensajeExito.set(
             respuesta.message ?? 'Estudiante inactivado correctamente.',
           );
-          this.cargarEstudiantes();
+          this.estadoDialogoAbierto.set(false);
+          this.estadoFilaSeleccionada.set(null);
+          this.consultaFiltros$.next({ reiniciarPagina: false });
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  cerrarDialogo(): void {
+    if (this.estadoDialogoProcesando()) {
+      return;
+    }
+
+    this.estadoDialogoAbierto.set(false);
+    this.estadoEstudianteSeleccionado.set(null);
   }
 
   obtenerNombreCompleto(estudiante: Estudiante): string {
@@ -212,36 +369,83 @@ export class ListarEstudiantesComponent implements OnInit {
     return 'Egresado';
   }
 
-  private cargarEstudiantes(): void {
-    if (this.cargandoEstudiantes()) {
-      return;
-    }
+  private configurarFiltrosDinamicos(): void {
+    const textoDebounced = merge(
+      this.filtros.controls.numero_matricula.valueChanges,
+      this.filtros.controls.identificacion.valueChanges,
+      this.filtros.controls.nombres.valueChanges,
+      this.filtros.controls.apellidos.valueChanges,
+      this.filtros.controls.nivel_academico_actual.valueChanges,
+    ).pipe(
+      debounceTime(DEBOUNCE_BUSQUEDA_MS),
+      map(() => true),
+    );
 
+    const selectoresInmediatos = merge(
+      this.filtros.controls.carrera_id.valueChanges,
+      this.filtros.controls.estado_academico.valueChanges,
+    ).pipe(map(() => true));
+
+    merge(textoDebounced, selectoresInmediatos)
+      .pipe(
+        filter(() => this.filtros.valid && !this.criteriosIgualesAplicados()),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe(() => this.consultaFiltros$.next({ reiniciarPagina: true }));
+
+    this.consultaFiltros$
+      .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.consultarEstudiantes();
+        }),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe();
+  }
+
+  private criteriosIgualesAplicados(): boolean {
+    const actuales = this.obtenerFiltrosActuales();
+    const aplicados = this.estadoFiltrosAplicados();
+
+    return JSON.stringify(actuales) === JSON.stringify(aplicados);
+  }
+
+  private contarFiltros(filtros: FiltrosEstudiantes): number {
+    return Object.values(filtros).filter((valor) => valor !== undefined).length;
+  }
+
+  private consultarEstudiantes(): Observable<RespuestaListadoEstudiantes> {
+    this.estadoFilaSeleccionada.set(null);
+    const filtros = this.obtenerFiltrosActuales();
+    this.estadoFiltrosAplicados.set(filtros);
     this.estadoCargandoEstudiantes.set(true);
     this.estadoMensajeError.set(null);
-    this.estudiantesService.listarEstudiantes({
-      ...this.estadoFiltrosAplicados(),
+    return this.estudiantesService.listarEstudiantes({
+      ...filtros,
       pagina: this.estadoPaginaActual(),
       limite: LIMITE_POR_PAGINA,
-    })
-      .pipe(
-        takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoCargandoEstudiantes.set(false)),
-      )
-      .subscribe({
+    }).pipe(
+      finalize(() => this.estadoCargandoEstudiantes.set(false)),
+      tap({
         next: (respuesta) => {
+          this.estadoMensajeError.set(null);
           this.estadoEstudiantes.set(respuesta.data ?? []);
           this.estadoTotalEstudiantes.set(respuesta.total);
           this.estadoTotalPaginas.set(respuesta.totalPages);
           this.estadoPaginaActual.set(respuesta.page);
         },
-        error: (error: unknown) => {
-          this.estadoEstudiantes.set([]);
-          this.estadoTotalEstudiantes.set(0);
-          this.estadoTotalPaginas.set(1);
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
+      }),
+      catchError((error: unknown) => {
+        this.estadoEstudiantes.set([]);
+        this.estadoTotalEstudiantes.set(0);
+        this.estadoTotalPaginas.set(1);
+        this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        return EMPTY;
+      }),
+    );
   }
 
   private cargarCarreras(): void {

@@ -7,6 +7,7 @@ import { interceptorErroresHttp } from './core/interceptors/errores-http.interce
 import { interceptorRenovacionSesion } from './core/interceptors/renovacion-sesion.interceptor';
 import { interceptorTokenAcceso } from './core/interceptors/token-acceso.interceptor';
 import { AutenticacionService } from './core/services/autenticacion.service';
+import { PreferenciasService } from './core/services/preferencias.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,6 +21,10 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const autenticacionService = inject(AutenticacionService);
       return autenticacionService.inicializarSesion();
+    }),
+    provideAppInitializer(() => {
+      const preferenciasService = inject(PreferenciasService);
+      preferenciasService.suscribirseACambiosDeSistema();
     }),
     provideRouter(routes),
   ],

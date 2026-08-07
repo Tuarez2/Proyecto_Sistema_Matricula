@@ -31,8 +31,9 @@
           <strong>Nivel académico:</strong> {{ estudiante.nivel_academico_actual }}
         </p>
         <p>
-          <strong>Estado académico:</strong>
-          {{ estudiante.estado_academico }}
+          <span class="estado-badge estado-badge--info">
+            {{ obtenerEtiquetaEstadoAcademico(estudiante.estado_academico) }}
+          </span>
         </p>
       </div>
     </div>
@@ -56,6 +57,7 @@
                 <th scope="col">Curso</th>
                 <th scope="col">Paralelo</th>
                 <th scope="col">Horario</th>
+                <th scope="col">Fecha</th>
                 <th scope="col">Estado</th>
                 <th scope="col">Acciones</th>
               </tr>
@@ -66,6 +68,7 @@
                   <td>{{ obtenerDescripcionCurso(matricula) }}</td>
                   <td>{{ matricula.curso?.paralelo ?? 'Sin paralelo' }}</td>
                   <td>{{ matricula.curso?.horario ?? 'Sin horario' }}</td>
+                  <td>{{ matricula.fecha_matricula | fecha }}</td>
                   <td>
                     <span class="estado-badge estado-badge--info">
                       {{ obtenerEtiquetaEstado(matricula.estado) }}

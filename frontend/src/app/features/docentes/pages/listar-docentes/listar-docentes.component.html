@@ -1,38 +1,81 @@
-<section aria-labelledby="titulo-docentes">
-  <h1 id="titulo-docentes">Docentes</h1>
+<section class="page" aria-labelledby="titulo-docentes">
+  <header class="page-header">
+    <div>
+      <h1 id="titulo-docentes">Docentes</h1>
+      <p class="page-subtitle">Consulta y administra los docentes.</p>
+    </div>
+    @if (esAdministrador()) {
+      <div class="page-actions">
+        <a routerLink="/docentes/crear" class="btn btn-primary">Nuevo docente</a>
+      </div>
+    }
+  </header>
 
-  @if (esAdministrador()) {
-    <a routerLink="/docentes/crear">Crear docente</a>
-  }
+  <app-docente-filter (filtrarDocentes)="filtrar($event)" />
 
-  <app-docente-filter
-    [cargando]="cargandoDocentes()"
-    (filtrarDocentes)="filtrar($event)"
-  />
+  <p
+    class="filtros-activos"
+    role="status"
+    aria-live="polite"
+  >
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
 
   @if (cargandoDocentes()) {
-    <p role="status" aria-live="polite">Consultando docentes...</p>
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando docentes...
+    </div>
   }
 
   @if (mensajeExito()) {
-    <p role="status">{{ mensajeExito() }}</p>
+    <p class="alert alert--success" role="status">{{ mensajeExito() }}</p>
   }
 
   @if (mensajeError()) {
-    <p role="alert">{{ mensajeError() }}</p>
+    <p class="alert alert--error" role="alert">{{ mensajeError() }}</p>
   }
 
   @if (!cargandoDocentes() && !mensajeError() && docentes().length === 0) {
-    <p>No se encontraron docentes.</p>
+    <div class="empty-state">
+      <span class="empty-icon" aria-hidden="true">👤</span>
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron docentes con los filtros aplicados.</h2>
+        <p>Prueba con otros criterios o limpia los filtros.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+      } @else {
+        <h2>No se encontraron docentes</h2>
+        <p>No hay docentes registrados que coincidan con la búsqueda.</p>
+        @if (esAdministrador()) {
+          <div class="empty-actions">
+            <a routerLink="/docentes/crear" class="btn btn-primary">Nuevo docente</a>
+          </div>
+        }
+      }
+    </div>
   }
 
   @if (docentes().length > 0) {
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
     <app-docente-table
       [docentes]="docentes()"
       [esAdministrador]="esAdministrador()"
       [idDocenteProcesando]="docenteProcesando()"
+      [filaSeleccionadaId]="filaSeleccionada()?.id ?? null"
       (editarDocente)="editarDocente($event)"
       (cambiarEstadoDocente)="cambiarEstadoDocente($event)"
+      (seleccionarFila)="seleccionarFila($event)"
+      (seleccionarFilaTeclado)="seleccionarFilaTeclado($event)"
+      (alternarSeleccion)="alternarSeleccion($event)"
     />
   }
 
@@ -44,3 +87,13 @@
     (pageChange)="cambiarPagina($event)"
   />
 </section>
+
+<app-confirm-modal
+  [oAbierto]="dialogoAbierto()"
+  [titulo]="dialogoTitulo()"
+  [mensaje]="dialogoMensaje()"
+  [peligroso]="dialogoPeligroso()"
+  [procesando]="dialogoProcesando()"
+  (confirmado)="confirmarCambioEstado()"
+  (cancelado)="cerrarDialogo()"
+/>
