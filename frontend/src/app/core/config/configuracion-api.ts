@@ -1,17 +1,27 @@
-const URL_API_POR_DEFECTO = 'http://localhost:3000/api/v1';
+const URL_API_LOCAL = 'http://localhost:3000/api/v1';
 
-function obtenerUrlBase(): string {
-  const urlDesdeVariable = import.meta.env?.NG_APP_API_URL?.trim();
+function construirUrlBase(): string {
+  const urlPorVariable = import.meta.env?.NG_APP_API_URL?.trim();
 
-  if (urlDesdeVariable) {
-    return urlDesdeVariable.replace(/\/+$/, '');
+  if (urlPorVariable) {
+    return urlPorVariable.replace(/\/+$/, '');
   }
 
-  return URL_API_POR_DEFECTO;
+  if (typeof window === 'undefined') {
+    return URL_API_LOCAL;
+  }
+
+  const hostname = window.location.hostname;
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return URL_API_LOCAL;
+  }
+
+  return `${window.location.protocol}//${window.location.host}/api/v1`;
 }
 
 export const CONFIGURACION_API = Object.freeze({
-  urlBase: obtenerUrlBase(),
+  urlBase: construirUrlBase(),
 } as const);
 
 export function obtenerUrlApi(ruta: string): string {

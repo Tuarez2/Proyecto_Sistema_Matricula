@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -11,6 +15,10 @@ import { limiteGeneralApi } from './middlewares/rateLimit.js';
 import routes from './routes/index.js';
 
 const app = express();
+
+const directorioActual = path.dirname(fileURLToPath(import.meta.url));
+const rutaFrontend = path.resolve(directorioActual, '../../frontend/dist/frontend/browser');
+const existeFrontendCompilado = fs.existsSync(rutaFrontend);
 
 app.disable('x-powered-by');
 if (environment.trustProxy !== false) {
@@ -32,7 +40,21 @@ app.get('/health', (req, res) => {
   });
 });
 
+if (environment.nodeEnv === 'production' && existeFrontendCompilado) {
+  app.use(express.static(rutaFrontend));
+}
+
 app.use('/api/v1', limiteGeneralApi, routes);
+
+if (environment.nodeEnv === 'production' && existeFrontendCompilado) {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+
+    return res.sendFile(path.join(rutaFrontend, 'index.html'));
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);
