@@ -11,6 +11,8 @@
     "instalar": "npm run verificar:entorno && npm ci --prefix backend && npm ci --prefix frontend",
     "dev:backend": "npm --prefix backend start",
     "dev:frontend": "npm --prefix frontend start",
+    "seed:video": "npm --prefix backend run seed:video",
+    "cleanup:video": "npm --prefix backend run cleanup:video",
     "test:backend": "npm --prefix backend test",
     "test:frontend": "npm --prefix frontend test -- --watch=false",
     "build:frontend": "npm --prefix frontend run build",
