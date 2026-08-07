@@ -114,11 +114,20 @@
       {{ totalUsuarios() === 1 ? 'usuario' : 'usuarios' }}
     </p>
 
-    <div class="table-wrap">
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
       <table>
         <caption>Listado de usuarios</caption>
         <thead>
           <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
             <th scope="col">Identificador</th>
             <th scope="col">Nombre completo</th>
             <th scope="col">Correo</th>
@@ -130,7 +139,22 @@
         </thead>
         <tbody>
           @for (usuario of usuarios(); track usuario.id) {
-            <tr>
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === usuario.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === usuario.id"
+              (click)="seleccionarFila($event, usuario)"
+              (keydown)="seleccionarFilaTeclado($event, usuario)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === usuario.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(usuario)"
+                  [attr.aria-label]="'Seleccionar a ' + obtenerNombreCompleto(usuario)"
+                />
+              </td>
               <td>{{ usuario.id }}</td>
               <td>{{ obtenerNombreCompleto(usuario) }}</td>
               <td>{{ usuario.correo }}</td>

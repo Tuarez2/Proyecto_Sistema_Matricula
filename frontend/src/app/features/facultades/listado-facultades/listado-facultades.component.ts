@@ -16,7 +16,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   EMPTY,
   Observable,
@@ -36,6 +36,11 @@ import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type {
   Facultad,
@@ -60,7 +65,7 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
 @Component({
   selector: 'app-listado-facultades',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, ConfirmModalComponent, FechaPipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, ConfirmModalComponent, BarraAccionesContextualesComponent, FechaPipe],
   templateUrl: './listado-facultades.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -68,6 +73,7 @@ export class ListadoFacultadesComponent implements OnInit {
   private readonly servicio = inject(FacultadesService);
   private readonly autenticacionService = inject(AutenticacionService);
   private readonly destruccion = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly estadoFacultades = signal<Facultad[]>([]);
   private readonly estadoCargando = signal(false);
   private readonly estadoMensajeError = signal<string | null>(null);
@@ -78,6 +84,7 @@ export class ListadoFacultadesComponent implements OnInit {
   private readonly estadoTotalPaginas = signal(1);
   private readonly estadoFacultadProcesando = signal<number | null>(null);
   private readonly estadoFacultadSeleccionada = signal<Facultad | null>(null);
+  private readonly estadoFilaSeleccionada = signal<Facultad | null>(null);
   private readonly estadoDialogoAbierto = signal(false);
   private readonly estadoDialogoTitulo = signal('');
   private readonly estadoDialogoMensaje = signal('');
@@ -100,6 +107,29 @@ export class ListadoFacultadesComponent implements OnInit {
   readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
   readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
   readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const facultad = this.estadoFilaSeleccionada();
+
+    if (!facultad) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [
+      { id: 'ver', etiqueta: 'Ver' },
+    ];
+
+    if (this.esAdministrador()) {
+      acciones.push({ id: 'editar', etiqueta: 'Editar' });
+      acciones.push({
+        id: 'cambiar-estado',
+        etiqueta: facultad.activo ? 'Desactivar' : 'Activar',
+        variante: facultad.activo ? 'danger' : 'neutral',
+      });
+    }
+
+    return acciones;
+  });
   readonly filtrosActivos = computed(() =>
     this.contarFiltros(this.estadoFiltrosAplicados()),
   );
@@ -167,7 +197,59 @@ export class ListadoFacultadesComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
+    this.estadoFilaSeleccionada.set(null);
     this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  seleccionarFila(evento: Event, facultad: Facultad): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(facultad);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, facultad: Facultad): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(facultad);
+  }
+
+  alternarSeleccion(facultad: Facultad): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === facultad.id ? null : facultad,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const facultad = this.estadoFilaSeleccionada();
+
+    if (!facultad) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'ver':
+        this.router.navigate(['/facultades', facultad.id]);
+        break;
+      case 'editar':
+        this.router.navigate(['/facultades/editar', facultad.id]);
+        break;
+      case 'cambiar-estado':
+        this.cambiarEstado(facultad);
+        break;
+    }
   }
 
   cambiarEstado(facultad: Facultad): void {
@@ -219,6 +301,7 @@ export class ListadoFacultadesComponent implements OnInit {
             respuesta.message ?? 'Estado de facultad actualizado correctamente.',
           );
           this.estadoDialogoAbierto.set(false);
+          this.estadoFilaSeleccionada.set(null);
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
@@ -288,6 +371,7 @@ export class ListadoFacultadesComponent implements OnInit {
   }
 
   private consultarFacultades(): Observable<RespuestaListadoFacultades> {
+    this.estadoFilaSeleccionada.set(null);
     const filtros = this.obtenerFiltrosAplicables();
     this.estadoFiltrosAplicados.set(filtros);
     this.estadoMensajeError.set(null);

@@ -112,11 +112,20 @@
   }
 
   @if (carreras().length > 0) {
-    <div class="table-wrap">
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
       <table>
         <caption>Listado de carreras</caption>
         <thead>
           <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
             <th scope="col">Código</th>
             <th scope="col">Nombre</th>
             <th scope="col">Facultad</th>
@@ -131,7 +140,22 @@
         </thead>
         <tbody>
           @for (carrera of carreras(); track carrera.id) {
-            <tr>
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === carrera.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === carrera.id"
+              (click)="seleccionarFila($event, carrera)"
+              (keydown)="seleccionarFilaTeclado($event, carrera)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === carrera.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(carrera)"
+                  [attr.aria-label]="'Seleccionar a ' + carrera.nombre"
+                />
+              </td>
               <td>{{ carrera.codigo }}</td>
               <td>{{ carrera.nombre }}</td>
               <td>{{ obtenerNombreFacultad(carrera) }}</td>

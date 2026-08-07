@@ -687,6 +687,31 @@ tbody tr {
   gap: var(--espacio-2);
   align-items: center;
   white-space: nowrap;
+  max-width: 16rem;
+}
+
+.columna-seleccion {
+  width: 2.5rem;
+  padding-right: var(--espacio-1);
+  text-align: center;
+}
+
+.columna-seleccion input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.tabla-seleccionable tbody tr {
+  cursor: pointer;
+}
+
+tbody tr.fila-seleccionada td,
+tbody tr.fila-seleccionada:hover td {
+  background: var(--color-primary-soft);
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 /* ==========================================================================

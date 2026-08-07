@@ -929,6 +929,131 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerTexto()).toContain('1 usuario');
   });
 
+  it('selecciona y deselecciona una fila con clic', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    clicEnFila(usuario);
+    expect(componente.filaSeleccionada()?.id).toBe(usuario.id);
+
+    clicEnFila(usuario);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    teclaEnFila(usuario, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(usuario.id);
+
+    teclaEnFila(usuario, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace interno', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+    const enlace = obtenerEnlace('Editar');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      usuario,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(usuario.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones al seleccionar', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    clicEnFila(usuario);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cambiar estado')).toBeTruthy();
+    expect(obtenerBoton('Cambiar contraseña')).toBeTruthy();
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    iniciarYCompletar();
+    const usuario = componente.usuarios()[0];
+
+    clicEnFila(usuario);
+    fixture.detectChanges();
+
+    expect(obtenerFila(usuario).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 2 }));
+    const usuario = componente.usuarios()[0];
+    clicEnFila(usuario);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  function clicEnFila(usuario: Usuario): void {
+    const celda = obtenerFila(usuario).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(usuario: Usuario, tecla: string): void {
+    obtenerFila(usuario).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerFila(usuario: Usuario): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find(
+      (filaEncontrada) =>
+        filaEncontrada.textContent?.includes(usuario.correo),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del usuario');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
+  }
+
   function iniciarComponente(): void {
     fixture.detectChanges();
   }

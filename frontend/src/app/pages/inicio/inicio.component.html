@@ -1,11 +1,11 @@
 <section class="pagina-inicio" aria-labelledby="titulo-inicio">
   <header class="saludo-inicio">
-    <h1 id="titulo-inicio">Bienvenido, {{ nombreUsuario() }}</h1>
+    <h1 id="titulo-inicio">Bienvenido@if (nombreUsuario(); as nombre) {, {{ nombre }}}</h1>
     <div class="saludo-inicio__meta">
       @if (nombreRolUsuario(); as rol) {
         <span class="rol-inicio">{{ rol }}</span>
       }
-      <time class="fecha-inicio" [attr.datetime]="fechaHoy.toISOString()">
+      <time class="fecha-inicio" [attr.datetime]="fechaHoyDatetime">
         {{ fechaHoy | fecha }}
       </time>
     </div>

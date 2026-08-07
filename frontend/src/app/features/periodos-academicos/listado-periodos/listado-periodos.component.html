@@ -184,12 +184,21 @@
   }
 
   @if (periodos().length > 0) {
-    <div class="table-wrap">
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
       @if (esAdministrador()) {
         <table>
           <caption>Listado de periodos académicos</caption>
           <thead>
             <tr>
+              <th scope="col" class="columna-seleccion">
+                <span class="sr-only">Seleccionar</span>
+              </th>
               <th scope="col">Código</th>
               <th scope="col">Nombre</th>
               <th scope="col">Inicio del periodo</th>
@@ -202,7 +211,22 @@
           </thead>
           <tbody>
             @for (periodo of periodos(); track periodo.id) {
-              <tr>
+              <tr
+                tabindex="0"
+                [class.fila-seleccionada]="filaSeleccionada()?.id === periodo.id"
+                [attr.aria-selected]="filaSeleccionada()?.id === periodo.id"
+                (click)="seleccionarFila($event, periodo)"
+                (keydown)="seleccionarFilaTeclado($event, periodo)"
+              >
+                <td class="columna-seleccion">
+                  <input
+                    type="checkbox"
+                    [checked]="filaSeleccionada()?.id === periodo.id"
+                    (click)="$event.stopPropagation()"
+                    (change)="alternarSeleccion(periodo)"
+                    [attr.aria-label]="'Seleccionar a ' + periodo.nombre"
+                  />
+                </td>
                 <td>{{ periodo.codigo }}</td>
                 <td>{{ periodo.nombre }}</td>
                 <td>{{ periodo.fecha_inicio | fecha }}</td>
@@ -249,6 +273,9 @@
           <caption>Listado de periodos académicos</caption>
           <thead>
             <tr>
+              <th scope="col" class="columna-seleccion">
+                <span class="sr-only">Seleccionar</span>
+              </th>
               <th scope="col">Código</th>
               <th scope="col">Nombre</th>
               <th scope="col">Inicio del periodo</th>
@@ -260,7 +287,22 @@
           </thead>
           <tbody>
             @for (periodo of periodos(); track periodo.id) {
-              <tr>
+              <tr
+                tabindex="0"
+                [class.fila-seleccionada]="filaSeleccionada()?.id === periodo.id"
+                [attr.aria-selected]="filaSeleccionada()?.id === periodo.id"
+                (click)="seleccionarFila($event, periodo)"
+                (keydown)="seleccionarFilaTeclado($event, periodo)"
+              >
+                <td class="columna-seleccion">
+                  <input
+                    type="checkbox"
+                    [checked]="filaSeleccionada()?.id === periodo.id"
+                    (click)="$event.stopPropagation()"
+                    (change)="alternarSeleccion(periodo)"
+                    [attr.aria-label]="'Seleccionar a ' + periodo.nombre"
+                  />
+                </td>
                 <td>{{ periodo.codigo }}</td>
                 <td>{{ periodo.nombre }}</td>
                 <td>{{ periodo.fecha_inicio | fecha }}</td>

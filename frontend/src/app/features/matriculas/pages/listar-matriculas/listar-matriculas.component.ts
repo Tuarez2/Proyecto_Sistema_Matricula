@@ -16,7 +16,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   EMPTY,
   Observable,
@@ -37,6 +37,11 @@ import { AutenticacionService } from '../../../../core/services/autenticacion.se
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal/confirm-modal.component';
 import { FechaPipe } from '../../../../shared/pipes/fecha.pipe';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import {
   ESTADOS_MATRICULA,
   type EstadoMatricula,
@@ -83,7 +88,7 @@ const CLAVES_FILTROS_MATRICULAS: (keyof FiltrosMatriculas)[] = [
 @Component({
   selector: 'app-listar-matriculas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe, ConfirmModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PaginationComponent, FechaPipe, ConfirmModalComponent, BarraAccionesContextualesComponent],
   templateUrl: './listar-matriculas.component.html',
   styleUrl: './listar-matriculas.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -92,6 +97,7 @@ export class ListarMatriculasComponent implements OnInit {
   private readonly matriculasService = inject(MatriculasService);
   private readonly autenticacionService = inject(AutenticacionService);
   private readonly referenciaDestruccion = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly estadoMatriculas = signal<Matricula[]>([]);
   private readonly estadoCargandoMatriculas = signal(false);
   private readonly estadoMensajeError = signal<string | null>(null);
@@ -111,6 +117,7 @@ export class ListarMatriculasComponent implements OnInit {
   private readonly estadoDialogoPeligroso = signal(false);
   private readonly estadoDialogoProcesando = signal(false);
   private readonly estadoFiltrosAplicados = signal<FiltrosMatriculas>({});
+  private readonly estadoFilaSeleccionada = signal<Matricula | null>(null);
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_MATRICULA = ESTADOS_MATRICULA;
@@ -128,6 +135,34 @@ export class ListarMatriculasComponent implements OnInit {
   readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
   readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
   readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const matricula = this.estadoFilaSeleccionada();
+
+    if (!matricula) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [
+      { id: 'ver', etiqueta: 'Ver' },
+    ];
+
+    if (this.puedeGestionarMatriculas()) {
+      for (const accion of this.obtenerAccionesEstado(matricula)) {
+        if (accion.estado === ESTADOS_MATRICULA.aprobada) {
+          acciones.push({ id: 'aprobar', etiqueta: 'Aprobar' });
+        } else if (accion.estado === ESTADOS_MATRICULA.reprobada) {
+          acciones.push({ id: 'reprobar', etiqueta: 'Reprobar' });
+        } else if (accion.estado === ESTADOS_MATRICULA.retirada) {
+          acciones.push({ id: 'retirar', etiqueta: 'Retirar', variante: 'danger' });
+        } else if (accion.estado === ESTADOS_MATRICULA.anulada) {
+          acciones.push({ id: 'anular', etiqueta: 'Anular', variante: 'danger' });
+        }
+      }
+    }
+
+    return acciones;
+  });
   readonly filtrosActivos = computed(() =>
     this.contarFiltros(this.estadoFiltrosAplicados()),
   );
@@ -218,6 +253,63 @@ export class ListarMatriculasComponent implements OnInit {
     this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
+  seleccionarFila(evento: Event, matricula: Matricula): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(matricula);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, matricula: Matricula): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(matricula);
+  }
+
+  alternarSeleccion(matricula: Matricula): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === matricula.id ? null : matricula,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const matricula = this.estadoFilaSeleccionada();
+
+    if (!matricula) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'ver':
+        this.router.navigate(['/matriculas', matricula.id]);
+        break;
+      case 'aprobar':
+        this.solicitarCambioEstado(matricula, ESTADOS_MATRICULA.aprobada);
+        break;
+      case 'reprobar':
+        this.solicitarCambioEstado(matricula, ESTADOS_MATRICULA.reprobada);
+        break;
+      case 'retirar':
+        this.solicitarCambioEstado(matricula, ESTADOS_MATRICULA.retirada);
+        break;
+      case 'anular':
+        this.solicitarCambioEstado(matricula, ESTADOS_MATRICULA.anulada);
+        break;
+    }
+  }
+
   solicitarCambioEstado(
     matricula: Matricula,
     estadoSiguiente: EstadoMatricula,
@@ -274,6 +366,7 @@ export class ListarMatriculasComponent implements OnInit {
             respuesta.message ?? 'Estado de matrícula actualizado correctamente.',
           );
           this.estadoDialogoAbierto.set(false);
+          this.estadoFilaSeleccionada.set(null);
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
@@ -426,6 +519,7 @@ export class ListarMatriculasComponent implements OnInit {
   }
 
   private consultarMatriculas(): Observable<RespuestaListadoMatriculas> {
+    this.estadoFilaSeleccionada.set(null);
     const filtros = this.obtenerFiltrosAplicables();
     this.estadoFiltrosAplicados.set(filtros);
     this.estadoMensajeError.set(null);

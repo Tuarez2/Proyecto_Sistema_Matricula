@@ -16,7 +16,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   EMPTY,
   Observable,
@@ -34,6 +34,11 @@ import {
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import type { Asignatura } from '../../asignaturas/models/asignatura.model';
@@ -75,6 +80,7 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
     RouterLink,
     PaginationComponent,
     ConfirmModalComponent,
+    BarraAccionesContextualesComponent,
   ],
   templateUrl: './listado-cursos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -85,6 +91,7 @@ export class ListadoCursosComponent implements OnInit {
   private readonly asignaturasServicio = inject(AsignaturasService);
   private readonly docentesServicio = inject(DocentesService);
   private readonly autenticacionService = inject(AutenticacionService);
+  private readonly router = inject(Router);
   private readonly destruccion = inject(DestroyRef);
   private readonly estadoCursos = signal<Curso[]>([]);
   private readonly estadoPeriodos = signal<PeriodoAcademico[]>([]);
@@ -98,6 +105,7 @@ export class ListadoCursosComponent implements OnInit {
   private readonly estadoTotalRegistros = signal(0);
   private readonly estadoCursoProcesando = signal<number | null>(null);
   private readonly estadoCursoSeleccionado = signal<Curso | null>(null);
+  private readonly estadoFilaSeleccionada = signal<Curso | null>(null);
   private readonly estadoDialogoAbierto = signal(false);
   private readonly estadoDialogoTitulo = signal('');
   private readonly estadoDialogoMensaje = signal('');
@@ -117,6 +125,7 @@ export class ListadoCursosComponent implements OnInit {
   readonly totalPaginas = this.estadoTotalPaginas.asReadonly();
   readonly totalRegistros = this.estadoTotalRegistros.asReadonly();
   readonly cursoProcesando = this.estadoCursoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
   readonly dialogoAbierto = this.estadoDialogoAbierto.asReadonly();
   readonly dialogoTitulo = this.estadoDialogoTitulo.asReadonly();
   readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
@@ -127,6 +136,31 @@ export class ListadoCursosComponent implements OnInit {
       this.autenticacionService.usuarioActual()?.rol?.codigo ===
       CODIGOS_ROL.ADMIN,
   );
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const curso = this.estadoFilaSeleccionada();
+
+    if (!curso) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [
+      { id: 'ver', etiqueta: 'Ver' },
+    ];
+
+    if (this.esAdministrador()) {
+      acciones.push({ id: 'editar', etiqueta: 'Editar' });
+
+      if (curso.estado !== ESTADOS_CURSO.CANCELADO) {
+        acciones.push({
+          id: 'cancelar',
+          etiqueta: 'Cancelar',
+          variante: 'danger',
+        });
+      }
+    }
+
+    return acciones;
+  });
   readonly filtrosActivos = computed(() =>
     this.contarFiltros(this.estadoFiltrosAplicados()),
   );
@@ -191,7 +225,59 @@ export class ListadoCursosComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
+    this.limpiarSeleccion();
     this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  seleccionarFila(evento: Event, curso: Curso): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(curso);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, curso: Curso): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(curso);
+  }
+
+  alternarSeleccion(curso: Curso): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === curso.id ? null : curso,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const curso = this.estadoFilaSeleccionada();
+
+    if (!curso) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'ver':
+        this.router.navigate(['/cursos', curso.id]);
+        break;
+      case 'editar':
+        this.router.navigate(['/cursos/editar', curso.id]);
+        break;
+      case 'cancelar':
+        this.cancelarCurso(curso);
+        break;
+    }
   }
 
   cancelarCurso(curso: Curso): void {
@@ -238,6 +324,7 @@ export class ListadoCursosComponent implements OnInit {
             respuesta.message ?? 'Curso cancelado correctamente.',
           );
           this.estadoDialogoAbierto.set(false);
+          this.limpiarSeleccion();
           this.cargarCursos();
         },
         error: (error: unknown) => {
@@ -395,6 +482,7 @@ export class ListadoCursosComponent implements OnInit {
   }
 
   private consultarCursos(): Observable<RespuestaListadoCursos> {
+    this.limpiarSeleccion();
     const filtros = this.obtenerFiltrosAplicables();
     this.estadoFiltrosAplicados.set(filtros);
     this.estadoMensajeError.set(null);

@@ -17,6 +17,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import {
   EMPTY,
   Observable,
@@ -37,6 +38,11 @@ import { AutenticacionService } from '../../../core/services/autenticacion.servi
 import { FacultadesService } from '../../facultades/services/facultades.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import type { Facultad } from '../../facultades/models/facultad.model';
 import type {
@@ -69,6 +75,7 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
     RouterLink,
     PaginationComponent,
     ConfirmModalComponent,
+    BarraAccionesContextualesComponent,
     FechaPipe,
   ],
   templateUrl: './listado-carreras.component.html',
@@ -78,6 +85,7 @@ export class ListadoCarrerasComponent implements OnInit {
   private readonly servicio = inject(CarrerasService);
   private readonly facultadesServicio = inject(FacultadesService);
   private readonly autenticacionService = inject(AutenticacionService);
+  private readonly router = inject(Router);
   private readonly destruccion = inject(DestroyRef);
   private readonly estadoCarreras = signal<Carrera[]>([]);
   private readonly estadoFacultades = signal<Facultad[]>([]);
@@ -91,6 +99,7 @@ export class ListadoCarrerasComponent implements OnInit {
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoCarreraProcesando = signal<number | null>(null);
   private readonly estadoCarreraSeleccionado = signal<Carrera | null>(null);
+  private readonly estadoFilaSeleccionada = signal<Carrera | null>(null);
   private readonly estadoDialogoAbierto = signal(false);
   private readonly estadoDialogoTitulo = signal('');
   private readonly estadoDialogoMensaje = signal('');
@@ -113,6 +122,30 @@ export class ListadoCarrerasComponent implements OnInit {
   readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
   readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
   readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const carrera = this.estadoFilaSeleccionada();
+
+    if (!carrera) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [{ id: 'ver', etiqueta: 'Ver' }];
+
+    if (this.esAdministrador()) {
+      acciones.push({ id: 'editar', etiqueta: 'Editar' });
+
+      if (carrera.activo) {
+        acciones.push({
+          id: 'inactivar',
+          etiqueta: 'Inactivar',
+          variante: 'danger',
+        });
+      }
+    }
+
+    return acciones;
+  });
   readonly cargando = computed(
     () => this.cargandoCarreras() || this.cargandoFacultades(),
   );
@@ -182,6 +215,7 @@ export class ListadoCarrerasComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
+    this.estadoFilaSeleccionada.set(null);
     this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
@@ -211,6 +245,57 @@ export class ListadoCarrerasComponent implements OnInit {
           );
         },
       });
+  }
+
+  seleccionarFila(evento: Event, carrera: Carrera): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(carrera);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, carrera: Carrera): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(carrera);
+  }
+
+  alternarSeleccion(carrera: Carrera): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === carrera.id ? null : carrera,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const carrera = this.estadoFilaSeleccionada();
+
+    if (!carrera) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'ver':
+        this.router.navigate(['/carreras', carrera.id]);
+        break;
+      case 'editar':
+        this.router.navigate(['/carreras/editar', carrera.id]);
+        break;
+      case 'inactivar':
+        this.inactivarCarrera(carrera);
+        break;
+    }
   }
 
   inactivarCarrera(carrera: Carrera): void {
@@ -256,6 +341,7 @@ export class ListadoCarrerasComponent implements OnInit {
             respuesta.message ?? 'Carrera inactivada correctamente.',
           );
           this.estadoDialogoAbierto.set(false);
+          this.estadoFilaSeleccionada.set(null);
           this.cargarCarreras();
         },
         error: (error: unknown) => {
@@ -341,6 +427,7 @@ export class ListadoCarrerasComponent implements OnInit {
   }
 
   private consultarCarreras(): Observable<RespuestaListadoCarreras> {
+    this.estadoFilaSeleccionada.set(null);
     const filtros = this.obtenerFiltrosActuales();
     this.estadoFiltrosAplicados.set(filtros);
     this.estadoMensajeError.set(null);

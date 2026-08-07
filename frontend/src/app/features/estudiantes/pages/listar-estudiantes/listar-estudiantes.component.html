@@ -184,11 +184,20 @@
       </p>
     </div>
 
-    <div class="table-wrap">
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
       <table>
         <caption>Listado de estudiantes</caption>
         <thead>
           <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
             <th scope="col">Matrícula</th>
             <th scope="col">Identificación</th>
             <th scope="col">Nombre completo</th>
@@ -200,7 +209,22 @@
         </thead>
         <tbody>
           @for (estudiante of estudiantes(); track estudiante.id) {
-            <tr>
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === estudiante.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === estudiante.id"
+              (click)="seleccionarFila($event, estudiante)"
+              (keydown)="seleccionarFilaTeclado($event, estudiante)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === estudiante.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(estudiante)"
+                  [attr.aria-label]="'Seleccionar a ' + obtenerNombreCompleto(estudiante)"
+                />
+              </td>
               <td>{{ estudiante.numero_matricula }}</td>
               <td>{{ estudiante.identificacion }}</td>
               <td>{{ obtenerNombreCompleto(estudiante) }}</td>

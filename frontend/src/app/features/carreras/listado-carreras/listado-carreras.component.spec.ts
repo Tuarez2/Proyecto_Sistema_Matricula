@@ -482,6 +482,131 @@ describe('ListadoCarrerasComponent', () => {
     expect(obtenerBoton('Buscar')).toBeNull();
   });
 
+  it('selecciona y deselecciona una fila con clic', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    teclaEnFila(primera, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    teclaEnFila(primera, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace o botón interno', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+    const enlace = obtenerEnlace('Ver');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      primera,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones válidas al seleccionar', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Ver')).toBeTruthy();
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Inactivar')).toBeTruthy();
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerFila(primera).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+    clicEnFila(primera);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no muestra acciones no permitidas en la barra contextual', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+    crearComponente();
+    const primera = componente.carreras()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Inactivar')).toBeNull();
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Ver')).toBeTruthy();
+  });
+
+  it('limpia la selección tras inactivar correctamente', () => {
+    crearComponente();
+    const primera = componente.carreras()[0];
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    componente.inactivarCarrera(primera);
+    fixture.detectChanges();
+    obtenerBoton('Confirmar')?.click();
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  function clicEnFila(carrera: Carrera): void {
+    const celda = obtenerFila(carrera).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(carrera: Carrera, tecla: string): void {
+    obtenerFila(carrera).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListadoCarrerasComponent);
     componente = fixture.componentInstance;
@@ -512,6 +637,33 @@ describe('ListadoCarrerasComponent', () => {
     ) as HTMLButtonElement[];
 
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function obtenerFila(carrera: Carrera): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find(
+      (filaEncontrada) =>
+        filaEncontrada.textContent?.includes(carrera.codigo),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila de la carrera');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
   }
 });
 

@@ -1,8 +1,11 @@
-<div class="table-wrap">
+<div class="table-wrap tabla-seleccionable">
   <table>
     <caption>Listado de docentes</caption>
     <thead>
       <tr>
+        <th scope="col" class="columna-seleccion">
+          <span class="sr-only">Seleccionar</span>
+        </th>
         <th scope="col">Identificación</th>
         <th scope="col">Nombre completo</th>
         <th scope="col">Correo</th>
@@ -16,7 +19,22 @@
     </thead>
     <tbody>
       @for (docente of docentes; track docente.id) {
-        <tr>
+        <tr
+          tabindex="0"
+          [class.fila-seleccionada]="filaSeleccionadaId === docente.id"
+          [attr.aria-selected]="filaSeleccionadaId === docente.id"
+          (click)="manejarClicFila($event, docente)"
+          (keydown)="manejarTecladoFila($event, docente)"
+        >
+          <td class="columna-seleccion">
+            <input
+              type="checkbox"
+              [checked]="filaSeleccionadaId === docente.id"
+              (click)="$event.stopPropagation()"
+              (change)="alternarSeleccion.emit(docente)"
+              [attr.aria-label]="'Seleccionar a ' + obtenerNombreCompleto(docente)"
+            />
+          </td>
           <td>{{ docente.identificacion }}</td>
           <td>{{ obtenerNombreCompleto(docente) }}</td>
           <td>{{ docente.correo }}</td>
@@ -56,7 +74,7 @@
         </tr>
       } @empty {
         <tr>
-          <td [attr.colspan]="esAdministrador ? 7 : 6">
+          <td [attr.colspan]="esAdministrador ? 8 : 7">
             No se encontraron docentes.
           </td>
         </tr>

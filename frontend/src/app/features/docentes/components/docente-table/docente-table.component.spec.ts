@@ -73,6 +73,53 @@ describe('DocenteTableComponent', () => {
     expect(obtenerTexto()).toContain('No registrado');
   });
 
+  it('marca la fila seleccionada según el input filaSeleccionadaId', () => {
+    fixture.componentRef.setInput('filaSeleccionadaId', 2);
+    fixture.detectChanges();
+
+    expect(obtenerFila('Luis Vera').classList.contains('fila-seleccionada')).toBe(true);
+    expect(obtenerFila('Ana Vera').classList.contains('fila-seleccionada')).toBe(false);
+  });
+
+  it('emite selección al pulsar una celda no interactiva', () => {
+    const seleccionar = vi.spyOn(componente.seleccionarFila, 'emit');
+
+    const celda = obtenerFila('Ana Vera').querySelector('td:not(.columna-seleccion)');
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(seleccionar).toHaveBeenCalledWith(componente.docentes[0]);
+  });
+
+  it('no emite selección al pulsar un botón interno', () => {
+    fixture.componentRef.setInput('esAdministrador', true);
+    fixture.detectChanges();
+    const seleccionar = vi.spyOn(componente.seleccionarFila, 'emit');
+
+    obtenerBoton('Editar')?.click();
+
+    expect(seleccionar).not.toHaveBeenCalled();
+  });
+
+  it('emite selección por teclado con Enter', () => {
+    const teclado = vi.spyOn(componente.seleccionarFilaTeclado, 'emit');
+
+    obtenerFila('Ana Vera').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    );
+
+    expect(teclado).toHaveBeenCalledWith(componente.docentes[0]);
+  });
+
+  it('emite alternarSelección al marcar el checkbox', () => {
+    const alternar = vi.spyOn(componente.alternarSeleccion, 'emit');
+
+    obtenerCheckbox(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+
+    expect(alternar).toHaveBeenCalledWith(componente.docentes[0]);
+  });
+
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
   }
@@ -87,6 +134,32 @@ describe('DocenteTableComponent', () => {
     ) as HTMLButtonElement[];
 
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function obtenerFila(texto: string): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find((filaEncontrada) =>
+      filaEncontrada.textContent?.includes(texto),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del docente');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckbox(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
   }
 });
 

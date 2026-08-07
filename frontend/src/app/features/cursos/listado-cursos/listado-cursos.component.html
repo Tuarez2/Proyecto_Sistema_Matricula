@@ -113,11 +113,20 @@
   }
 
   @if (cursos().length > 0) {
-    <div class="table-wrap">
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
       <table>
         <caption>Listado de cursos</caption>
         <thead>
           <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
             <th scope="col">Curso</th>
             <th scope="col">Docente</th>
             <th scope="col">Período</th>
@@ -134,7 +143,22 @@
         </thead>
         <tbody>
           @for (curso of cursos(); track curso.id) {
-            <tr>
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === curso.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === curso.id"
+              (click)="seleccionarFila($event, curso)"
+              (keydown)="seleccionarFilaTeclado($event, curso)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === curso.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(curso)"
+                  [attr.aria-label]="'Seleccionar el curso ' + obtenerNombreAsignatura(curso)"
+                />
+              </td>
               <td>{{ obtenerNombreAsignatura(curso) }} ({{ curso.paralelo }})</td>
               <td>{{ obtenerNombreDocente(curso) }}</td>
               <td>{{ obtenerNombrePeriodo(curso) }}</td>

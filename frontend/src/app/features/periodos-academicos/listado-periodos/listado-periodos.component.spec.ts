@@ -999,6 +999,114 @@ it('ignora resultados de una consulta anterior', () => {
     );
   });
 
+  it('selecciona y deselecciona una fila con clic', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 1 }), crearPeriodo({ id: 2 })],
+      total: 2,
+    }));
+    const primero = componente.periodos()[0];
+
+    clicEnFila(primero);
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    clicEnFila(primero);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    const primero = componente.periodos()[0];
+
+    teclaEnFila(primero, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    teclaEnFila(primero, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace interno', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    const primero = componente.periodos()[0];
+    const enlace = obtenerEnlace('Editar');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      primero,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar();
+    const primero = componente.periodos()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primero.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con Editar y Cambiar estado al seleccionar', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 1, estado: 'planificado' })],
+    }));
+
+    clicEnFila(componente.periodos()[0]);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cambiar estado')).toBeTruthy();
+  });
+
+  it('un usuario no administrador ve una barra contextual vacía al seleccionar', () => {
+    usuarioActual.set(crearUsuarioConRol('DOCENTE'));
+    iniciarYCompletar();
+
+    clicEnFila(componente.periodos()[0]);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Cambiar estado')).toBeNull();
+  });
+
+  it('oculta Cambiar estado si no hay transiciones disponibles', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({
+      data: [crearPeriodo({ id: 1, estado: 'cerrado' })],
+    }));
+
+    clicEnFila(componente.periodos()[0]);
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Cambiar estado')).toBeNull();
+  });
+
+  it('limpia la selección al paginar', () => {
+    usuarioActual.set(crearUsuarioConRol('ADMIN'));
+    iniciarYCompletar(crearRespuestaListado({ page: 1, totalPages: 2 }));
+    const primero = componente.periodos()[0];
+    clicEnFila(primero);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
   function iniciarComponente(): void {
     fixture.detectChanges();
   }
@@ -1050,6 +1158,46 @@ it('ignora resultados de una consulta anterior', () => {
 
   function obtenerTexto(): string {
     return fixture.nativeElement.textContent ?? '';
+  }
+
+  function obtenerFila(periodo: PeriodoAcademico): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find((filaEncontrada) =>
+      filaEncontrada.textContent?.includes(periodo.codigo),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del periodo');
+    }
+
+    return fila;
+  }
+
+  function clicEnFila(periodo: PeriodoAcademico): void {
+    const celda = obtenerFila(periodo).querySelector(
+      'td:not(.columna-seleccion)',
+    );
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(periodo: PeriodoAcademico, tecla: string): void {
+    obtenerFila(periodo).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
   }
 });
 

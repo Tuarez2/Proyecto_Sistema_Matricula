@@ -117,11 +117,20 @@
   }
 
   @if (asignaturas().length > 0) {
-    <div class="table-wrap">
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
+    <div class="table-wrap tabla-seleccionable">
       <table>
         <caption>Listado de asignaturas</caption>
         <thead>
           <tr>
+            <th scope="col" class="columna-seleccion">
+              <span class="sr-only">Seleccionar</span>
+            </th>
             <th scope="col">Código</th>
             <th scope="col">Nombre</th>
             <th scope="col">Créditos</th>
@@ -136,7 +145,22 @@
         </thead>
         <tbody>
           @for (asignatura of asignaturas(); track asignatura.id) {
-            <tr>
+            <tr
+              tabindex="0"
+              [class.fila-seleccionada]="filaSeleccionada()?.id === asignatura.id"
+              [attr.aria-selected]="filaSeleccionada()?.id === asignatura.id"
+              (click)="seleccionarFila($event, asignatura)"
+              (keydown)="seleccionarFilaTeclado($event, asignatura)"
+            >
+              <td class="columna-seleccion">
+                <input
+                  type="checkbox"
+                  [checked]="filaSeleccionada()?.id === asignatura.id"
+                  (click)="$event.stopPropagation()"
+                  (change)="alternarSeleccion(asignatura)"
+                  [attr.aria-label]="'Seleccionar a ' + asignatura.nombre"
+                />
+              </td>
               <td>{{ asignatura.codigo }}</td>
               <td>{{ asignatura.nombre }}</td>
               <td>{{ asignatura.creditos }}</td>

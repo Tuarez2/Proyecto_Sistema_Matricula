@@ -60,12 +60,22 @@
   }
 
   @if (docentes().length > 0) {
+    <app-barra-acciones-contextuales
+      [acciones]="accionesContextuales()"
+      [haySeleccion]="filaSeleccionada() !== null"
+      (ejecutar)="ejecutarAccionContextual($event)"
+    />
+
     <app-docente-table
       [docentes]="docentes()"
       [esAdministrador]="esAdministrador()"
       [idDocenteProcesando]="docenteProcesando()"
+      [filaSeleccionadaId]="filaSeleccionada()?.id ?? null"
       (editarDocente)="editarDocente($event)"
       (cambiarEstadoDocente)="cambiarEstadoDocente($event)"
+      (seleccionarFila)="seleccionarFila($event)"
+      (seleccionarFilaTeclado)="seleccionarFilaTeclado($event)"
+      (alternarSeleccion)="alternarSeleccion($event)"
     />
   }
 

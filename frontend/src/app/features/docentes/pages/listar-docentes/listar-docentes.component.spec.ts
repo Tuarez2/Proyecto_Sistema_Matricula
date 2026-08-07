@@ -57,6 +57,14 @@ describe('ListarDocentesComponent', () => {
             identificacion: '222',
             especialidad: 'Programación',
           }),
+          crearDocente({
+            id: 3,
+            nombres: 'Pablo',
+            apellidos: 'Ríos',
+            identificacion: '333',
+            especialidad: 'Física',
+            activo: false,
+          }),
         ])),
       ),
       cambiarEstadoDocente: vi.fn(() =>
@@ -510,6 +518,148 @@ describe('ListarDocentesComponent', () => {
     });
   });
 
+  it('selecciona y deselecciona una fila con clic', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    teclaEnFila(primera, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    teclaEnFila(primera, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace o botón interno', () => {
+    crearComponente();
+    const boton = obtenerBoton('Editar');
+
+    boton?.click();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con las acciones válidas al seleccionar', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBoton('Editar')).toBeTruthy();
+    expect(obtenerBoton('Inactivar')).toBeTruthy();
+  });
+
+  it('muestra Activar cuando el docente seleccionado está inactivo', () => {
+    crearComponente();
+    clicEnFila(componente.docentes()[2]);
+
+    expect(componente.accionesContextuales()).toEqual([
+      { id: 'editar', etiqueta: 'Editar' },
+      { id: 'cambiar-estado', etiqueta: 'Activar', variante: 'neutral' },
+    ]);
+  });
+
+  it('usa variante danger para inactivar y neutral para activar', () => {
+    crearComponente();
+    clicEnFila(componente.docentes()[0]);
+
+    expect(componente.accionesContextuales()).toEqual([
+      { id: 'editar', etiqueta: 'Editar' },
+      {
+        id: 'cambiar-estado',
+        etiqueta: 'Inactivar',
+        variante: 'danger',
+      },
+    ]);
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerFila(primera).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+    clicEnFila(primera);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('roles no administradores no reciben acciones contextuales', () => {
+    usuarioActual.set(crearUsuario(CODIGOS_ROL.DOCENTE));
+    crearComponente();
+    const primera = componente.docentes()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(componente.accionesContextuales()).toEqual([]);
+    expect(obtenerBoton('Editar')).toBeNull();
+    expect(obtenerBoton('Inactivar')).toBeNull();
+  });
+
+  it('ejecuta editar desde la barra contextual', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    obtenerBoton('Editar')?.click();
+    fixture.detectChanges();
+
+    expect(navegar).toHaveBeenCalledWith(['/docentes/editar', 1]);
+  });
+
+  it('ejecuta cambiar estado desde la barra contextual', () => {
+    crearComponente();
+    const primera = componente.docentes()[0];
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    obtenerBoton('Inactivar')?.click();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Confirmar')).toBeTruthy();
+  });
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListarDocentesComponent);
     componente = fixture.componentInstance;
@@ -534,6 +684,45 @@ describe('ListarDocentesComponent', () => {
     ) as HTMLButtonElement[];
 
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function clicEnFila(docente: Docente): void {
+    const celda = obtenerFila(docente).querySelector('td:not(.columna-seleccion)');
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(docente: Docente, tecla: string): void {
+    obtenerFila(docente).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerFila(docente: Docente): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find(
+      (filaEncontrada) =>
+        filaEncontrada.textContent?.includes(docente.identificacion),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila del docente');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
   }
 });
 

@@ -17,6 +17,10 @@ import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal/confirm-modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import {
+  BarraAccionesContextualesComponent,
+  type AccionContextual,
+} from '../../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import { DocenteFilterComponent } from '../../components/docente-filter/docente-filter.component';
 import { DocenteTableComponent } from '../../components/docente-table/docente-table.component';
 import type {
@@ -40,6 +44,7 @@ const LIMITE_POR_PAGINA = 10;
     DocenteTableComponent,
     PaginationComponent,
     ConfirmModalComponent,
+    BarraAccionesContextualesComponent,
     RouterLink,
   ],
   templateUrl: './listar-docentes.component.html',
@@ -61,6 +66,7 @@ export class ListarDocentesComponent implements OnInit {
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoDocenteProcesando = signal<number | null>(null);
   private readonly estadoDocenteSeleccionado = signal<Docente | null>(null);
+  private readonly estadoFilaSeleccionada = signal<Docente | null>(null);
   private readonly estadoDialogoAbierto = signal(false);
   private readonly estadoDialogoTitulo = signal('');
   private readonly estadoDialogoMensaje = signal('');
@@ -81,11 +87,28 @@ export class ListarDocentesComponent implements OnInit {
   readonly dialogoMensaje = this.estadoDialogoMensaje.asReadonly();
   readonly dialogoPeligroso = this.estadoDialogoPeligroso.asReadonly();
   readonly dialogoProcesando = this.estadoDialogoProcesando.asReadonly();
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
   readonly esAdministrador = computed(
     () =>
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
   );
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const docente = this.estadoFilaSeleccionada();
+
+    if (!docente || !this.esAdministrador()) {
+      return [];
+    }
+
+    return [
+      { id: 'editar', etiqueta: 'Editar' },
+      {
+        id: 'cambiar-estado',
+        etiqueta: docente.activo ? 'Inactivar' : 'Activar',
+        variante: docente.activo ? 'danger' : 'neutral',
+      },
+    ];
+  });
   readonly filtrosActivos = computed(() =>
     this.contarFiltros(this.estadoFiltrosAplicados()),
   );
@@ -134,6 +157,41 @@ export class ListarDocentesComponent implements OnInit {
 
     this.estadoPaginaActual.set(pagina);
     this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  seleccionarFila(docente: Docente): void {
+    this.alternarSeleccion(docente);
+  }
+
+  seleccionarFilaTeclado(docente: Docente): void {
+    this.alternarSeleccion(docente);
+  }
+
+  alternarSeleccion(docente: Docente): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === docente.id ? null : docente,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const docente = this.estadoFilaSeleccionada();
+
+    if (!docente) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'editar':
+        void this.router.navigate(['/docentes/editar', docente.id]);
+        break;
+      case 'cambiar-estado':
+        this.cambiarEstadoDocente(docente);
+        break;
+    }
   }
 
   editarDocente(docente: Docente): void {
@@ -185,6 +243,7 @@ export class ListarDocentesComponent implements OnInit {
                 : 'Docente activado correctamente.'),
           );
           this.estadoDialogoAbierto.set(false);
+          this.estadoFilaSeleccionada.set(null);
           this.consultaFiltros$.next({ reiniciarPagina: false });
         },
         error: (error: unknown) => {
@@ -207,6 +266,7 @@ export class ListarDocentesComponent implements OnInit {
   }
 
   private consultarDocentes(): Observable<RespuestaListadoDocentes> {
+    this.estadoFilaSeleccionada.set(null);
     this.estadoCargandoDocentes.set(true);
     this.estadoMensajeError.set(null);
     return this.docentesService.listarDocentes({

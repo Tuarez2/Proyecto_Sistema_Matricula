@@ -1,0 +1,22 @@
+@if (haySeleccion) {
+  <div
+    class="barra-contextual"
+    role="group"
+    aria-label="Acciones para el registro seleccionado"
+  >
+    <p class="barra-contextual__conteo" role="status">
+      1 registro seleccionado
+    </p>
+    <div class="barra-contextual__acciones">
+      @for (accion of acciones; track accion.id) {
+        <button
+          type="button"
+          class="btn btn-sm {{ claseVariante(accion) }}"
+          (click)="ejecutar.emit(accion.id)"
+        >
+          {{ accion.etiqueta }}
+        </button>
+      }
+    </div>
+  </div>
+}

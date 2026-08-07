@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   EMPTY,
   Observable,
@@ -25,6 +25,11 @@ import {
 } from 'rxjs';
 
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import type { Rol } from '../models/rol.model';
 import {
   ESTADOS_USUARIO,
@@ -49,6 +54,7 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
     ReactiveFormsModule,
     RouterLink,
     PaginationComponent,
+    BarraAccionesContextualesComponent,
   ],
   templateUrl: './listado-usuarios.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +64,7 @@ export class ListadoUsuariosComponent implements OnInit {
   private readonly usuariosService = inject(UsuariosService);
   private readonly rolesService = inject(RolesService);
   private readonly referenciaDestruccion = inject(DestroyRef);
+  private readonly router = inject(Router);
   private readonly estadoUsuarios = signal<Usuario[]>([]);
   private readonly estadoRoles = signal<Rol[]>([]);
   private readonly estadoCargandoUsuarios = signal(false);
@@ -69,6 +76,7 @@ export class ListadoUsuariosComponent implements OnInit {
   private readonly estadoTotalUsuarios = signal(0);
   private readonly estadoTotalPaginas = signal(0);
   private readonly estadoFiltrosAplicados = signal<FiltrosListadoUsuarios>({});
+  private readonly estadoFilaSeleccionada = signal<Usuario | null>(null);
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_USUARIO = ESTADOS_USUARIO;
@@ -94,6 +102,18 @@ export class ListadoUsuariosComponent implements OnInit {
   readonly filtrosActivos = computed(() =>
     this.contarFiltros(this.estadoFiltrosAplicados()),
   );
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    if (!this.estadoFilaSeleccionada()) {
+      return [];
+    }
+
+    return [
+      { id: 'editar', etiqueta: 'Editar' },
+      { id: 'cambiar-estado', etiqueta: 'Cambiar estado' },
+      { id: 'cambiar-contrasena', etiqueta: 'Cambiar contraseña' },
+    ];
+  });
   readonly formularioFiltros = this.constructorFormulario.nonNullable.group({
     correo: ['', [Validators.maxLength(150)]],
     estado: [''],
@@ -175,6 +195,57 @@ export class ListadoUsuariosComponent implements OnInit {
     this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
+  seleccionarFila(evento: Event, usuario: Usuario): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(usuario);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, usuario: Usuario): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(usuario);
+  }
+
+  alternarSeleccion(usuario: Usuario): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === usuario.id ? null : usuario,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const usuario = this.estadoFilaSeleccionada();
+
+    if (!usuario) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'editar':
+        this.router.navigate(['/usuarios', usuario.id, 'editar']);
+        break;
+      case 'cambiar-estado':
+        this.router.navigate(['/usuarios', usuario.id, 'estado']);
+        break;
+      case 'cambiar-contrasena':
+        this.router.navigate(['/usuarios', usuario.id, 'contrasena']);
+        break;
+    }
+  }
+
   obtenerEtiquetaEstado(estado: EstadoUsuario): string {
     if (estado === ESTADOS_USUARIO.ACTIVO) {
       return 'Activo';
@@ -251,6 +322,7 @@ export class ListadoUsuariosComponent implements OnInit {
   }
 
   private ejecutarConsultaUsuarios(): Observable<RespuestaListadoUsuarios> {
+    this.estadoFilaSeleccionada.set(null);
     this.estadoMensajeErrorUsuarios.set(null);
     this.estadoCargandoUsuarios.set(true);
     return this.usuariosService.listarUsuarios(this.obtenerParametrosConsulta())

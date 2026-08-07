@@ -495,6 +495,176 @@ describe('ListarMatriculasComponent', () => {
     expect(evento.defaultPrevented).toBe(true);
   });
 
+  it('selecciona y deselecciona una fila con clic', () => {
+    iniciarYCompletar();
+    const primera = componente.matriculas()[0];
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    clicEnFila(primera);
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('selecciona la fila con Enter o Espacio', () => {
+    iniciarYCompletar();
+    const primera = componente.matriculas()[0];
+
+    teclaEnFila(primera, 'Enter');
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    teclaEnFila(primera, ' ');
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('no selecciona al pulsar un enlace o botón interno', () => {
+    iniciarYCompletar();
+    const primera = componente.matriculas()[0];
+    const enlace = obtenerEnlace('#1');
+
+    componente.seleccionarFila(
+      { target: enlace } as unknown as Event,
+      primera,
+    );
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('el checkbox interno alterna la selección una sola vez', () => {
+    iniciarYCompletar();
+    const primera = componente.matriculas()[0];
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()?.id).toBe(primera.id);
+
+    obtenerCheckboxSeleccion(0)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  it('muestra la barra contextual con Ver y las acciones de estado al seleccionar una inscrita', () => {
+    iniciarYCompletar();
+    const primera = componente.matriculas()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain('1 registro seleccionado');
+    expect(obtenerBotonBarra('Ver')).toBeTruthy();
+    expect(obtenerBotonBarra('Aprobar')).toBeTruthy();
+    expect(obtenerBotonBarra('Reprobar')).toBeTruthy();
+    expect(obtenerBotonBarra('Retirar')).toBeTruthy();
+    expect(obtenerBotonBarra('Anular')).toBeTruthy();
+  });
+
+  it('para una matrícula no inscrita la barra muestra solo Ver', () => {
+    iniciarYCompletar(crearRespuestaListado([
+      crearMatricula({ estado: ESTADOS_MATRICULA.aprobada }),
+    ]));
+    const primera = componente.matriculas()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerBotonBarra('Ver')).toBeTruthy();
+    expect(obtenerBotonBarra('Aprobar')).toBeNull();
+    expect(obtenerBotonBarra('Reprobar')).toBeNull();
+    expect(obtenerBotonBarra('Retirar')).toBeNull();
+    expect(obtenerBotonBarra('Anular')).toBeNull();
+  });
+
+  it('Retirar y Anular llevan variante danger en la barra contextual', () => {
+    iniciarYCompletar();
+    const primera = componente.matriculas()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerBotonBarra('Retirar')?.classList.contains('btn-danger')).toBe(
+      true,
+    );
+    expect(obtenerBotonBarra('Anular')?.classList.contains('btn-danger')).toBe(
+      true,
+    );
+    expect(obtenerBotonBarra('Ver')?.classList.contains('btn-neutral')).toBe(
+      true,
+    );
+  });
+
+  it('marca visualmente la fila seleccionada', () => {
+    iniciarYCompletar();
+    const primera = componente.matriculas()[0];
+
+    clicEnFila(primera);
+    fixture.detectChanges();
+
+    expect(obtenerFila(primera).classList.contains('fila-seleccionada')).toBe(
+      true,
+    );
+  });
+
+  it('limpia la selección al paginar', () => {
+    iniciarYCompletar();
+    const primera = componente.matriculas()[0];
+    clicEnFila(primera);
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(componente.filaSeleccionada()).toBeNull();
+  });
+
+  function clicEnFila(matricula: Matricula): void {
+    const celda = obtenerFila(matricula).querySelector(
+      'td:not(.columna-seleccion)',
+    );
+
+    celda?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  function teclaEnFila(matricula: Matricula, tecla: string): void {
+    obtenerFila(matricula).dispatchEvent(
+      new KeyboardEvent('keydown', { key: tecla, bubbles: true }),
+    );
+  }
+
+  function obtenerFila(matricula: Matricula): HTMLTableRowElement {
+    const filas = Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr'),
+    ) as HTMLTableRowElement[];
+
+    const fila = filas.find((filaEncontrada) =>
+      filaEncontrada.textContent?.includes(`#${matricula.id}`),
+    );
+
+    if (!fila) {
+      throw new Error('No se encontró la fila de la matrícula');
+    }
+
+    return fila;
+  }
+
+  function obtenerCheckboxSeleccion(indice: number): HTMLInputElement | null {
+    const checkboxes = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'tbody tr .columna-seleccion input[type="checkbox"]',
+      ),
+    ) as HTMLInputElement[];
+
+    return checkboxes[indice] ?? null;
+  }
+
+  function obtenerBotonBarra(texto: string): HTMLButtonElement | null {
+    const botones = Array.from(
+      fixture.nativeElement.querySelectorAll('.barra-contextual button'),
+    ) as HTMLButtonElement[];
+
+    return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListarMatriculasComponent);
     componente = fixture.componentInstance;

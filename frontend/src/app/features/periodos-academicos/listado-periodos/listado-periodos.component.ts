@@ -17,7 +17,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   EMPTY,
   Observable,
@@ -34,6 +34,11 @@ import {
 
 import { CODIGOS_ROL } from '../../../core/config/codigos-rol';
 import { AutenticacionService } from '../../../core/services/autenticacion.service';
+import {
+  BarraAccionesContextualesComponent,
+  esElementoInteractivo,
+  type AccionContextual,
+} from '../../../shared/components/barra-acciones-contextuales/barra-acciones-contextuales.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { FechaPipe } from '../../../shared/pipes/fecha.pipe';
 import {
@@ -60,6 +65,7 @@ const DEBOUNCE_BUSQUEDA_MS = 350;
     RouterLink,
     PaginationComponent,
     FechaPipe,
+    BarraAccionesContextualesComponent,
   ],
   templateUrl: './listado-periodos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,6 +74,7 @@ export class ListadoPeriodosComponent implements OnInit {
   private readonly constructorFormulario = inject(FormBuilder);
   private readonly periodosAcademicosService = inject(PeriodosAcademicosService);
   private readonly autenticacionService = inject(AutenticacionService);
+  private readonly router = inject(Router);
   private readonly referenciaDestruccion = inject(DestroyRef);
   private readonly estadoPeriodos = signal<PeriodoAcademico[]>([]);
   private readonly estadoCargandoPeriodos = signal(false);
@@ -77,6 +84,9 @@ export class ListadoPeriodosComponent implements OnInit {
   private readonly estadoTotalPeriodos = signal(0);
   private readonly estadoTotalPaginas = signal(0);
   private readonly estadoFiltrosAplicados = signal<FiltrosListadoPeriodos>({});
+  private readonly estadoFilaSeleccionada = signal<PeriodoAcademico | null>(
+    null,
+  );
   private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly ESTADOS_PERIODO_ACADEMICO = ESTADOS_PERIODO_ACADEMICO;
@@ -101,6 +111,24 @@ export class ListadoPeriodosComponent implements OnInit {
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
   );
+  readonly filaSeleccionada = this.estadoFilaSeleccionada.asReadonly();
+  readonly accionesContextuales = computed<AccionContextual[]>(() => {
+    const periodo = this.estadoFilaSeleccionada();
+
+    if (!periodo || !this.esAdministrador()) {
+      return [];
+    }
+
+    const acciones: AccionContextual[] = [
+      { id: 'editar', etiqueta: 'Editar' },
+    ];
+
+    if (this.tieneTransicionesDisponibles(periodo.estado)) {
+      acciones.push({ id: 'cambiar-estado', etiqueta: 'Cambiar estado' });
+    }
+
+    return acciones;
+  });
   readonly filtrosActivos = computed(() =>
     this.contarFiltros(this.estadoFiltrosAplicados()),
   );
@@ -181,7 +209,56 @@ export class ListadoPeriodosComponent implements OnInit {
     }
 
     this.estadoPaginaActual.set(pagina);
+    this.estadoFilaSeleccionada.set(null);
     this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  seleccionarFila(evento: Event, periodo: PeriodoAcademico): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    this.alternarSeleccion(periodo);
+  }
+
+  seleccionarFilaTeclado(evento: KeyboardEvent, periodo: PeriodoAcademico): void {
+    if (esElementoInteractivo(evento.target)) {
+      return;
+    }
+
+    if (evento.key !== 'Enter' && evento.key !== ' ') {
+      return;
+    }
+
+    evento.preventDefault();
+    this.alternarSeleccion(periodo);
+  }
+
+  alternarSeleccion(periodo: PeriodoAcademico): void {
+    this.estadoFilaSeleccionada.set(
+      this.estadoFilaSeleccionada()?.id === periodo.id ? null : periodo,
+    );
+  }
+
+  limpiarSeleccion(): void {
+    this.estadoFilaSeleccionada.set(null);
+  }
+
+  ejecutarAccionContextual(accionId: string): void {
+    const periodo = this.estadoFilaSeleccionada();
+
+    if (!periodo) {
+      return;
+    }
+
+    switch (accionId) {
+      case 'editar':
+        this.router.navigate(['/periodos-academicos', periodo.id, 'editar']);
+        break;
+      case 'cambiar-estado':
+        this.router.navigate(['/periodos-academicos', periodo.id, 'estado']);
+        break;
+    }
   }
 
   cargarPeriodos(): void {
@@ -281,6 +358,7 @@ export class ListadoPeriodosComponent implements OnInit {
   }
 
   private consultarPeriodos(): Observable<RespuestaListadoPeriodos> {
+    this.estadoFilaSeleccionada.set(null);
     const filtros = this.obtenerFiltrosAplicables();
     this.estadoFiltrosAplicados.set(filtros);
     this.estadoMensajeError.set(null);
