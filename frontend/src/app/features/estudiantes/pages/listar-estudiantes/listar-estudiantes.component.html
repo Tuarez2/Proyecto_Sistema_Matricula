@@ -14,7 +14,7 @@
   <form
     class="form-card"
     [formGroup]="filtros"
-    (ngSubmit)="buscarEstudiantes()"
+    (ngSubmit)="impedirEnvio($event)"
     novalidate
   >
     <div class="form-grid">
@@ -122,16 +122,22 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" [disabled]="cargandoEstudiantes()">Buscar</button>
       <button
         type="button"
-        [disabled]="cargandoEstudiantes()"
+        class="btn btn-neutral"
         (click)="limpiarFiltros()"
+        [disabled]="filtrosActivos() === 0"
       >
         Limpiar filtros
       </button>
     </div>
   </form>
+
+  @if (filtrosActivos() > 0) {
+    <p class="filtros-activos" role="status">
+      Filtros activos: <strong>{{ filtrosActivos() }}</strong>
+    </p>
+  }
 
   @if (cargandoEstudiantes()) {
     <div class="loading" role="status" aria-live="polite">
@@ -150,8 +156,23 @@
 
   @if (!cargandoEstudiantes() && !mensajeError() && estudiantes().length === 0) {
     <div class="empty-state">
-      <h2>No se encontraron estudiantes.</h2>
-      <p>No hay resultados con los criterios indicados. Ajusta los filtros o regístralo nuevamente.</p>
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron estudiantes con los filtros aplicados.</h2>
+        <p>Ajusta los criterios o limpia los filtros para ampliar la búsqueda.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-primary" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+      } @else {
+        <h2>No se encontraron estudiantes.</h2>
+        <p>No hay estudiantes registrados todavía.</p>
+        @if (esAdministrador()) {
+          <div class="empty-actions">
+            <a routerLink="/estudiantes/crear" class="btn btn-primary">Nuevo estudiante</a>
+          </div>
+        }
+      }
     </div>
   }
 

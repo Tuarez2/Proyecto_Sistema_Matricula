@@ -281,7 +281,7 @@ describe('ListarEstudiantesComponent', () => {
     expect(componente.totalPaginas()).toBe(2);
   });
 
-  it('muestra estado vacío cuando no hay resultados', () => {
+  it('muestra estado vacío general cuando no hay resultados ni filtros', () => {
     estudiantesService.listarEstudiantes.mockReturnValueOnce(
       respuestaObservable(crearRespuestaEstudiantes([])),
     );
@@ -394,6 +394,237 @@ describe('ListarEstudiantesComponent', () => {
     expect(estudiantesService.cambiarEstadoEstudiante).toHaveBeenCalledTimes(1);
   });
 
+  it('cambiar un selector consulta inmediatamente', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.filtros.controls.carrera_id.setValue('2');
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(1);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      carrera_id: 2,
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('la busqueda de texto no consulta con cada tecla y aplica tras el debounce', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      estudiantesService.listarEstudiantes.mockClear();
+
+      componente.filtros.controls.nombres.setValue('An');
+      vi.advanceTimersByTime(100);
+
+      expect(estudiantesService.listarEstudiantes).not.toHaveBeenCalled();
+
+      componente.filtros.controls.nombres.setValue('Ana');
+      vi.advanceTimersByTime(400);
+
+      expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(1);
+      expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+        nombres: 'Ana',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('normaliza la busqueda con trim', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      estudiantesService.listarEstudiantes.mockClear();
+
+      componente.filtros.controls.nombres.setValue('  Ana  ');
+      vi.advanceTimersByTime(400);
+
+      expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+        nombres: 'Ana',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('solo espacios en la busqueda no dispara una consulta redundante', () => {
+    vi.useFakeTimers();
+    try {
+      crearComponente();
+      estudiantesService.listarEstudiantes.mockClear();
+
+      componente.filtros.controls.nombres.setValue('   ');
+      vi.advanceTimersByTime(400);
+
+      expect(estudiantesService.listarEstudiantes).not.toHaveBeenCalled();
+      expect(componente.filtrosActivos()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('una consulta anterior no sobrescribe la mas reciente', () => {
+    const primera = new Subject<RespuestaListadoEstudiantes>();
+    const segunda = new Subject<RespuestaListadoEstudiantes>();
+
+    estudiantesService.listarEstudiantes
+      .mockReturnValueOnce(primera.asObservable())
+      .mockReturnValueOnce(segunda.asObservable());
+
+    crearComponente();
+    componente.filtros.controls.estado_academico.setValue(
+      ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO,
+    );
+
+    primera.next(crearRespuestaEstudiantes([crearEstudiante({ id: 50 })]));
+    expect(componente.estudiantes()).toEqual([]);
+
+    segunda.next(crearRespuestaEstudiantes([crearEstudiante({ id: 60 })]));
+    expect(componente.estudiantes()[0]?.id).toBe(60);
+  });
+
+  it('una consulta cancelada no se presenta como error', () => {
+    const primera = new Subject<RespuestaListadoEstudiantes>();
+    const segunda = new Subject<RespuestaListadoEstudiantes>();
+
+    estudiantesService.listarEstudiantes
+      .mockReturnValueOnce(primera.asObservable())
+      .mockReturnValueOnce(segunda.asObservable());
+
+    crearComponente();
+    componente.filtros.controls.carrera_id.setValue('2');
+
+    expect(componente.mensajeError()).toBeNull();
+    segunda.next(crearRespuestaEstudiantes([crearEstudiante({ id: 1 })]));
+    expect(componente.mensajeError()).toBeNull();
+  });
+
+  it('cambiar un filtro reinicia a la página 1', () => {
+    crearComponente();
+    componente.cambiarPagina(3);
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.filtros.controls.estado_academico.setValue(
+      ESTADOS_ACADEMICOS_ESTUDIANTE.ACTIVO,
+    );
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      estado_academico: 'activo',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('cambiar de página conserva los filtros', () => {
+    crearComponente();
+    componente.filtros.controls.nombres.setValue('Ana');
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.cambiarPagina(2);
+    fixture.detectChanges();
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      nombres: 'Ana',
+      pagina: 2,
+      limite: 10,
+    });
+  });
+
+  it('limpiar filtros vuelve a la página 1 y hace una sola consulta', () => {
+    crearComponente();
+    componente.filtros.controls.nombres.setValue('Ana');
+    componente.filtros.controls.carrera_id.setValue('2');
+    componente.cambiarPagina(3);
+    estudiantesService.listarEstudiantes.mockClear();
+
+    componente.limpiarFiltros();
+    fixture.detectChanges();
+
+    expect(componente.paginaActual()).toBe(1);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(1);
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledWith({
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('el indicador de filtros activos refleja el numero correcto', () => {
+    crearComponente();
+    expect(componente.filtrosActivos()).toBe(0);
+
+    componente.filtros.controls.nombres.setValue('Ana');
+    componente.filtros.controls.carrera_id.setValue('2');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(2);
+
+    componente.limpiarFiltros();
+    expect(componente.filtrosActivos()).toBe(0);
+  });
+
+  it('muestra empty-state contextual con filtros y permite limpiar', () => {
+    estudiantesService.listarEstudiantes.mockReturnValueOnce(
+      respuestaObservable(crearRespuestaEstudiantes([])),
+    );
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockReturnValueOnce(
+      respuestaObservable(crearRespuestaEstudiantes([])),
+    );
+
+    componente.filtros.controls.carrera_id.setValue('2');
+    fixture.detectChanges();
+
+    expect(obtenerTexto()).toContain(
+      'No se encontraron estudiantes con los filtros aplicados.',
+    );
+    expect(obtenerBoton('Limpiar filtros')).toBeTruthy();
+  });
+
+  it('Enter no dispara una consulta duplicada', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockClear();
+
+    const formulario = obtenerElemento<HTMLFormElement>('form');
+    formulario?.dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
+
+    expect(estudiantesService.listarEstudiantes).toHaveBeenCalledTimes(0);
+  });
+
+  it('el estado de carga se desactiva al finalizar', () => {
+    crearComponente();
+
+    expect(componente.cargandoEstudiantes()).toBe(false);
+  });
+
+  it('un error deja de cargar y conserva los filtros introducidos', () => {
+    crearComponente();
+    estudiantesService.listarEstudiantes.mockReturnValueOnce(
+      errorObservable(new HttpErrorResponse({ status: 0 })),
+    );
+
+    componente.filtros.controls.estado_academico.setValue(
+      ESTADOS_ACADEMICOS_ESTUDIANTE.INACTIVO,
+    );
+    fixture.detectChanges();
+
+    expect(componente.filtros.controls.estado_academico.value).toBe('inactivo');
+    expect(componente.mensajeError()).toContain('No fue posible conectar');
+    expect(componente.cargandoEstudiantes()).toBe(false);
+  });
+
+  it('no existen botones Buscar en el formulario de filtros', () => {
+    crearComponente();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
   function crearComponente(): void {
     fixture = TestBed.createComponent(ListarEstudiantesComponent);
     componente = fixture.componentInstance;
@@ -418,6 +649,12 @@ describe('ListarEstudiantesComponent', () => {
     ) as HTMLButtonElement[];
 
     return botones.find((boton) => boton.textContent?.includes(texto)) ?? null;
+  }
+
+  function obtenerElemento<T extends Element = Element>(
+    selector: string,
+  ): T | null {
+    return fixture.nativeElement.querySelector(selector) as T | null;
   }
 });
 

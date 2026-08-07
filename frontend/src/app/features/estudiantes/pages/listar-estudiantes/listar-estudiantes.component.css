@@ -66,3 +66,13 @@
 .listar-estudiantes__vaciar:focus-visible {
   color: var(--color-danger);
 }
+
+.filtros-activos {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.filtros-activos strong {
+  color: var(--color-primary);
+}

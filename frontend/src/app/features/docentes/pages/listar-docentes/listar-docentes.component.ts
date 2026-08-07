@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { EMPTY, Observable, Subject, catchError, finalize, switchMap, tap } from 'rxjs';
 
 import { CODIGOS_ROL } from '../../../../core/config/codigos-rol';
 import type { ErrorApi } from '../../../../core/models/respuesta-api.model';
@@ -18,8 +18,16 @@ import { AutenticacionService } from '../../../../core/services/autenticacion.se
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { DocenteFilterComponent } from '../../components/docente-filter/docente-filter.component';
 import { DocenteTableComponent } from '../../components/docente-table/docente-table.component';
-import type { Docente, FiltrosDocentes } from '../../models/docente.model';
+import type {
+  Docente,
+  FiltrosDocentes,
+  RespuestaListadoDocentes,
+} from '../../models/docente.model';
 import { DocentesService } from '../../services/docentes.service';
+
+interface CambioConsulta {
+  reiniciarPagina: boolean;
+}
 
 const LIMITE_POR_PAGINA = 10;
 
@@ -45,6 +53,7 @@ export class ListarDocentesComponent implements OnInit {
   private readonly estadoMensajeExito = signal<string | null>(null);
   private readonly estadoPaginaActual = signal(1);
   private readonly estadoDocenteProcesando = signal<number | null>(null);
+  private readonly consultaFiltros$ = new Subject<CambioConsulta>();
 
   readonly docentes = this.estadoDocentes.asReadonly();
   readonly totalDocentes = this.estadoTotalDocentes.asReadonly();
@@ -59,60 +68,54 @@ export class ListarDocentesComponent implements OnInit {
       this.autenticacionService.usuarioActual()
         ?.rol?.codigo === CODIGOS_ROL.ADMIN,
   );
+  readonly filtrosActivos = computed(() =>
+    this.contarFiltros(this.estadoFiltrosAplicados()),
+  );
 
   ngOnInit(): void {
-    this.cargarDocentes();
-  }
-
-  cargarDocentes(): void {
-    if (this.cargandoDocentes()) {
-      return;
-    }
-
-    this.estadoMensajeError.set(null);
-    this.estadoCargandoDocentes.set(true);
-    this.docentesService.listarDocentes({
-      ...this.estadoFiltrosAplicados(),
-      pagina: this.estadoPaginaActual(),
-      limite: LIMITE_POR_PAGINA,
-    })
+    this.consultaFiltros$
       .pipe(
+        switchMap((cambio) => {
+          if (cambio.reiniciarPagina) {
+            this.estadoPaginaActual.set(1);
+          }
+          return this.consultarDocentes();
+        }),
         takeUntilDestroyed(this.referenciaDestruccion),
-        finalize(() => this.estadoCargandoDocentes.set(false)),
       )
-      .subscribe({
-        next: (respuesta) => {
-          this.estadoDocentes.set(respuesta.data ?? []);
-          this.estadoTotalDocentes.set(respuesta.total);
-          this.estadoTotalPaginas.set(respuesta.totalPages);
-          this.estadoPaginaActual.set(respuesta.page);
-        },
-        error: (error: unknown) => {
-          this.estadoDocentes.set([]);
-          this.estadoTotalDocentes.set(0);
-          this.estadoTotalPaginas.set(1);
-          this.estadoMensajeError.set(this.obtenerMensajeError(error));
-        },
-      });
+      .subscribe();
+    this.consultaFiltros$.next({ reiniciarPagina: true });
   }
 
   filtrar(filtros: FiltrosDocentes): void {
-    if (this.cargandoDocentes()) {
+    if (this.filtrosIguales(filtros)) {
       return;
     }
 
     this.estadoFiltrosAplicados.set(filtros);
     this.estadoPaginaActual.set(1);
-    this.cargarDocentes();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
+  }
+
+  limpiarFiltros(): void {
+    if (this.filtrosActivos() === 0) {
+      return;
+    }
+
+    this.estadoMensajeError.set(null);
+    this.estadoMensajeExito.set(null);
+    this.estadoFiltrosAplicados.set({});
+    this.estadoPaginaActual.set(1);
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   cambiarPagina(pagina: number): void {
-    if (this.cargandoDocentes() || pagina === this.paginaActual()) {
+    if (pagina === this.paginaActual()) {
       return;
     }
 
     this.estadoPaginaActual.set(pagina);
-    this.cargarDocentes();
+    this.consultaFiltros$.next({ reiniciarPagina: false });
   }
 
   editarDocente(docente: Docente): void {
@@ -149,7 +152,7 @@ export class ListarDocentesComponent implements OnInit {
                 ? 'Docente inactivado correctamente.'
                 : 'Docente activado correctamente.'),
           );
-          this.cargarDocentes();
+          this.consultaFiltros$.next({ reiniciarPagina: false });
         },
         error: (error: unknown) => {
           this.estadoMensajeError.set(this.obtenerMensajeError(error));
@@ -159,6 +162,46 @@ export class ListarDocentesComponent implements OnInit {
 
   obtenerNombreCompleto(docente: Docente): string {
     return `${docente.nombres} ${docente.apellidos}`.trim();
+  }
+
+  private consultarDocentes(): Observable<RespuestaListadoDocentes> {
+    this.estadoCargandoDocentes.set(true);
+    this.estadoMensajeError.set(null);
+    return this.docentesService.listarDocentes({
+      ...this.estadoFiltrosAplicados(),
+      pagina: this.estadoPaginaActual(),
+      limite: LIMITE_POR_PAGINA,
+    }).pipe(
+      finalize(() => this.estadoCargandoDocentes.set(false)),
+      tap({
+        next: (respuesta) => {
+          this.estadoMensajeError.set(null);
+          this.estadoDocentes.set(respuesta.data ?? []);
+          this.estadoTotalDocentes.set(respuesta.total);
+          this.estadoTotalPaginas.set(respuesta.totalPages);
+          this.estadoPaginaActual.set(respuesta.page);
+        },
+      }),
+      catchError((error: unknown) => {
+        this.estadoDocentes.set([]);
+        this.estadoTotalDocentes.set(0);
+        this.estadoTotalPaginas.set(1);
+        this.estadoMensajeError.set(this.obtenerMensajeError(error));
+        return EMPTY;
+      }),
+    );
+  }
+
+  private contarFiltros(filtros: FiltrosDocentes): number {
+    return Object.keys(filtros).filter(
+      (clave) => filtros[clave as keyof FiltrosDocentes] !== undefined,
+    ).length;
+  }
+
+  private filtrosIguales(filtros: FiltrosDocentes): boolean {
+    const actuales = this.estadoFiltrosAplicados();
+
+    return JSON.stringify(filtros) === JSON.stringify(actuales);
   }
 
   private obtenerMensajeError(error: unknown): string {

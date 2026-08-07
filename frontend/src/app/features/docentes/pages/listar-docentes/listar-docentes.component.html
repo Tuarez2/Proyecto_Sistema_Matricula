@@ -11,10 +11,15 @@
     }
   </header>
 
-  <app-docente-filter
-    [cargando]="cargandoDocentes()"
-    (filtrarDocentes)="filtrar($event)"
-  />
+  <app-docente-filter (filtrarDocentes)="filtrar($event)" />
+
+  <p
+    class="filtros-activos"
+    role="status"
+    aria-live="polite"
+  >
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
 
   @if (cargandoDocentes()) {
     <div class="loading" role="status" aria-live="polite">
@@ -34,12 +39,22 @@
   @if (!cargandoDocentes() && !mensajeError() && docentes().length === 0) {
     <div class="empty-state">
       <span class="empty-icon" aria-hidden="true">👤</span>
-      <h2>No se encontraron docentes</h2>
-      <p>No hay docentes registrados que coincidan con la búsqueda.</p>
-      @if (esAdministrador()) {
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron docentes con los filtros aplicados.</h2>
+        <p>Prueba con otros criterios o limpia los filtros.</p>
         <div class="empty-actions">
-          <a routerLink="/docentes/crear" class="btn btn-primary">Nuevo docente</a>
+          <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
         </div>
+      } @else {
+        <h2>No se encontraron docentes</h2>
+        <p>No hay docentes registrados que coincidan con la búsqueda.</p>
+        @if (esAdministrador()) {
+          <div class="empty-actions">
+            <a routerLink="/docentes/crear" class="btn btn-primary">Nuevo docente</a>
+          </div>
+        }
       }
     </div>
   }

@@ -12,7 +12,7 @@
   <form
     class="form-card"
     [formGroup]="formularioFiltros"
-    (ngSubmit)="buscarUsuarios()"
+    (ngSubmit)="$event.preventDefault()"
     novalidate
   >
     <div class="form-grid">
@@ -58,19 +58,19 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary" [disabled]="cargandoUsuarios()">
-        Buscar
-      </button>
       <button
         type="button"
         class="btn btn-neutral"
-        [disabled]="cargandoUsuarios()"
         (click)="limpiarFiltros()"
       >
         Limpiar filtros
       </button>
     </div>
   </form>
+
+  <p class="filtros-activos" role="status" aria-live="polite">
+    Filtros activos: {{ filtrosActivos() }}
+  </p>
 
   @if (cargandoUsuarios()) {
     <div class="loading" role="status" aria-live="polite">
@@ -90,11 +90,21 @@
   @if (!cargandoUsuarios() && !mensajeErrorUsuarios() && usuarios().length === 0) {
     <div class="empty-state">
       <span class="empty-icon" aria-hidden="true">👥</span>
-      <h2>No se encontraron usuarios.</h2>
-      <p>Ajusta los filtros de búsqueda o registra un nuevo usuario.</p>
-      <div class="empty-actions">
-        <a routerLink="/usuarios/nuevo" class="btn btn-primary">Nuevo usuario</a>
-      </div>
+      @if (filtrosActivos() > 0) {
+        <h2>No se encontraron usuarios con los filtros aplicados.</h2>
+        <p>Prueba con otros criterios o limpia los filtros.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+      } @else {
+        <h2>No se encontraron usuarios.</h2>
+        <p>Ajusta los filtros de búsqueda o registra un nuevo usuario.</p>
+        <div class="empty-actions">
+          <a routerLink="/usuarios/nuevo" class="btn btn-primary">Nuevo usuario</a>
+        </div>
+      }
     </div>
   }
 

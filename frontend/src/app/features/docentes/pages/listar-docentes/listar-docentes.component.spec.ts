@@ -410,20 +410,33 @@ describe('ListarDocentesComponent', () => {
     expect(docentesService.cambiarEstadoDocente).toHaveBeenCalledTimes(1);
   });
 
-  it('no filtra ni cambia de página mientras hay una carga pendiente', () => {
-    const cargaPendiente = new Subject<RespuestaListadoDocentes>();
-
-    docentesService.listarDocentes.mockReturnValueOnce(
-      cargaPendiente.asObservable(),
-    );
+  it('ignora resultados obsoletos de una consulta anterior', () => {
+    const consultaAnterior = new Subject<RespuestaListadoDocentes>();
+    const consultaNueva = new Subject<RespuestaListadoDocentes>();
 
     crearComponente();
-    componente.filtrar({ identificacion: '222' });
-    componente.cambiarPagina(2);
+    docentesService.listarDocentes
+      .mockReturnValueOnce(consultaAnterior.asObservable())
+      .mockReturnValueOnce(consultaNueva.asObservable());
+
+    componente.filtrar({ nombres: 'Ana' });
+    componente.filtrar({ especialidad: 'Matemática' });
     fixture.detectChanges();
 
-    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(1);
-    cargaPendiente.complete();
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(3);
+
+    consultaNueva.next(
+      crearRespuestaDocentes([crearDocente({ nombres: 'Nuevo' })]),
+    );
+    consultaNueva.complete();
+    consultaAnterior.next(
+      crearRespuestaDocentes([crearDocente({ nombres: 'Obsoleto' })]),
+    );
+    consultaAnterior.complete();
+    fixture.detectChanges();
+
+    expect(componente.docentes()).toHaveLength(1);
+    expect(componente.docentes()[0].nombres).toBe('Nuevo');
   });
 
   it('muestra error al cambiar estado', () => {
@@ -438,6 +451,51 @@ describe('ListarDocentesComponent', () => {
     expect(componente.mensajeError()).toBe(
       'No tiene permisos para gestionar docentes.',
     );
+  });
+
+  it('informa cuantos filtros están activos', () => {
+    crearComponente();
+
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.filtrar({ identificacion: '1002', activo: true });
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(2);
+    expect(obtenerTexto()).toContain('Filtros activos: 2');
+  });
+
+  it('no renderiza el botón Buscar en la lista', () => {
+    crearComponente();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
+  });
+
+  it('limpiar filtros estando sin filtros no dispara una consulta', () => {
+    crearComponente();
+    docentesService.listarDocentes.mockClear();
+
+    componente.limpiarFiltros();
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).not.toHaveBeenCalled();
+  });
+
+  it('limpiar filtros restablece a la página 1', () => {
+    crearComponente();
+    componente.cambiarPagina(2);
+    docentesService.listarDocentes.mockClear();
+
+    componente.filtrar({ nombres: 'Ana' });
+    fixture.detectChanges();
+
+    expect(docentesService.listarDocentes).toHaveBeenCalledTimes(1);
+    expect(docentesService.listarDocentes).toHaveBeenCalledWith({
+      nombres: 'Ana',
+      pagina: 1,
+      limite: 10,
+    });
   });
 
   function crearComponente(): void {

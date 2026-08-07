@@ -1,12 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   EventEmitter,
-  Input,
+  OnInit,
   Output,
   inject,
 } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, filter, map, merge } from 'rxjs';
 
 import type { FiltrosDocentes } from '../../models/docente.model';
 
@@ -19,6 +22,8 @@ interface ControlesFiltrosDocentes {
   activo: string;
 }
 
+const DEBOUNCE_BUSQUEDA_MS = 350;
+
 @Component({
   selector: 'app-docente-filter',
   standalone: true,
@@ -27,10 +32,9 @@ interface ControlesFiltrosDocentes {
   styleUrl: './docente-filter.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DocenteFilterComponent {
+export class DocenteFilterComponent implements OnInit {
   private readonly constructorFormulario = inject(NonNullableFormBuilder);
-
-  @Input() cargando = false;
+  private readonly referenciaDestruccion = inject(DestroyRef);
 
   @Output() filtrarDocentes = new EventEmitter<FiltrosDocentes>();
 
@@ -41,8 +45,6 @@ export class DocenteFilterComponent {
     correo: '',
     especialidad: '',
     activo: '',
-  }, {
-    validators: [],
   });
 
   constructor() {
@@ -53,33 +55,48 @@ export class DocenteFilterComponent {
     this.formularioFiltros.controls.especialidad.addValidators(Validators.maxLength(150));
   }
 
-  aplicarFiltros(): void {
-    if (this.cargando) {
-      return;
-    }
+  ngOnInit(): void {
+    const textoDebounced = merge(
+      this.formularioFiltros.controls.identificacion.valueChanges,
+      this.formularioFiltros.controls.nombres.valueChanges,
+      this.formularioFiltros.controls.apellidos.valueChanges,
+      this.formularioFiltros.controls.correo.valueChanges,
+      this.formularioFiltros.controls.especialidad.valueChanges,
+    ).pipe(
+      debounceTime(DEBOUNCE_BUSQUEDA_MS),
+      map(() => this.obtenerFiltros()),
+      distinctUntilChanged(sonFiltrosIguales),
+    );
 
-    if (this.formularioFiltros.invalid) {
-      this.formularioFiltros.markAllAsTouched();
-      return;
-    }
+    const selectInmediato = this.formularioFiltros.controls.activo.valueChanges.pipe(
+      map(() => this.obtenerFiltros()),
+    );
 
-    this.filtrarDocentes.emit(this.obtenerFiltros());
+    merge(textoDebounced, selectInmediato)
+      .pipe(
+        filter(() => this.formularioFiltros.valid),
+        takeUntilDestroyed(this.referenciaDestruccion),
+      )
+      .subscribe((filtros) => this.filtrarDocentes.emit(filtros));
   }
 
   limpiarFiltros(): void {
-    if (this.cargando) {
-      return;
-    }
-
-    this.formularioFiltros.reset({
-      identificacion: '',
-      nombres: '',
-      apellidos: '',
-      correo: '',
-      especialidad: '',
-      activo: '',
-    });
+    this.formularioFiltros.reset(
+      {
+        identificacion: '',
+        nombres: '',
+        apellidos: '',
+        correo: '',
+        especialidad: '',
+        activo: '',
+      },
+      { emitEvent: false },
+    );
     this.filtrarDocentes.emit({});
+  }
+
+  impedirEnvio(evento: Event): void {
+    evento.preventDefault();
   }
 
   private obtenerFiltros(): FiltrosDocentes {
@@ -121,4 +138,11 @@ export class DocenteFilterComponent {
 
     return filtros;
   }
+}
+
+function sonFiltrosIguales(
+  anterior: FiltrosDocentes,
+  actual: FiltrosDocentes,
+): boolean {
+  return JSON.stringify(anterior) === JSON.stringify(actual);
 }

@@ -125,7 +125,7 @@ describe('ListadoUsuariosComponent', () => {
   it('envia el correo sin espacios exteriores', () => {
     iniciarYCompletar();
     usuariosService.listarUsuarios.mockClear();
-    componente.formularioFiltros.patchValue({ correo: '  admin  ' });
+    componente.formularioFiltros.patchValue({ correo: '  admin  ' }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -135,7 +135,7 @@ describe('ListadoUsuariosComponent', () => {
   it('envia estado', () => {
     iniciarYCompletar();
     usuariosService.listarUsuarios.mockClear();
-    componente.formularioFiltros.patchValue({ estado: 'activo' });
+    componente.formularioFiltros.patchValue({ estado: 'activo' }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -145,7 +145,7 @@ describe('ListadoUsuariosComponent', () => {
   it('envia codigo de rol', () => {
     iniciarYCompletar();
     usuariosService.listarUsuarios.mockClear();
-    componente.formularioFiltros.patchValue({ codigoRol: 'ADMIN' });
+    componente.formularioFiltros.patchValue({ codigoRol: 'ADMIN' }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -159,7 +159,7 @@ describe('ListadoUsuariosComponent', () => {
       correo: '   ',
       estado: '',
       codigoRol: '',
-    });
+    }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -172,7 +172,7 @@ describe('ListadoUsuariosComponent', () => {
   it('correo de mas de 150 caracteres no consulta', () => {
     iniciarYCompletar();
     usuariosService.listarUsuarios.mockClear();
-    componente.formularioFiltros.patchValue({ correo: 'a'.repeat(151) });
+    componente.formularioFiltros.patchValue({ correo: 'a'.repeat(151) }, { emitEvent: false });
 
     componente.buscarUsuarios();
 
@@ -186,7 +186,7 @@ describe('ListadoUsuariosComponent', () => {
       correo: 'admin',
       estado: 'activo',
       codigoRol: 'ADMIN',
-    });
+    }, { emitEvent: false });
 
     componente.limpiarFiltros();
 
@@ -385,14 +385,6 @@ describe('ListadoUsuariosComponent', () => {
     expect(componente.cargandoRoles()).toBe(false);
   });
 
-  it('evita consultas duplicadas de usuarios durante carga', () => {
-    iniciarComponente();
-
-    componente.buscarUsuarios();
-
-    expect(usuariosService.listarUsuarios).toHaveBeenCalledTimes(1);
-  });
-
   it('evita consultas duplicadas de roles durante carga', () => {
     iniciarComponente();
 
@@ -401,12 +393,85 @@ describe('ListadoUsuariosComponent', () => {
     expect(rolesService.listarRoles).toHaveBeenCalledTimes(1);
   });
 
-  it('deshabilita controles de accion durante carga', () => {
+  it('ignora resultados obsoletos de una consulta anterior', () => {
     iniciarComponente();
+    const consultaAnterior = solicitudesUsuarios[solicitudesUsuarios.length - 1];
+    const consultaNueva = new Subject<RespuestaListadoUsuarios>();
+    usuariosService.listarUsuarios.mockImplementationOnce(() => consultaNueva.asObservable());
+
+    componente.buscarUsuarios();
+
+    expect(usuariosService.listarUsuarios).toHaveBeenCalledTimes(2);
+
+    consultaNueva.next(
+      crearRespuestaListado({ data: [crearUsuario({ id: 77 })] }),
+    );
+    consultaNueva.complete();
+    consultaAnterior.next(
+      crearRespuestaListado({ data: [crearUsuario({ id: 1 })] }),
+    );
+    consultaAnterior.complete();
+
+    expect(componente.usuarios()[0]?.id).toBe(77);
+  });
+
+  it('al cambiar el select estado consulta inmediatamente', () => {
+    iniciarYCompletar();
+    usuariosService.listarUsuarios.mockClear();
+
+    componente.formularioFiltros.controls.estado.setValue('bloqueado');
+
+    expect(usuariosService.listarUsuarios).toHaveBeenCalledTimes(1);
+    expect(obtenerUltimosFiltros()).toMatchObject({
+      estado: 'bloqueado',
+      pagina: 1,
+      limite: 10,
+    });
+  });
+
+  it('la busqueda por correo emite una sola consulta con debounce', () => {
+    vi.useFakeTimers();
+    try {
+      iniciarYCompletar();
+      usuariosService.listarUsuarios.mockClear();
+
+      componente.formularioFiltros.controls.correo.setValue('anuor');
+      vi.advanceTimersByTime(100);
+      expect(usuariosService.listarUsuarios).not.toHaveBeenCalled();
+
+      componente.formularioFiltros.controls.correo.setValue('admin');
+      vi.advanceTimersByTime(400);
+
+      expect(usuariosService.listarUsuarios).toHaveBeenCalledTimes(1);
+      expect(obtenerUltimosFiltros()).toMatchObject({
+        correo: 'admin',
+        pagina: 1,
+        limite: 10,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('informa cuantos filtros están activos', () => {
+    iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerBoton('Buscar')?.disabled).toBe(true);
-    expect(obtenerBoton('Limpiar filtros')?.disabled).toBe(true);
+    expect(componente.filtrosActivos()).toBe(0);
+    expect(obtenerTexto()).toContain('Filtros activos: 0');
+
+    componente.formularioFiltros.controls.estado.setValue('activo');
+    fixture.detectChanges();
+
+    expect(componente.filtrosActivos()).toBe(1);
+    expect(obtenerTexto()).toContain('Filtros activos: 1');
+  });
+
+  it('no existe boton Buscar en el filtro', () => {
+    iniciarYCompletar();
+    fixture.detectChanges();
+
+    expect(obtenerBoton('Buscar')).toBeNull();
   });
 
   it('error de usuarios no elimina los roles ya cargados', () => {
@@ -538,11 +603,11 @@ describe('ListadoUsuariosComponent', () => {
     expect(obtenerElemento('select[formControlName="codigoRol"]')).toBeTruthy();
   });
 
-  it('existe boton Buscar', () => {
+  it('el filtro no contiene boton Buscar', () => {
     iniciarYCompletar();
     fixture.detectChanges();
 
-    expect(obtenerBoton('Buscar')).toBeTruthy();
+    expect(obtenerBoton('Buscar')).toBeNull();
   });
 
   it('existe boton Limpiar filtros', () => {

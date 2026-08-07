@@ -1,7 +1,7 @@
 <form
   class="form-card"
   [formGroup]="formularioFiltros"
-  (ngSubmit)="aplicarFiltros()"
+  (ngSubmit)="impedirEnvio($event)"
   novalidate
 >
   <div class="form-grid">
@@ -106,8 +106,7 @@
   </div>
 
   <div class="form-actions">
-    <button type="submit" [disabled]="cargando">Buscar</button>
-    <button type="button" [disabled]="cargando" (click)="limpiarFiltros()">
+    <button type="button" class="btn btn-neutral" (click)="limpiarFiltros()">
       Limpiar filtros
     </button>
   </div>
