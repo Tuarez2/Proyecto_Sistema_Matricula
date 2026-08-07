@@ -325,7 +325,7 @@ describe('ListarEstudiantesComponent', () => {
   it('ADMIN ve acciones administrativas', () => {
     crearComponente();
 
-    expect(obtenerEnlace('Crear estudiante')).toBeTruthy();
+    expect(obtenerEnlace('Nuevo estudiante')).toBeTruthy();
     expect(obtenerEnlace('Editar')).toBeTruthy();
     expect(obtenerBoton('Inactivar')).toBeTruthy();
   });
@@ -335,7 +335,7 @@ describe('ListarEstudiantesComponent', () => {
 
     crearComponente();
 
-    expect(obtenerEnlace('Crear estudiante')).toBeNull();
+    expect(obtenerEnlace('Nuevo estudiante')).toBeNull();
     expect(obtenerEnlace('Editar')).toBeNull();
     expect(obtenerBoton('Inactivar')).toBeNull();
   });

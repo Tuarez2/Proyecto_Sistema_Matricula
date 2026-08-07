@@ -178,9 +178,9 @@
       @if (enviando) {
         Guardando...
       } @else if (modoEdicion) {
-        Actualizar
+        Guardar cambios
       } @else {
-        Guardar
+        Crear estudiante
       }
     </button>
     <button type="button" class="btn btn-neutral" [disabled]="enviando" (click)="cancelar()">
