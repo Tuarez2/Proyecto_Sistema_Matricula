@@ -15,6 +15,11 @@ import type {
   Docente,
   SolicitudCrearDocente,
 } from '../../models/docente.model';
+import {
+  validarIdentificacion,
+  validarNombre,
+  validarTelefono,
+} from '../../../../shared/utils/validators';
 
 @Component({
   selector: 'app-docente-form',
@@ -35,11 +40,11 @@ export class DocenteFormComponent implements OnInit, OnChanges {
   @Output() cancelarFormulario = new EventEmitter<void>();
 
   readonly formularioDocente = this.constructorFormulario.group({
-    identificacion: ['', [Validators.required, Validators.maxLength(20)]],
-    nombres: ['', [Validators.required, Validators.maxLength(100)]],
-    apellidos: ['', [Validators.required, Validators.maxLength(100)]],
+    identificacion: ['', [Validators.required, validarIdentificacion()]],
+    nombres: ['', [Validators.required, validarNombre()]],
+    apellidos: ['', [Validators.required, validarNombre()]],
     correo: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
-    telefono: ['', [Validators.maxLength(20)]],
+    telefono: ['', [validarTelefono()]],
     especialidad: ['', [Validators.required, Validators.maxLength(150)]],
     activo: true,
   });

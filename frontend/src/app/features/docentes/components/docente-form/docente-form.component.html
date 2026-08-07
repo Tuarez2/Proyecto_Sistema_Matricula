@@ -18,7 +18,7 @@
         formularioDocente.controls.identificacion.touched &&
         formularioDocente.controls.identificacion.invalid
       ) {
-        <p class="error-field" role="alert">La identificación es obligatoria y no puede superar 20 caracteres.</p>
+        <p class="error-field" role="alert">La identificación es obligatoria, entre 5 y 20 caracteres alfanuméricos y debe contener al menos un número.</p>
       }
     </div>
 
@@ -35,7 +35,7 @@
         formularioDocente.controls.nombres.touched &&
         formularioDocente.controls.nombres.invalid
       ) {
-        <p class="error-field" role="alert">Los nombres son obligatorios y no pueden superar 100 caracteres.</p>
+        <p class="error-field" role="alert">Los nombres son obligatorios y solo pueden contener letras y espacios.</p>
       }
     </div>
 
@@ -52,7 +52,7 @@
         formularioDocente.controls.apellidos.touched &&
         formularioDocente.controls.apellidos.invalid
       ) {
-        <p class="error-field" role="alert">Los apellidos son obligatorios y no pueden superar 100 caracteres.</p>
+        <p class="error-field" role="alert">Los apellidos son obligatorios y solo pueden contener letras y espacios.</p>
       }
     </div>
 
@@ -86,7 +86,7 @@
         formularioDocente.controls.telefono.touched &&
         formularioDocente.controls.telefono.invalid
       ) {
-        <p class="error-field" role="alert">El teléfono no puede superar 20 caracteres.</p>
+        <p class="error-field" role="alert">El teléfono debe contener solo números, +, - y espacios.</p>
       }
     </div>
 
