@@ -1,6 +1,7 @@
 import { body } from 'express-validator';
 
 import {
+  CODIGO_PATTERN,
   EDAD_MINIMA_ESTUDIANTE,
   IDENTIFICACION_PATTERN,
   NOMBRES_PATTERN,
@@ -48,6 +49,20 @@ export const reglaTextoOpcional = (campo, etiqueta, { max = 100, patron } = {}) 
 
 export const reglaNombreOpcional = (campo, etiqueta) =>
   reglaTextoOpcional(campo, etiqueta, { max: 100, patron: NOMBRES_PATTERN });
+
+export const reglaCodigoOpcional = (campo = 'codigo', etiqueta = 'El codigo') =>
+  body(campo)
+    .optional()
+    .isString()
+    .withMessage(`${etiqueta} debe ser texto.`)
+    .bail()
+    .trim()
+    .notEmpty()
+    .withMessage(`${etiqueta} no puede estar vacio.`)
+    .bail()
+    .matches(CODIGO_PATTERN)
+    .withMessage(`${etiqueta} solo puede contener letras, numeros, guiones o guiones bajos.`)
+    .customSanitizer((valor) => valor.toUpperCase());
 
 export const reglaIdentificacionOpcional = (campo = 'identificacion') =>
   body(campo)
@@ -124,6 +139,7 @@ export default {
   calcularEdad,
   reglaTextoOpcional,
   reglaNombreOpcional,
+  reglaCodigoOpcional,
   reglaIdentificacionOpcional,
   reglaTelefonoOpcional,
   reglaCorreoOpcional,

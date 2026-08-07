@@ -1,17 +1,19 @@
 import { body, query } from 'express-validator';
 
+import { DURACION_SEMESTRES_MAX, DURACION_SEMESTRES_MIN } from '../constants/domain.constants.js';
 import { validarCamposPermitidos, validarFiltrosPermitidos, validarIdParam } from './common.validator.js';
+import { reglaCodigoOpcional, reglaTextoOpcional } from './reglasComunes.js';
 
 const camposPermitidos = ['codigo', 'nombre', 'duracion_semestres', 'facultad_id', 'activo'];
 const camposListado = ['codigo', 'nombre', 'facultad_id', 'activo', 'page', 'limit'];
 
 const reglas = [
-  body('codigo').optional().isLength({ min: 1, max: 20 }).withMessage('El codigo es invalido.'),
-  body('nombre').optional().isLength({ min: 1, max: 150 }).withMessage('El nombre es invalido.'),
+  reglaCodigoOpcional('codigo', 'El codigo'),
+  reglaTextoOpcional('nombre', 'El nombre', { max: 150 }),
   body('duracion_semestres')
     .optional()
-    .isInt({ min: 1 })
-    .withMessage('La duracion en semestres debe ser positiva.')
+    .isInt({ min: DURACION_SEMESTRES_MIN, max: DURACION_SEMESTRES_MAX })
+    .withMessage(`La duracion en semestres debe estar entre ${DURACION_SEMESTRES_MIN} y ${DURACION_SEMESTRES_MAX}.`)
     .toInt(),
   body('facultad_id').optional().isInt({ min: 1 }).withMessage('La facultad debe ser valida.').toInt(),
   body('activo').optional().isBoolean().withMessage('El campo activo debe ser booleano.').toBoolean()

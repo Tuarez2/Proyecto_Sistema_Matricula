@@ -206,6 +206,31 @@ const asegurarPeriodoOperativoUnico = async (estado, periodoIdExcluido = null, o
   }
 };
 
+const asegurarPeriodoNoSolapado = async ({ fecha_inicio, fecha_fin }, periodoIdExcluido = null, opciones = {}) => {
+  if (!fecha_inicio || !fecha_fin) return;
+
+  const condiciones = {
+    [Op.and]: [{ fecha_inicio: { [Op.lte]: fecha_fin } }, { fecha_fin: { [Op.gte]: fecha_inicio } }]
+  };
+
+  if (periodoIdExcluido) {
+    condiciones.id = { [Op.ne]: periodoIdExcluido };
+  }
+
+  const periodoSolapado = await PeriodoAcademico.findOne({
+    where: condiciones,
+    transaction: opciones.transaction
+  });
+
+  if (periodoSolapado) {
+    throw new ApiError(
+      409,
+      'Las fechas del periodo academico se superponen con otro periodo existente.',
+      'PERIODO_FECHAS_SOLAPADAS'
+    );
+  }
+};
+
 const contarDependenciasPeriodo = async (periodoId, opciones = {}) => {
   const cursos = await Curso.findAll({
     where: { periodo_id: periodoId },
@@ -341,6 +366,7 @@ export const crearPeriodoAcademico = async (datos) =>
     verificarFechasPeriodo(datosPermitidos);
     await asegurarCodigoUnico(datosPermitidos.codigo, null, { transaction });
     await asegurarPeriodoOperativoUnico(datosPermitidos.estado, null, { transaction });
+    await asegurarPeriodoNoSolapado(datosPermitidos, null, { transaction });
 
     const periodo = await PeriodoAcademico.create(datosPermitidos, { transaction });
 
@@ -364,6 +390,10 @@ export const actualizarPeriodoAcademico = async (id, datos) =>
     verificarFechasPeriodo(construirPeriodoConDatos(periodo, datosPermitidos));
     await asegurarFechasModificables(periodo.id, datosPermitidos, { transaction });
     await asegurarCodigoUnico(datosPermitidos.codigo, periodo.id, { transaction });
+
+    if (datosPermitidos.fecha_inicio !== undefined || datosPermitidos.fecha_fin !== undefined) {
+      await asegurarPeriodoNoSolapado(construirPeriodoConDatos(periodo, datosPermitidos), periodo.id, { transaction });
+    }
 
     await periodo.update(datosPermitidos, { transaction });
 

@@ -124,7 +124,26 @@ export const obtenerAsignaturaPorId = async (id) => {
   return asignatura;
 };
 
-export const crearAsignatura = async (datos) => Asignatura.create(seleccionarDatosPermitidos(datos));
+const asegurarCodigoUnico = async (codigo, asignaturaIdExcluida = null) => {
+  if (!codigo) return;
+
+  const condiciones = { codigo };
+
+  if (asignaturaIdExcluida) {
+    condiciones.id = { [Op.ne]: asignaturaIdExcluida };
+  }
+
+  const asignaturaExistente = await Asignatura.findOne({ where: condiciones });
+
+  if (asignaturaExistente) {
+    throw new ApiError(409, 'El codigo de asignatura ya esta registrado.', 'ASIGNATURA_CODIGO_DUPLICATED');
+  }
+};
+
+export const crearAsignatura = async (datos) => {
+  await asegurarCodigoUnico(datos.codigo);
+  return Asignatura.create(seleccionarDatosPermitidos(datos));
+};
 
 export const actualizarAsignatura = async (id, datos) => {
   const asignatura = await Asignatura.findByPk(id);
@@ -137,6 +156,10 @@ export const actualizarAsignatura = async (id, datos) => {
 
   if (Object.keys(datosPermitidos).length === 0) {
     throw new ApiError(400, 'Debe enviar al menos un campo valido.', 'EMPTY_UPDATE_PAYLOAD');
+  }
+
+  if (datosPermitidos.codigo !== undefined) {
+    await asegurarCodigoUnico(datosPermitidos.codigo, asignatura.id);
   }
 
   await asignatura.update(datosPermitidos);

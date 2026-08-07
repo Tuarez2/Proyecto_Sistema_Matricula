@@ -2,6 +2,7 @@ import { body, query } from 'express-validator';
 
 import ApiError from '../utils/ApiError.js';
 import { validarIdParam } from './common.validator.js';
+import { reglaCodigoOpcional, reglaTextoOpcional } from './reglasComunes.js';
 
 const camposCreacion = ['codigo', 'nombre', 'activo'];
 const camposActualizacion = ['codigo', 'nombre'];
@@ -35,25 +36,9 @@ const validarFiltrosPermitidos = (camposPermitidos) => (req, res, next) => {
   return next();
 };
 
-const reglaCodigo = () =>
-  body('codigo')
-    .optional()
-    .isString()
-    .withMessage('El codigo debe ser texto.')
-    .bail()
-    .trim()
-    .isLength({ min: 1, max: 20 })
-    .withMessage('El codigo tiene una longitud invalida.');
+const reglaCodigo = () => reglaCodigoOpcional('codigo', 'El codigo');
 
-const reglaNombre = () =>
-  body('nombre')
-    .optional()
-    .isString()
-    .withMessage('El nombre debe ser texto.')
-    .bail()
-    .trim()
-    .isLength({ min: 1, max: 120 })
-    .withMessage('El nombre tiene una longitud invalida.');
+const reglaNombre = () => reglaTextoOpcional('nombre', 'El nombre', { max: 120 });
 
 const reglasComunes = [
   reglaCodigo(),
